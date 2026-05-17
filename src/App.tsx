@@ -22,6 +22,7 @@ import AuditLogs from './pages/AuditLogs';
 import PublicTournament from './pages/public/PublicTournament';
 import PublicProgramme from './pages/public/PublicProgramme';
 import PublicResultats from './pages/public/PublicResultats';
+import LandingPage from './pages/public/LandingPage';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
 
@@ -37,7 +38,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/mat/:matId" element={<MatLive />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/tournaments" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/tournaments/new" element={<PrivateRoute><TournamentNew /></PrivateRoute>} />
