@@ -1,13 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Activity, ChevronRight, Tv } from 'lucide-react';
+import { Activity, Tv } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-
-const statusColor: Record<string, string> = {
-  ready: 'badge-green', on_mat: 'badge-yellow', waiting: 'badge-gray', finished: 'badge-gray', blocked: 'badge-red',
-};
 
 export default function MatManager() {
   const { id } = useParams<{ id: string }>();

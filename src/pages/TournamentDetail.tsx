@@ -89,7 +89,7 @@ export default function TournamentDetail() {
     { label: 'Clubs',       value: stats?.clubs ?? 0,        icon: Trophy,      color: 'text-amber-400',   glow: 'shadow-amber-900/30'  },
     { label: 'Compétitions',value: stats?.competitions ?? 0, icon: Grid3X3,     color: 'text-purple-400',  glow: 'shadow-purple-900/30' },
     { label: 'Combats',     value: matchesTotal > 0 ? `${matchesDone}/${matchesTotal}` : '—',
-                                                             icon: CheckCircle, color: 'text-emerald-400', glow: 'shadow-emerald-900/30'},
+                                                             icon: CheckCircle, color: 'text-emerald-400' },
   ];
 
   return (
@@ -105,7 +105,7 @@ export default function TournamentDetail() {
       <div className="p-6 space-y-6 animate-fade-in">
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-          {statCards.map(({ label, value, icon: Icon, color, glow }) => (
+          {statCards.map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-3 animate-fade-in">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
