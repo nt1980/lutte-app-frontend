@@ -15,9 +15,9 @@ import {
   Check,
   Menu,
   X,
-  Github,
-  Twitter,
-  Linkedin,
+  ExternalLink,
+  AtSign,
+  Share2,
 } from 'lucide-react';
 
 // ─── CSS Animations ────────────────────────────────────────────────────────────
@@ -964,7 +964,7 @@ const Footer = () => (
             La plateforme de référence pour la gestion de tournois de lutte en France.
           </p>
           <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-            {[Twitter, Github, Linkedin].map((Icon, i) => (
+            {[Share2, AtSign, ExternalLink].map((Icon, i) => (
               <div key={i} style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                 <Icon size={15} color="#6b7280" />
               </div>
