@@ -10,10 +10,16 @@ import TournamentDetail from './pages/TournamentDetail';
 import Registrations from './pages/Registrations';
 import WeighIn from './pages/WeighIn';
 import Competitions from './pages/Competitions';
+import Brackets from './pages/Brackets';
 import Athletes from './pages/Athletes';
 import Clubs from './pages/Clubs';
 import TournamentSettings from './pages/TournamentSettings';
 import MatLive from './pages/MatLive';
+import MatManager from './pages/MatManager';
+import RefView from './pages/RefView';
+import TournamentUsers from './pages/TournamentUsers';
+import AuditLogs from './pages/AuditLogs';
+import PublicTournament from './pages/public/PublicTournament';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
 
@@ -39,7 +45,13 @@ export default function App() {
           <Route path="/t/:id/registrations" element={<PrivateRoute><Registrations /></PrivateRoute>} />
           <Route path="/t/:id/weigh-in" element={<PrivateRoute><WeighIn /></PrivateRoute>} />
           <Route path="/t/:id/competitions" element={<PrivateRoute><Competitions /></PrivateRoute>} />
+          <Route path="/t/:id/brackets" element={<PrivateRoute><Brackets /></PrivateRoute>} />
+          <Route path="/t/:id/mats" element={<PrivateRoute><MatManager /></PrivateRoute>} />
+          <Route path="/t/:id/users" element={<PrivateRoute><TournamentUsers /></PrivateRoute>} />
+          <Route path="/t/:id/audit" element={<PrivateRoute><AuditLogs /></PrivateRoute>} />
           <Route path="/t/:id/settings" element={<PrivateRoute><TournamentSettings /></PrivateRoute>} />
+          <Route path="/ref/:matchId" element={<PrivateRoute><RefView /></PrivateRoute>} />
+          <Route path="/tournoi/:slug" element={<PublicTournament />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
         <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', border: '1px solid #2E2E2E' }, success: { iconTheme: { primary: '#DC2626', secondary: '#fff' } } }} />
