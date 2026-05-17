@@ -20,6 +20,8 @@ import RefView from './pages/RefView';
 import TournamentUsers from './pages/TournamentUsers';
 import AuditLogs from './pages/AuditLogs';
 import PublicTournament from './pages/public/PublicTournament';
+import PublicProgramme from './pages/public/PublicProgramme';
+import PublicResultats from './pages/public/PublicResultats';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
 
@@ -35,7 +37,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/mat/:matId" element={<MatLive />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/tournaments" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/tournaments/new" element={<PrivateRoute><TournamentNew /></PrivateRoute>} />
@@ -52,7 +54,9 @@ export default function App() {
           <Route path="/t/:id/settings" element={<PrivateRoute><TournamentSettings /></PrivateRoute>} />
           <Route path="/ref/:matchId" element={<PrivateRoute><RefView /></PrivateRoute>} />
           <Route path="/tournoi/:slug" element={<PublicTournament />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/tournoi/:slug/programme" element={<PublicProgramme />} />
+          <Route path="/tournoi/:slug/resultats" element={<PublicResultats />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
         <Toaster position="top-right" toastOptions={{ style: { background: '#1A1A1A', color: '#fff', border: '1px solid #2E2E2E' }, success: { iconTheme: { primary: '#DC2626', secondary: '#fff' } } }} />
       </BrowserRouter>
