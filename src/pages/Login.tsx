@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Trophy, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail]       = useState('');
@@ -27,101 +27,117 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/[0.06] rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-blue-600/[0.04] rounded-full blur-[120px]" />
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.015]"
-          style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
-      </div>
+    <div style={{ minHeight: '100vh', background: '#080808', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      <div style={{ width: '100%', maxWidth: '360px' }}>
 
-      <div className="w-full max-w-sm relative animate-fade-in">
         {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="relative inline-flex mb-5">
-            <div className="w-16 h-16 rounded-2xl bg-red-600 flex items-center justify-center shadow-2xl shadow-red-900/50 animate-pulse-glow">
-              <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8" stroke="white" strokeWidth="2.5">
-                <path d="M6 9l6-6 6 6" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M6 15l6 6 6-6" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 16, background: '#dc2626',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1rem', boxShadow: '0 8px 32px rgba(220,38,38,0.35)'
+          }}>
+            <Trophy size={26} color="white" />
           </div>
-          <h1 className="text-3xl font-black text-white tracking-tight">Lutte App</h1>
-          <p className="text-gray-500 text-sm mt-1.5">Gestion de tournois FFLDA / UWW</p>
+          <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Lutte App</h1>
+          <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.3rem' }}>Gestion de tournois FFLDA / UWW</p>
         </div>
 
         {/* Card */}
-        <div className="bg-[#111] border border-white/[0.08] rounded-2xl p-8 shadow-2xl shadow-black/60">
-          <h2 className="text-lg font-bold text-white mb-6">Connexion</h2>
+        <div style={{
+          background: '#141414', border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 20, padding: '2rem', boxShadow: '0 24px 64px rgba(0,0,0,0.6)'
+        }}>
+          <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', marginTop: 0 }}>
+            Connexion
+          </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label">Email</label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
+          <form onSubmit={handleSubmit}>
+            {/* Email */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', color: '#6b7280', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
+                Email
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="email"
-                  className="input pl-10"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="admin@lutte.app"
                   required
                   autoComplete="email"
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 12, padding: '0.65rem 1rem 0.65rem 2.5rem',
+                    color: 'white', fontSize: '0.875rem', outline: 'none',
+                  }}
                 />
               </div>
             </div>
 
-            <div>
-              <label className="label">Mot de passe</label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
+            {/* Password */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', color: '#6b7280', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
+                Mot de passe
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type={showPw ? 'text' : 'password'}
-                  className="input pl-10 pr-10"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 12, padding: '0.65rem 2.5rem 0.65rem 2.5rem',
+                    color: 'white', fontSize: '0.875rem', outline: 'none',
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 transition-colors"
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563' }}
                 >
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
               </div>
             </div>
 
+            {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+              <div style={{
+                background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)',
+                borderRadius: 10, padding: '0.65rem 1rem', color: '#f87171',
+                fontSize: '0.8rem', marginBottom: '1rem'
+              }}>
                 {error}
               </div>
             )}
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full btn-lg mt-2 relative overflow-hidden"
+              style={{
+                width: '100%', padding: '0.8rem',
+                background: loading ? '#991b1b' : '#dc2626',
+                border: 'none', borderRadius: 12,
+                color: 'white', fontWeight: 700, fontSize: '0.9rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'background 0.15s',
+              }}
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                  </svg>
-                  Connexion en cours…
-                </>
-              ) : 'Se connecter'}
+              {loading ? 'Connexion…' : 'Se connecter'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-700 mt-5">
+        <p style={{ textAlign: 'center', color: '#374151', fontSize: '0.75rem', marginTop: '1rem' }}>
           Accès réservé aux gestionnaires de tournois
         </p>
       </div>
