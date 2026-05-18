@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import {
   Trophy, LayoutDashboard, Users, Building2, ListChecks, Scale, Zap,
-  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft
+  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft,
 } from 'lucide-react';
 
 const globalNav = [
@@ -12,71 +12,79 @@ const globalNav = [
 ];
 
 const tournamentNav = (id: string) => [
-  { to: `/t/${id}`,              label: 'Vue générale',   icon: LayoutDashboard },
-  { to: `/t/${id}/registrations`,label: 'Inscriptions',   icon: ListChecks      },
-  { to: `/t/${id}/weigh-in`,     label: 'Pesée',          icon: Scale           },
-  { to: `/t/${id}/competitions`, label: 'Compétitions',   icon: Grid3X3         },
-  { to: `/t/${id}/brackets`,     label: 'Tableaux',       icon: Zap             },
-  { to: `/t/${id}/mats`,         label: 'Tapis',          icon: Activity        },
-  { to: `/t/${id}/users`,        label: 'Utilisateurs',   icon: Users           },
-  { to: `/t/${id}/audit`,        label: 'Audit',          icon: Shield          },
-  { to: `/t/${id}/settings`,     label: 'Paramètres',     icon: Settings        },
+  { to: `/t/${id}`,               label: 'Vue générale',  icon: LayoutDashboard },
+  { to: `/t/${id}/registrations`, label: 'Inscriptions',  icon: ListChecks      },
+  { to: `/t/${id}/weigh-in`,      label: 'Pesée',         icon: Scale           },
+  { to: `/t/${id}/competitions`,  label: 'Compétitions',  icon: Grid3X3         },
+  { to: `/t/${id}/brackets`,      label: 'Tableaux',      icon: Zap             },
+  { to: `/t/${id}/mats`,          label: 'Tapis',         icon: Activity        },
+  { to: `/t/${id}/users`,         label: 'Utilisateurs',  icon: Users           },
+  { to: `/t/${id}/audit`,         label: 'Audit',         icon: Shield          },
+  { to: `/t/${id}/settings`,      label: 'Paramètres',    icon: Settings        },
 ];
 
 export default function Layout({ children, tournamentId }: { children: React.ReactNode; tournamentId?: string }) {
   const { user, logout } = useAuth();
-  const location = useLocation();
+  const location  = useLocation();
   const navigate  = useNavigate();
 
   const handleLogout = () => { logout(); navigate('/login'); };
   const initials = user?.name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 
   return (
-    <div className="flex h-screen bg-[#080808] overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-58 bg-[#0e0e0e] border-r border-white/[0.06] flex flex-col shrink-0" style={{ width: 224 }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#080808', overflow: 'hidden' }}>
+
+      {/* ── Sidebar ── */}
+      <aside style={{
+        width: 220,
+        flexShrink: 0,
+        background: '#0d0d0d',
+        borderRight: '1px solid rgba(255,255,255,0.055)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
 
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-white/[0.06]">
-          <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center shrink-0 shadow-lg shadow-red-900/40">
-            <Trophy size={15} className="text-white" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.055)' }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 9,
+            background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(220,38,38,0.35)',
+          }}>
+            <Trophy size={15} color="#fff" strokeWidth={2.2} />
           </div>
           <div>
-            <div className="text-[13px] font-black text-white tracking-tight">Lutte App</div>
-            <div className="text-[10px] text-gray-600 font-medium">FFLDA / UWW</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>Lutte App</div>
+            <div style={{ fontSize: 10, color: '#4b5563', fontWeight: 500, marginTop: 1 }}>FFLDA / UWW</div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+        <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
           {/* Global nav */}
           {globalNav.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
-              <Link key={to} to={to} className={`sidebar-link ${active ? 'active' : ''}`}>
-                <Icon size={15} />
-                <span>{label}</span>
-              </Link>
+              <NavLink key={to} to={to} label={label} icon={Icon} active={active} />
             );
           })}
 
           {/* Tournament nav */}
           {tournamentId && (
             <>
-              <div className="px-3 pt-5 pb-2">
-                <Link to="/dashboard" className="flex items-center gap-1.5 text-[10px] text-gray-600 hover:text-gray-400 transition-colors mb-2">
+              <div style={{ padding: '16px 8px 6px' }}>
+                <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#4b5563', textDecoration: 'none', marginBottom: 8 }}>
                   <ChevronLeft size={10} /> Tous les tournois
                 </Link>
-                <div className="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Ce tournoi</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ce tournoi</div>
               </div>
               {tournamentNav(tournamentId).map(({ to, label, icon: Icon }) => {
                 const active = location.pathname === to;
                 return (
-                  <Link key={to} to={to} className={`sidebar-link ${active ? 'active' : ''}`}>
-                    <Icon size={15} />
-                    <span>{label}</span>
-                  </Link>
+                  <NavLink key={to} to={to} label={label} icon={Icon} active={active} />
                 );
               })}
             </>
@@ -84,30 +92,68 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-white/[0.06] p-3">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-white/[0.04] transition-colors group">
-            <div className="w-7 h-7 rounded-lg bg-red-600/20 border border-red-600/30 flex items-center justify-center text-[11px] font-bold text-red-400 shrink-0">
-              {initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-semibold text-gray-300 truncate">{user?.name}</div>
-              <div className="text-[10px] text-gray-600 truncate">{user?.email}</div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-              title="Se déconnecter"
-            >
-              <LogOut size={13} />
-            </button>
-          </div>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.055)', padding: '10px 8px' }}>
+          <UserRow initials={initials} name={user?.name} email={user?.email} onLogout={handleLogout} />
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto min-w-0">
+      {/* ── Main content ── */}
+      <main style={{ flex: 1, overflowY: 'auto', minWidth: 0 }}>
         {children}
       </main>
+    </div>
+  );
+}
+
+function NavLink({ to, label, icon: Icon, active }: { to: string; label: string; icon: any; active: boolean }) {
+  return (
+    <Link
+      to={to}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+        padding: '7px 10px',
+        borderRadius: 8,
+        textDecoration: 'none',
+        fontSize: 13,
+        fontWeight: active ? 600 : 400,
+        color: active ? '#fff' : '#6b7280',
+        background: active ? 'rgba(220,38,38,0.12)' : 'transparent',
+        border: `1px solid ${active ? 'rgba(220,38,38,0.2)' : 'transparent'}`,
+        transition: 'all 0.15s ease',
+      }}
+    >
+      <Icon size={14} color={active ? '#ef4444' : '#4b5563'} />
+      {label}
+    </Link>
+  );
+}
+
+function UserRow({ initials, name, email, onLogout }: { initials: string; name?: string; email?: string; onLogout: () => void }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 8px', borderRadius: 10 }}>
+      <div style={{
+        width: 28, height: 28, borderRadius: 8,
+        background: 'rgba(220,38,38,0.15)',
+        border: '1px solid rgba(220,38,38,0.25)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 10, fontWeight: 800, color: '#f87171',
+        flexShrink: 0,
+      }}>
+        {initials}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#d1d5db', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+        <div style={{ fontSize: 10, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
+      </div>
+      <button
+        onClick={onLogout}
+        title="Se déconnecter"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#4b5563', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+      >
+        <LogOut size={13} color="#4b5563" />
+      </button>
     </div>
   );
 }
@@ -122,18 +168,24 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="sticky top-0 z-10 bg-[#080808]/80 backdrop-blur-md border-b border-white/[0.06] px-6 py-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-[17px] font-black text-white tracking-tight truncate">{title}</h1>
-          {subtitle && (
-            <p className="text-[12px] text-gray-500 mt-0.5 truncate">{subtitle}</p>
-          )}
-        </div>
-        {actions && (
-          <div className="flex items-center gap-2 shrink-0">{actions}</div>
+    <div style={{
+      position: 'sticky', top: 0, zIndex: 10,
+      background: 'rgba(8,8,8,0.85)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      borderBottom: '1px solid rgba(255,255,255,0.055)',
+      padding: '14px 24px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <h1 style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h1>
+        {subtitle && (
+          <p style={{ fontSize: 12, color: '#4b5563', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</p>
         )}
       </div>
+      {actions && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>{actions}</div>
+      )}
     </div>
   );
 }
