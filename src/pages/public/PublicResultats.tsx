@@ -125,7 +125,7 @@ export default function PublicResultats() {
                 <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', padding: '0.85rem 1.25rem', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', gap: '1rem' }}>
                   {/* Red */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', shrink: 0 }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
                     <div>
                       <div style={{ fontSize: '0.9rem', fontWeight: r.winner_id === r.red_athlete_id ? 700 : 400, color: r.winner_id === r.red_athlete_id ? 'white' : '#9ca3af' }}>
                         {r.red_name}
@@ -156,7 +156,7 @@ export default function PublicResultats() {
                       </div>
                       {r.blue_club && <div style={{ fontSize: '0.72rem', color: '#6b7280' }}>{r.blue_club}</div>}
                     </div>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', shrink: 0 }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                   </div>
                 </div>
               ))}

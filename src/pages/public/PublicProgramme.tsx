@@ -124,7 +124,7 @@ export default function PublicProgramme() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                               {(pool.athletes || []).filter((a: any) => a.athlete_id).map((a: any, i: number) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                  <div style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#6b7280', fontWeight: 700, shrink: 0 }}>
+                                  <div style={{ width: 22, height: 22, borderRadius: 6, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', color: '#6b7280', fontWeight: 700, flexShrink: 0 }}>
                                     {i + 1}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>

@@ -473,7 +473,7 @@ const WeighInMockup = () => (
         }}>
           <div style={{ fontSize: 48, fontWeight: 900, color: '#60a5fa', letterSpacing: '-2px', fontVariantNumeric: 'tabular-nums' }}>64.3</div>
           <div style={{ fontSize: 14, color: '#3b82f6', fontWeight: 500, marginTop: 2 }}>kg</div>
-          <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 30, padding: '5px 14px', display: 'inline-flex' }}>
+          <div style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 30, padding: '5px 14px' }}>
             <Check size={12} color="#4ade80" />
             <span style={{ fontSize: 11, color: '#4ade80', fontWeight: 600 }}>Dans la catégorie</span>
           </div>
