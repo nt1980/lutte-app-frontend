@@ -6,15 +6,18 @@ import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 };
+const INPUT: React.CSSProperties = { width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '9px 12px 9px 38px', fontSize: 13, color: '#fff', outline: 'none' };
+
+import React from 'react';
+
+function FieldIcon({ icon: Icon }: { icon: any }) {
+  return <Icon size={14} color="#374151" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />;
+}
+
 export default function TournamentNew() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: '',
-    event_date: '',
-    city: '',
-    organizer_club_id: '',
-    number_of_mats: 2,
-  });
+  const [form, setForm] = useState({ name: '', event_date: '', city: '', organizer_club_id: '', number_of_mats: 2 });
 
   const { data: clubs = [] } = useQuery({
     queryKey: ['clubs'],
@@ -23,19 +26,13 @@ export default function TournamentNew() {
 
   const create = useMutation({
     mutationFn: (data: any) => api.post('/api/tournaments', data),
-    onSuccess: (r) => {
-      toast.success('Tournoi créé !');
-      navigate(`/t/${r.data.id}`);
-    },
+    onSuccess: (r) => { toast.success('Tournoi créé !'); navigate(`/t/${r.data.id}`); },
     onError: () => toast.error('Erreur lors de la création'),
   });
 
   const f = (key: string) => ({
     value: (form as any)[key],
-    onChange: (e: any) => setForm(p => ({
-      ...p,
-      [key]: e.target.type === 'number' ? parseInt(e.target.value) : e.target.value,
-    })),
+    onChange: (e: any) => setForm(p => ({ ...p, [key]: e.target.type === 'number' ? parseInt(e.target.value) : e.target.value })),
   });
 
   const canSubmit = form.name && form.event_date && form.city && !create.isPending;
@@ -46,88 +43,83 @@ export default function TournamentNew() {
         title="Nouveau tournoi"
         subtitle="Créer un tournoi FFLDA / UWW"
         actions={
-          <button className="btn-ghost" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft size={15} /> Retour
+          <button onClick={() => navigate('/dashboard')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <ArrowLeft size={14} color="#6b7280" /> Retour
           </button>
         }
       />
 
-      <div className="p-6 animate-fade-in">
-        <div className="max-w-lg">
-          <div className="bg-[#141414] border border-white/[0.06] rounded-2xl overflow-hidden">
+      <div style={{ padding: '28px 24px' }}>
+        <div style={{ maxWidth: 520 }}>
+          <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, overflow: 'hidden' }}>
 
             {/* Header */}
-            <div className="px-6 py-5 border-b border-white/[0.06] flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center">
-                <Trophy size={18} className="text-red-500" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 11, background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trophy size={18} color="#dc2626" strokeWidth={1.8} />
               </div>
               <div>
-                <div className="font-bold text-white">Informations du tournoi</div>
-                <div className="text-xs text-gray-500">Les champs marqués * sont obligatoires</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>Informations du tournoi</div>
+                <div style={{ fontSize: 12, color: '#4b5563', marginTop: 2 }}>Les champs marqués * sont obligatoires</div>
               </div>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+
               {/* Name */}
               <div>
-                <label className="label">Nom du tournoi *</label>
-                <div className="relative">
-                  <Trophy size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
-                  <input
-                    className="input pl-10"
-                    placeholder="Championnat AURA U15 2026"
-                    {...f('name')}
-                  />
+                <label style={LABEL}>Nom du tournoi *</label>
+                <div style={{ position: 'relative' }}>
+                  <FieldIcon icon={Trophy} />
+                  <input style={INPUT} placeholder="Championnat AURA U15 2026" {...f('name')} />
                 </div>
               </div>
 
               {/* Date + City */}
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label className="label">Date *</label>
-                  <div className="relative">
-                    <Calendar size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
-                    <input type="date" className="input pl-10" {...f('event_date')} />
+                  <label style={LABEL}>Date *</label>
+                  <div style={{ position: 'relative' }}>
+                    <FieldIcon icon={Calendar} />
+                    <input type="date" style={INPUT} {...f('event_date')} />
                   </div>
                 </div>
                 <div>
-                  <label className="label">Ville *</label>
-                  <div className="relative">
-                    <MapPin size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
-                    <input className="input pl-10" placeholder="Lyon" {...f('city')} />
+                  <label style={LABEL}>Ville *</label>
+                  <div style={{ position: 'relative' }}>
+                    <FieldIcon icon={MapPin} />
+                    <input style={INPUT} placeholder="Lyon" {...f('city')} />
                   </div>
                 </div>
               </div>
 
               {/* Club */}
               <div>
-                <label className="label">Club organisateur</label>
-                <div className="relative">
-                  <Building2 size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
-                  <select className="select pl-10" {...f('organizer_club_id')}>
+                <label style={LABEL}>Club organisateur</label>
+                <div style={{ position: 'relative' }}>
+                  <FieldIcon icon={Building2} />
+                  <select style={{ ...INPUT, appearance: 'none', cursor: 'pointer' }} {...f('organizer_club_id')}>
                     <option value="">— Sélectionner un club —</option>
-                    {clubs.map((c: any) => (
-                      <option key={c.id} value={c.id}>{c.name} ({c.short_name})</option>
-                    ))}
+                    {clubs.map((c: any) => <option key={c.id} value={c.id}>{c.name} ({c.short_name})</option>)}
                   </select>
                 </div>
               </div>
 
               {/* Mats */}
               <div>
-                <label className="label">Nombre de tapis</label>
-                <div className="relative">
-                  <Layers size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
-                  <input type="number" className="input pl-10" min={1} max={16} {...f('number_of_mats')} />
+                <label style={LABEL}>Nombre de tapis</label>
+                <div style={{ position: 'relative' }}>
+                  <FieldIcon icon={Layers} />
+                  <input type="number" style={INPUT} min={1} max={16} {...f('number_of_mats')} />
                 </div>
-                <p className="text-xs text-gray-600 mt-1.5">Les tapis seront nommés automatiquement (A, B, C…)</p>
+                <p style={{ fontSize: 11, color: '#374151', marginTop: 6 }}>Les tapis seront nommés automatiquement (A, B, C…)</p>
               </div>
 
-              {/* Mats preview */}
+              {/* Mat preview */}
               {form.number_of_mats > 0 && (
-                <div className="flex flex-wrap gap-1.5">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {Array.from({ length: Math.min(form.number_of_mats, 16) }, (_, i) => (
-                    <span key={i} className="badge-gray text-xs">
+                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 600, color: '#6b7280' }}>
                       Tapis {String.fromCharCode(65 + i)}
                     </span>
                   ))}
@@ -136,26 +128,18 @@ export default function TournamentNew() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 px-6 pb-6">
-              <button className="btn-secondary" onClick={() => navigate('/dashboard')}>
+            <div style={{ display: 'flex', gap: 10, padding: '0 24px 24px' }}>
+              <button onClick={() => navigate('/dashboard')} style={{ padding: '9px 18px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Annuler
               </button>
               <button
-                className="btn-primary flex-1"
                 onClick={() => create.mutate(form)}
                 disabled={!canSubmit}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '9px 18px', borderRadius: 9, background: canSubmit ? '#dc2626' : '#7f1d1d', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? '0 4px 16px rgba(220,38,38,0.3)' : 'none' }}
               >
-                {create.isPending ? (
-                  <>
-                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    Création en cours…
-                  </>
-                ) : (
-                  <><Trophy size={15} /> Créer le tournoi</>
-                )}
+                {create.isPending
+                  ? 'Création en cours…'
+                  : <><Trophy size={14} /> Créer le tournoi</>}
               </button>
             </div>
           </div>

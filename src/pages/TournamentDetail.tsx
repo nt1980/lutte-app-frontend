@@ -4,55 +4,19 @@ import { Users, Grid3X3, Swords, CheckCircle, Activity, Scale, Settings, Trophy,
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 
+const CARD: React.CSSProperties = {
+  background: '#111',
+  border: '1px solid rgba(255,255,255,0.06)',
+  borderRadius: 16,
+};
+
 const shortcuts = (id: string) => [
-  {
-    to: `/t/${id}/registrations`,
-    label: 'Inscriptions',
-    desc: 'Importer et gérer les combattants',
-    icon: Users,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10 border-blue-500/20',
-  },
-  {
-    to: `/t/${id}/weigh-in`,
-    label: 'Pesée',
-    desc: 'Interface de pesée rapide',
-    icon: Scale,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10 border-amber-500/20',
-  },
-  {
-    to: `/t/${id}/competitions`,
-    label: 'Compétitions',
-    desc: 'Générer les poules et tableaux',
-    icon: Grid3X3,
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10 border-purple-500/20',
-  },
-  {
-    to: `/t/${id}/brackets`,
-    label: 'Tableaux',
-    desc: 'Visualiser et gérer les matchs',
-    icon: Swords,
-    color: 'text-red-400',
-    bg: 'bg-red-500/10 border-red-500/20',
-  },
-  {
-    to: `/t/${id}/mats`,
-    label: 'Tapis',
-    desc: 'Affecter les combats aux tapis',
-    icon: Activity,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10 border-emerald-500/20',
-  },
-  {
-    to: `/t/${id}/settings`,
-    label: 'Paramètres',
-    desc: 'Configuration du tournoi',
-    icon: Settings,
-    color: 'text-gray-400',
-    bg: 'bg-white/5 border-white/10',
-  },
+  { to: `/t/${id}/registrations`, label: 'Inscriptions',  desc: 'Importer et gérer les combattants',   icon: Users,     color: '#60a5fa', bg: 'rgba(96,165,250,0.1)',  border: 'rgba(96,165,250,0.2)'  },
+  { to: `/t/${id}/weigh-in`,      label: 'Pesée',         desc: 'Interface de pesée rapide',            icon: Scale,     color: '#fbbf24', bg: 'rgba(251,191,36,0.1)', border: 'rgba(251,191,36,0.2)'  },
+  { to: `/t/${id}/competitions`,  label: 'Compétitions',  desc: 'Générer les poules et tableaux',       icon: Grid3X3,   color: '#c084fc', bg: 'rgba(192,132,252,0.1)',border: 'rgba(192,132,252,0.2)' },
+  { to: `/t/${id}/brackets`,      label: 'Tableaux',      desc: 'Visualiser et gérer les matchs',       icon: Swords,    color: '#f87171', bg: 'rgba(248,113,113,0.1)',border: 'rgba(248,113,113,0.2)' },
+  { to: `/t/${id}/mats`,          label: 'Tapis',         desc: 'Affecter les combats aux tapis',       icon: Activity,  color: '#4ade80', bg: 'rgba(74,222,128,0.1)', border: 'rgba(74,222,128,0.2)'  },
+  { to: `/t/${id}/settings`,      label: 'Paramètres',    desc: 'Configuration du tournoi',             icon: Settings,  color: '#9ca3af', bg: 'rgba(156,163,175,0.08)',border: 'rgba(156,163,175,0.15)'},
 ];
 
 export default function TournamentDetail() {
@@ -72,9 +36,11 @@ export default function TournamentDetail() {
 
   if (!tournament) return (
     <Layout tournamentId={id}>
-      <div className="flex items-center justify-center h-64">
-        <div className="flex gap-1">
-          {[0,1,2].map(i => <div key={i} className="w-2 h-2 rounded-full bg-gray-700 animate-bounce" style={{ animationDelay: `${i * 100}ms` }} />)}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#374151', animation: 'bounce 1s infinite', animationDelay: `${i * 150}ms` }} />
+          ))}
         </div>
       </div>
     </Layout>
@@ -85,88 +51,109 @@ export default function TournamentDetail() {
   const progress     = matchesTotal > 0 ? Math.round((matchesDone / matchesTotal) * 100) : 0;
 
   const statCards = [
-    { label: 'Combattants', value: stats?.athletes ?? 0,     icon: Users,       color: 'text-blue-400',    glow: 'shadow-blue-900/30'   },
-    { label: 'Clubs',       value: stats?.clubs ?? 0,        icon: Trophy,      color: 'text-amber-400',   glow: 'shadow-amber-900/30'  },
-    { label: 'Compétitions',value: stats?.competitions ?? 0, icon: Grid3X3,     color: 'text-purple-400',  glow: 'shadow-purple-900/30' },
+    { label: 'Combattants', value: stats?.athletes    ?? 0,   icon: Users,        color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'   },
+    { label: 'Clubs',       value: stats?.clubs       ?? 0,   icon: Trophy,       color: '#fbbf24', bg: 'rgba(251,191,36,0.1)'   },
+    { label: 'Compétitions',value: stats?.competitions ?? 0,  icon: Grid3X3,      color: '#c084fc', bg: 'rgba(192,132,252,0.1)'  },
     { label: 'Combats',     value: matchesTotal > 0 ? `${matchesDone}/${matchesTotal}` : '—',
-                                                             icon: CheckCircle, color: 'text-emerald-400' },
+                                                               icon: CheckCircle,  color: '#4ade80', bg: 'rgba(74,222,128,0.1)'   },
   ];
+
+  const dateStr = new Date(tournament.event_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <Layout tournamentId={id}>
       <PageHeader
         title={tournament.name}
-        subtitle={`${new Date(tournament.event_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} · ${tournament.city}`}
+        subtitle={`${dateStr} · ${tournament.city}`}
         actions={
-          <Link to={`/t/${id}/settings`} className="btn-secondary"><Settings size={15} /> Paramètres</Link>
+          <Link to={`/t/${id}/settings`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+            <Settings size={14} color="#6b7280" /> Paramètres
+          </Link>
         }
       />
 
-      <div className="p-6 space-y-6 animate-fade-in">
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
-          {statCards.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 flex flex-col gap-3 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">{label}</span>
-                <div className={`w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center`}>
-                  <Icon size={16} className={color} />
+      <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+        {/* ── Stat cards ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+          {statCards.map(({ label, value, icon: Icon, color, bg }) => (
+            <div key={label} style={{ ...CARD, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</span>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={15} color={color} strokeWidth={1.8} />
                 </div>
               </div>
-              <span className="text-3xl font-black text-white tracking-tight">{value}</span>
+              <span style={{ fontSize: 32, fontWeight: 900, color: '#fff', letterSpacing: '-1.5px', lineHeight: 1 }}>{value}</span>
             </div>
           ))}
         </div>
 
-        {/* Progress */}
+        {/* ── Progress ── */}
         {matchesTotal > 0 && (
-          <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
+          <div style={{ ...CARD, padding: '20px 22px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div>
-                <div className="text-sm font-bold text-white">Progression du tournoi</div>
-                <div className="text-xs text-gray-500 mt-0.5">{matchesDone} combats terminés sur {matchesTotal}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Progression du tournoi</div>
+                <div style={{ fontSize: 12, color: '#4b5563', marginTop: 3 }}>{matchesDone} combats terminés sur {matchesTotal}</div>
               </div>
-              <div className="text-2xl font-black text-red-500">{progress}%</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: '#dc2626' }}>{progress}%</div>
             </div>
-            <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-red-600 to-red-400 rounded-full transition-all duration-700"
-                style={{ width: `${progress}%` }}
-              />
+            <div style={{ height: 6, background: 'rgba(255,255,255,0.05)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#dc2626,#ef4444)', borderRadius: 4, transition: 'width 0.7s ease' }} />
             </div>
             {progress === 100 && (
-              <div className="flex items-center gap-2 mt-3 text-xs text-emerald-400">
-                <CheckCircle size={12} /> Tournoi terminé — tous les combats sont joués
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, fontSize: 12, color: '#4ade80' }}>
+                <CheckCircle size={13} color="#4ade80" /> Tournoi terminé — tous les combats sont joués
               </div>
             )}
           </div>
         )}
 
-        {/* Shortcuts */}
+        {/* ── Shortcuts ── */}
         <div>
-          <div className="section-title mb-4">Accès rapide</div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 stagger">
-            {shortcuts(id!).map(({ to, label, desc, icon: Icon, color, bg }) => (
-              <Link
-                key={to}
-                to={to}
-                className="group bg-[#141414] hover:bg-[#1c1c1c] border border-white/[0.06] hover:border-red-600/25 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/40 animate-fade-in"
-              >
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-3 transition-transform group-hover:scale-110 duration-200 ${bg}`}>
-                  <Icon size={18} className={color} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-semibold text-white group-hover:text-red-300 transition-colors">{label}</div>
-                    <div className="text-xs text-gray-600 mt-0.5 leading-tight">{desc}</div>
-                  </div>
-                  <ArrowRight size={14} className="text-gray-700 group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all shrink-0" />
-                </div>
-              </Link>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>Accès rapide</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            {shortcuts(id!).map(({ to, label, desc, icon: Icon, color, bg, border }) => (
+              <ShortcutCard key={to} to={to} label={label} desc={desc} Icon={Icon} color={color} bg={bg} border={border} />
             ))}
           </div>
         </div>
+
       </div>
     </Layout>
   );
 }
+
+function ShortcutCard({ to, label, desc, Icon, color, bg, border }: any) {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <Link
+      to={to}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', flexDirection: 'column',
+        background: hovered ? '#161616' : '#111',
+        border: `1px solid ${hovered ? 'rgba(220,38,38,0.25)' : 'rgba(255,255,255,0.06)'}`,
+        borderRadius: 14, padding: '18px 18px',
+        textDecoration: 'none',
+        transition: 'border-color 0.15s ease, background 0.15s ease, transform 0.15s ease',
+        transform: hovered ? 'translateY(-2px)' : 'none',
+      }}
+    >
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: bg, border: `1px solid ${border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+        <Icon size={17} color={color} strokeWidth={1.8} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: hovered ? '#fca5a5' : '#fff' }}>{label}</div>
+          <div style={{ fontSize: 11, color: '#4b5563', marginTop: 3, lineHeight: 1.4 }}>{desc}</div>
+        </div>
+        <ArrowRight size={14} color={hovered ? '#9ca3af' : '#374151'} style={{ flexShrink: 0 }} />
+      </div>
+    </Link>
+  );
+}
+
+import React from 'react';

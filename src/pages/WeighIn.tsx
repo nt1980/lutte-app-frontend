@@ -6,11 +6,11 @@ import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
-const statusInfo: Record<string, { label: string; cls: string }> = {
-  pending:    { label: 'En attente',     cls: 'badge-gray'   },
-  done:       { label: 'Pesé',           cls: 'badge-green'  },
-  overweight: { label: 'Hors catégorie', cls: 'badge-red'    },
-  no_show:    { label: 'Absent',         cls: 'badge-yellow' },
+const STATUS_INFO: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  pending:    { label: 'En attente',     color: '#6b7280', bg: 'rgba(107,114,128,0.1)',  dot: '#4b5563'  },
+  done:       { label: 'Pesé',           color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  dot: '#22c55e'  },
+  overweight: { label: 'Hors catégorie', color: '#f87171', bg: 'rgba(248,113,113,0.12)', dot: '#ef4444'  },
+  no_show:    { label: 'Absent',         color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  dot: '#f59e0b'  },
 };
 
 export default function WeighIn() {
@@ -20,7 +20,7 @@ export default function WeighIn() {
   const [selected, setSelected] = useState<any>(null);
   const [weight,   setWeight]   = useState('');
   const [status,   setStatus]   = useState('done');
-  const [filter,   setFilter]   = useState<string>('all');
+  const [filter,   setFilter]   = useState('all');
 
   const { data: regs = [] } = useQuery({
     queryKey: ['registrations', id],
@@ -29,14 +29,11 @@ export default function WeighIn() {
   });
 
   const mutation = useMutation({
-    mutationFn: ({ regId, data }: any) =>
-      api.put(`/api/tournaments/${id}/registrations/${regId}/weigh-in`, data),
+    mutationFn: ({ regId, data }: any) => api.put(`/api/tournaments/${id}/registrations/${regId}/weigh-in`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['registrations', id] });
       toast.success('Pesée enregistrée');
-      setSelected(null);
-      setWeight('');
-      setStatus('done');
+      setSelected(null); setWeight(''); setStatus('done');
     },
     onError: () => toast.error('Erreur lors de la pesée'),
   });
@@ -48,8 +45,7 @@ export default function WeighIn() {
   const progress   = regs.length > 0 ? Math.round(((done + overweight + noShow) / regs.length) * 100) : 0;
 
   const filtered = regs.filter((r: any) => {
-    const matchSearch = !search ||
-      `${r.last_name} ${r.first_name} ${r.license_number}`.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || `${r.last_name} ${r.first_name} ${r.license_number}`.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || r.weigh_in_status === filter;
     return matchSearch && matchFilter;
   });
@@ -60,45 +56,57 @@ export default function WeighIn() {
     setStatus(reg.weigh_in_status === 'pending' ? 'done' : (reg.weigh_in_status || 'done'));
   };
 
+  const statusActions = [
+    { v: 'done',       l: '✓ Pesé',       color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.3)'  },
+    { v: 'overweight', l: '↑ Hors cat.',   color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)' },
+    { v: 'no_show',    l: '— Absent',      color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.3)'  },
+    { v: 'pending',    l: '⏳ Attente',     color: '#6b7280', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.2)' },
+  ];
+
   return (
     <Layout tournamentId={id}>
-      <PageHeader
-        title="Pesée"
-        subtitle={`${done} / ${regs.length} validés · ${pending} en attente`}
-      />
+      <PageHeader title="Pesée" subtitle={`${done} / ${regs.length} validés · ${pending} en attente`} />
 
-      <div className="p-6 space-y-4 animate-fade-in">
+      <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
         {/* Progress */}
-        <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex gap-3 text-xs">
-              <span className="badge-green">Pesés: {done}</span>
-              <span className="badge-gray">Attente: {pending}</span>
-              {overweight > 0 && <span className="badge-red">Hors cat.: {overweight}</span>}
-              {noShow > 0 && <span className="badge-yellow">Absents: {noShow}</span>}
+        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {[
+                { label: `Pesés: ${done}`,          color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  border: 'rgba(74,222,128,0.2)'  },
+                { label: `Attente: ${pending}`,      color: '#6b7280', bg: 'rgba(107,114,128,0.1)', border: 'rgba(107,114,128,0.15)'},
+                ...(overweight > 0 ? [{ label: `Hors cat.: ${overweight}`, color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.2)' }] : []),
+                ...(noShow > 0 ? [{ label: `Absents: ${noShow}`, color: '#fbbf24', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.2)' }] : []),
+              ].map(({ label, color, bg, border }) => (
+                <span key={label} style={{ background: bg, border: `1px solid ${border}`, color, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 600 }}>{label}</span>
+              ))}
             </div>
-            <span className="text-sm font-black text-white">{progress}%</span>
+            <span style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>{progress}%</span>
           </div>
-          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-700" style={{ width: `${progress}%` }} />
+          <div style={{ height: 5, background: 'rgba(255,255,255,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#16a34a,#4ade80)', borderRadius: 3, transition: 'width 0.7s ease' }} />
           </div>
         </div>
 
-        <div className="flex gap-5">
-          {/* List */}
-          <div className="flex-1 space-y-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-600" />
+        {/* Split layout */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+
+          {/* Left: list */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                 <input
-                  className="input pl-10"
+                  style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px 8px 36px', fontSize: 13, color: '#fff', outline: 'none' }}
                   placeholder="Nom, prénom, numéro de licence…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  autoFocus
+                  value={search} onChange={e => setSearch(e.target.value)} autoFocus
                 />
               </div>
-              <select className="select w-auto" value={filter} onChange={e => setFilter(e.target.value)}>
+              <select
+                value={filter} onChange={e => setFilter(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#d1d5db', outline: 'none', cursor: 'pointer' }}
+              >
                 <option value="all">Tous</option>
                 <option value="pending">En attente</option>
                 <option value="done">Pesés</option>
@@ -107,47 +115,35 @@ export default function WeighIn() {
               </select>
             </div>
 
-            <div className="space-y-1.5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 'calc(100vh - 340px)', overflowY: 'auto' }}>
               {filtered.length === 0 && (
-                <div className="flex flex-col items-center py-12 text-center">
-                  <Scale size={28} className="text-gray-700 mb-3" />
-                  <div className="text-gray-500">Aucun résultat</div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 16px', textAlign: 'center' }}>
+                  <Scale size={28} color="#374151" style={{ marginBottom: 10 }} />
+                  <div style={{ color: '#4b5563', fontSize: 13 }}>Aucun résultat</div>
                 </div>
               )}
               {filtered.map((reg: any) => {
-                const s = statusInfo[reg.weigh_in_status] || statusInfo.pending;
-                const isSelected = selected?.id === reg.id;
+                const s = STATUS_INFO[reg.weigh_in_status] || STATUS_INFO.pending;
+                const isSel = selected?.id === reg.id;
                 return (
-                  <button
-                    key={reg.id}
-                    onClick={() => openSelected(reg)}
-                    className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150
-                      ${isSelected
-                        ? 'bg-red-600/10 border-red-600/40'
-                        : 'bg-[#141414] border-white/[0.06] hover:border-white/[0.12] hover:bg-[#1a1a1a]'
-                      }`}
-                  >
-                    <div className={`w-2 h-2 rounded-full shrink-0 ${
-                      reg.weigh_in_status === 'done' ? 'bg-emerald-500' :
-                      reg.weigh_in_status === 'overweight' ? 'bg-red-500' :
-                      reg.weigh_in_status === 'no_show' ? 'bg-amber-500' :
-                      'bg-gray-600'
-                    }`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-white text-sm">
-                        {reg.last_name} <span className="font-medium">{reg.first_name}</span>
-                      </div>
-                      <div className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
-                        <span className="font-mono">{reg.license_number}</span>
-                        {reg.club_short || reg.club_name ? <><span>·</span><span>{reg.club_short || reg.club_name}</span></> : null}
-                        {reg.final_age_category ? <><span>·</span><span className="text-gray-400">{reg.final_age_category}</span></> : null}
+                  <button key={reg.id} onClick={() => openSelected(reg)} style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10,
+                    background: isSel ? 'rgba(220,38,38,0.08)' : 'rgba(255,255,255,0.025)',
+                    border: `1px solid ${isSel ? 'rgba(220,38,38,0.35)' : 'rgba(255,255,255,0.06)'}`,
+                    cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.1s',
+                  }}>
+                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: '#fff', fontSize: 13 }}>{reg.last_name} <span style={{ fontWeight: 400 }}>{reg.first_name}</span></div>
+                      <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>
+                        <span style={{ fontFamily: 'monospace' }}>{reg.license_number}</span>
+                        {(reg.club_short || reg.club_name) && <> · {reg.club_short || reg.club_name}</>}
+                        {reg.final_age_category && <> · <span style={{ color: '#6b7280' }}>{reg.final_age_category}</span></>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {reg.weigh_in_weight_kg && (
-                        <span className="text-sm font-bold text-white tabular-nums">{reg.weigh_in_weight_kg} kg</span>
-                      )}
-                      <span className={s.cls}>{s.label}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      {reg.weigh_in_weight_kg && <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{reg.weigh_in_weight_kg} kg</span>}
+                      <span style={{ background: s.bg, color: s.color, borderRadius: 5, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>{s.label}</span>
                     </div>
                   </button>
                 );
@@ -155,81 +151,70 @@ export default function WeighIn() {
             </div>
           </div>
 
-          {/* Weigh-in panel */}
+          {/* Right: weighin panel */}
           {selected ? (
-            <div className="w-72 shrink-0">
-              <div className="bg-[#141414] border border-white/[0.06] rounded-2xl p-5 sticky top-6 space-y-5">
-                <div className="flex items-start justify-between">
+            <div style={{ width: 280, flexShrink: 0, position: 'sticky', top: 20 }}>
+              <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Athlete info */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                   <div>
-                    <div className="text-base font-black text-white">{selected.last_name} {selected.first_name}</div>
-                    <div className="text-xs text-gray-500 mt-1 font-mono">{selected.license_number}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{selected.club_name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{selected.last_name} {selected.first_name}</div>
+                    <div style={{ fontSize: 11, color: '#4b5563', fontFamily: 'monospace', marginTop: 3 }}>{selected.license_number}</div>
+                    <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>{selected.club_name}</div>
                   </div>
-                  <button onClick={() => setSelected(null)} className="btn-ghost btn-sm">
-                    <X size={14} />
-                  </button>
+                  <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', display: 'flex', padding: 2 }}><X size={15} /></button>
                 </div>
 
                 {selected.default_weight_kg && (
-                  <div className="flex items-center justify-between bg-white/[0.04] rounded-xl px-3 py-2.5 text-sm">
-                    <span className="text-gray-500">Poids licence</span>
-                    <span className="font-bold text-white">{selected.default_weight_kg} kg</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 12px' }}>
+                    <span style={{ fontSize: 12, color: '#6b7280' }}>Poids licence</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{selected.default_weight_kg} kg</span>
                   </div>
                 )}
 
+                {/* Weight input */}
                 <div>
-                  <label className="label">Poids relevé (kg)</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Poids relevé (kg)</label>
                   <input
                     type="number" step="0.1" min="0" max="200"
-                    className="input text-3xl font-black text-center tracking-tight py-4"
-                    value={weight}
-                    onChange={e => setWeight(e.target.value)}
-                    placeholder="0.0"
-                    autoFocus
+                    style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px', fontSize: 28, fontWeight: 900, color: '#fff', textAlign: 'center', outline: 'none', letterSpacing: '-1px' }}
+                    value={weight} onChange={e => setWeight(e.target.value)} placeholder="0.0" autoFocus
                   />
                 </div>
 
+                {/* Status buttons */}
                 <div>
-                  <label className="label">Statut</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { v: 'done',       l: '✓ Pesé',          cls: 'border-emerald-600/40 bg-emerald-600/10 text-emerald-400' },
-                      { v: 'overweight', l: '↑ Hors cat.',      cls: 'border-red-600/40 bg-red-600/10 text-red-400' },
-                      { v: 'no_show',    l: '— Absent',         cls: 'border-amber-600/40 bg-amber-600/10 text-amber-400' },
-                      { v: 'pending',    l: '⏳ Attente',        cls: 'border-white/10 bg-white/5 text-gray-400' },
-                    ].map(({ v, l, cls }) => (
-                      <button
-                        key={v}
-                        onClick={() => setStatus(v)}
-                        className={`text-xs font-semibold py-2.5 rounded-xl border transition-all ${
-                          status === v ? cls : 'border-white/[0.06] text-gray-600 hover:text-gray-400'
-                        }`}
-                      >
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Statut</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                    {statusActions.map(({ v, l, color, bg, border }) => (
+                      <button key={v} onClick={() => setStatus(v)} style={{
+                        padding: '9px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                        background: status === v ? bg : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${status === v ? border : 'rgba(255,255,255,0.07)'}`,
+                        color: status === v ? color : '#4b5563',
+                        transition: 'all 0.1s',
+                      }}>
                         {l}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex gap-2 pt-1">
-                  <button
-                    className="btn-primary flex-1"
-                    onClick={() => mutation.mutate({
-                      regId: selected.id,
-                      data: { weigh_in_weight_kg: parseFloat(weight) || null, weigh_in_status: status },
-                    })}
-                    disabled={mutation.isPending}
-                  >
-                    {mutation.isPending ? 'Enregistrement…' : 'Valider la pesée'}
-                  </button>
-                </div>
+                {/* Submit */}
+                <button
+                  onClick={() => mutation.mutate({ regId: selected.id, data: { weigh_in_weight_kg: parseFloat(weight) || null, weigh_in_status: status } })}
+                  disabled={mutation.isPending}
+                  style={{ width: '100%', padding: '12px', borderRadius: 10, background: '#dc2626', color: '#fff', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(220,38,38,0.3)' }}
+                >
+                  {mutation.isPending ? 'Enregistrement…' : 'Valider la pesée'}
+                </button>
               </div>
             </div>
           ) : (
-            <div className="w-72 shrink-0 flex items-center justify-center py-16">
-              <div className="text-center text-gray-700">
-                <Scale size={32} className="mx-auto mb-3" />
-                <div className="text-sm">Sélectionner un combattant</div>
+            <div style={{ width: 280, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0', color: '#374151', textAlign: 'center' }}>
+              <div>
+                <Scale size={32} color="#374151" style={{ margin: '0 auto 10px' }} />
+                <div style={{ fontSize: 13 }}>Sélectionner un combattant</div>
               </div>
             </div>
           )}
