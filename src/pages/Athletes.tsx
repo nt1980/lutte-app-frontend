@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Search, Users, X, FileText, AlertCircle } from 'lucide-react';
+import { Upload, Search, Users, X, FileText, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -10,11 +10,35 @@ const TD: React.CSSProperties = { padding: '11px 16px', fontSize: 13, borderBott
 
 import React from 'react';
 
+interface FormData {
+  license_number: string;
+  first_name: string;
+  last_name: string;
+  gender: string;
+  nationality: string;
+  birth_date: string;
+  style: string;
+  age_category_imported: string;
+  default_weight_kg: string;
+}
+
 export default function Athletes() {
   const qc = useQueryClient();
-  const [search,     setSearch]     = useState('');
-  const [showImport, setShowImport] = useState(false);
-  const [csvText,    setCsvText]    = useState('');
+  const [search,       setSearch]       = useState('');
+  const [showImport,   setShowImport]   = useState(false);
+  const [showAddForm,  setShowAddForm]  = useState(false);
+  const [csvText,      setCsvText]      = useState('');
+  const [formData,     setFormData]     = useState<FormData>({
+    license_number: '',
+    first_name: '',
+    last_name: '',
+    gender: 'M',
+    nationality: 'France',
+    birth_date: '',
+    style: '',
+    age_category_imported: '',
+    default_weight_kg: '',
+  });
 
   const { data: athletes = [], isLoading } = useQuery({
     queryKey: ['athletes', search],
@@ -32,15 +56,64 @@ export default function Athletes() {
     onError: () => toast.error('Erreur lors de l\'import'),
   });
 
+  const addAthlMutation = useMutation({
+    mutationFn: (data: FormData) => api.post('/api/athletes', {
+      license_number: data.license_number,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      gender: data.gender,
+      nationality: data.nationality || 'France',
+      birth_date: data.birth_date || null,
+      style: data.style || null,
+      age_category_imported: data.age_category_imported || null,
+      default_weight_kg: data.default_weight_kg ? parseFloat(data.default_weight_kg) : null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['athletes'] });
+      toast.success('Athlète ajouté');
+      setShowAddForm(false);
+      setFormData({
+        license_number: '', first_name: '', last_name: '', gender: 'M',
+        nationality: 'France', birth_date: '', style: '', age_category_imported: '', default_weight_kg: '',
+      });
+    },
+    onError: () => toast.error('Erreur lors de l\'ajout'),
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: () => api.delete('/api/athletes'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['athletes'] });
+      toast.success('Tous les athlètes supprimés');
+    },
+    onError: () => toast.error('Erreur lors de la suppression'),
+  });
+
+  const handleDeleteAll = () => {
+    if (confirm('⚠️ Êtes-vous sûr ? Cette action est irréversible.')) {
+      deleteAllMutation.mutate();
+    }
+  };
+
   return (
     <Layout>
       <PageHeader
         title="Licenciés FFLDA"
         subtitle={`${athletes.length} athlètes dans la base`}
         actions={
-          <button onClick={() => setShowImport(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}>
-            <Upload size={14} /> Importer CSV
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => setShowAddForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#10b981', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+              <Plus size={14} /> Ajouter
+            </button>
+            <button onClick={() => setShowImport(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3b82f6', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }}>
+              <Upload size={14} /> Importer CSV
+            </button>
+            {athletes.length > 0 && (
+              <button onClick={handleDeleteAll} disabled={deleteAllMutation.isPending} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: deleteAllMutation.isPending ? 'not-allowed' : 'pointer', opacity: deleteAllMutation.isPending ? 0.5 : 1, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+                <Trash2 size={14} /> {deleteAllMutation.isPending ? 'Suppression…' : 'Tout effacer'}
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -107,6 +180,78 @@ export default function Athletes() {
           </table>
         </div>
       </div>
+
+      {/* Add Athlete Modal */}
+      {showAddForm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 600, boxShadow: '0 40px 120px rgba(0,0,0,0.8)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, background: '#121212' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Plus size={16} color="#10b981" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>Ajouter un athlète</div>
+                  <div style={{ fontSize: 12, color: '#4b5563' }}>Saisie manuelle</div>
+                </div>
+              </div>
+              <button onClick={() => setShowAddForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}><X size={18} /></button>
+            </div>
+            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {/* License Number */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>N° Licence *</label>
+                <input type="text" value={formData.license_number} onChange={(e) => setFormData({...formData, license_number: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+              {/* Last Name */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Nom *</label>
+                <input type="text" value={formData.last_name} onChange={(e) => setFormData({...formData, last_name: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+              {/* First Name */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Prénom *</label>
+                <input type="text" value={formData.first_name} onChange={(e) => setFormData({...formData, first_name: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+              {/* Gender */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Sexe *</label>
+                <select value={formData.gender} onChange={(e) => setFormData({...formData, gender: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }}>
+                  <option value="M">Masculin</option>
+                  <option value="F">Féminin</option>
+                </select>
+              </div>
+              {/* Birth Date */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Date de naissance</label>
+                <input type="date" value={formData.birth_date} onChange={(e) => setFormData({...formData, birth_date: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+              {/* Nationality */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Nationalité</label>
+                <input type="text" value={formData.nationality} onChange={(e) => setFormData({...formData, nationality: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+              {/* Style */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Style</label>
+                <select value={formData.style} onChange={(e) => setFormData({...formData, style: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }}>
+                  <option value="">—</option>
+                  <option value="libre">Libre</option>
+                  <option value="greco">Gréco-romaine</option>
+                  <option value="feminine">Féminin</option>
+                </select>
+              </div>
+              {/* Weight */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Poids (kg)</label>
+                <input type="number" step="0.1" value={formData.default_weight_kg} onChange={(e) => setFormData({...formData, default_weight_kg: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+              {/* Age Category */}
+              <div><label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Catégorie d'âge</label>
+                <input type="text" value={formData.age_category_imported} onChange={(e) => setFormData({...formData, age_category_imported: e.target.value})} placeholder="ex: U13, U15..." style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <button onClick={() => setShowAddForm(false)} style={{ padding: '8px 16px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
+              <button onClick={() => addAthlMutation.mutate(formData)} disabled={!formData.license_number || !formData.first_name || !formData.last_name || addAthlMutation.isPending} style={{ padding: '8px 18px', borderRadius: 9, background: (formData.license_number && formData.first_name && formData.last_name) ? '#10b981' : '#065f46', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: (formData.license_number && formData.first_name && formData.last_name && !addAthlMutation.isPending) ? 'pointer' : 'not-allowed' }}>
+                {addAthlMutation.isPending ? 'Ajout…' : 'Ajouter'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Modal */}
       {showImport && (
