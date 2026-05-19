@@ -31,6 +31,10 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
   const handleLogout = () => { logout(); navigate('/login'); };
   const initials = user?.name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 
+  // Tournament admins without a global role only see the tournament they manage
+  const isGlobalAdmin = (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
+  const showGlobalNav = isGlobalAdmin || !tournamentId;
+
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#080808', overflow: 'hidden' }}>
 
@@ -64,8 +68,8 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
         {/* Navigation */}
         <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-          {/* Global nav */}
-          {globalNav.map(({ to, label, icon: Icon }) => {
+          {/* Global nav — hidden for tournament-only admins */}
+          {showGlobalNav && globalNav.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return (
               <NavLink key={to} to={to} label={label} icon={Icon} active={active} />
@@ -76,9 +80,11 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
           {tournamentId && (
             <>
               <div style={{ padding: '16px 8px 6px' }}>
-                <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#4b5563', textDecoration: 'none', marginBottom: 8 }}>
-                  <ChevronLeft size={10} /> Tous les tournois
-                </Link>
+                {isGlobalAdmin && (
+                  <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#4b5563', textDecoration: 'none', marginBottom: 8 }}>
+                    <ChevronLeft size={10} /> Tous les tournois
+                  </Link>
+                )}
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ce tournoi</div>
               </div>
               {tournamentNav(tournamentId).map(({ to, label, icon: Icon }) => {
