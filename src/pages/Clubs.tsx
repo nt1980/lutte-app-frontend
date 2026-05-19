@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Building2, X } from 'lucide-react';
+import { Plus, Search, Building2, X, Trash2, Edit2 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -15,9 +15,10 @@ import React from 'react';
 
 export default function Clubs() {
   const qc = useQueryClient();
-  const [search, setSearch] = useState('');
-  const [modal,  setModal]  = useState(false);
-  const [form,   setForm]   = useState({ fflda_number: '', short_name: '', name: '', city: '', regional_committee: '', coach_name: '' });
+  const [search,     setSearch]     = useState('');
+  const [modal,      setModal]      = useState(false);
+  const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [form,       setForm]       = useState({ fflda_number: '', short_name: '', name: '', city: '', regional_committee: '', coach_name: '' });
 
   const { data: clubs = [] } = useQuery({
     queryKey: ['clubs', search],
@@ -25,15 +26,65 @@ export default function Clubs() {
   });
 
   const create = useMutation({
-    mutationFn: (data: any) => api.post('/api/clubs', data),
+    mutationFn: (data: any) => editingId ? api.put(`/api/clubs/${editingId}`, data) : api.post('/api/clubs', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['clubs'] });
-      toast.success('Club créé');
+      toast.success(editingId ? 'Club modifié' : 'Club créé');
       setModal(false);
+      setEditingId(null);
       setForm({ fflda_number: '', short_name: '', name: '', city: '', regional_committee: '', coach_name: '' });
     },
     onError: () => toast.error('Erreur'),
   });
+
+  const deleteClub = useMutation({
+    mutationFn: (clubId: string) => api.delete(`/api/clubs/${clubId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clubs'] });
+      toast.success('Club supprimé');
+    },
+    onError: () => toast.error('Erreur'),
+  });
+
+  const deleteAllClubs = useMutation({
+    mutationFn: () => api.delete('/api/clubs'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clubs'] });
+      toast.success('Tous les clubs supprimés');
+    },
+    onError: () => toast.error('Erreur'),
+  });
+
+  const handleEdit = (club: any) => {
+    setEditingId(club.id);
+    setForm({
+      fflda_number: club.fflda_number || '',
+      short_name: club.short_name || '',
+      name: club.name || '',
+      city: club.city || '',
+      regional_committee: club.regional_committee || '',
+      coach_name: club.coach_name || '',
+    });
+    setModal(true);
+  };
+
+  const handleDeleteClub = (clubId: string) => {
+    if (confirm('⚠️ Supprimer ce club ?')) {
+      deleteClub.mutate(clubId);
+    }
+  };
+
+  const handleDeleteAll = () => {
+    if (confirm('⚠️ Êtes-vous sûr ? Cette action est irréversible.')) {
+      deleteAllClubs.mutate();
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModal(false);
+    setEditingId(null);
+    setForm({ fflda_number: '', short_name: '', name: '', city: '', regional_committee: '', coach_name: '' });
+  };
 
   const f = (key: string) => ({ value: (form as any)[key], onChange: (e: any) => setForm(p => ({ ...p, [key]: e.target.value })) });
 
@@ -43,9 +94,16 @@ export default function Clubs() {
         title="Clubs"
         subtitle={`${clubs.length} clubs`}
         actions={
-          <button onClick={() => setModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}>
-            <Plus size={14} /> Ajouter un club
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => { setEditingId(null); setForm({ fflda_number: '', short_name: '', name: '', city: '', regional_committee: '', coach_name: '' }); setModal(true); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#10b981', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+              <Plus size={14} /> Ajouter
+            </button>
+            {clubs.length > 0 && (
+              <button onClick={handleDeleteAll} disabled={deleteAllClubs.isPending} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: deleteAllClubs.isPending ? 'not-allowed' : 'pointer', opacity: deleteAllClubs.isPending ? 0.5 : 1, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+                <Trash2 size={14} /> {deleteAllClubs.isPending ? 'Suppression…' : 'Tout effacer'}
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -66,7 +124,7 @@ export default function Clubs() {
         <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>{['Club', 'N° FFLDA', 'Ville', 'Comité', 'Coach'].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
+              <tr>{['Club', 'N° FFLDA', 'Ville', 'Comité', 'Coach', 'Actions'].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {clubs.map((c: any) => (
@@ -86,10 +144,20 @@ export default function Clubs() {
                   <td style={{ ...TD, color: '#6b7280' }}>{c.city || '—'}</td>
                   <td style={{ ...TD, color: '#4b5563', fontSize: 12 }}>{c.regional_committee || '—'}</td>
                   <td style={{ ...TD, color: '#6b7280' }}>{c.coach_name || '—'}</td>
+                  <td style={{ ...TD, textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                      <button onClick={() => handleEdit(c)} style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', color: '#60a5fa', padding: '4px 8px', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                        <Edit2 size={12} /> Éditer
+                      </button>
+                      <button onClick={() => handleDeleteClub(c.id)} disabled={deleteClub.isPending} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', padding: '4px 8px', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: deleteClub.isPending ? 0.5 : 1 }}>
+                        <Trash2 size={12} /> Supprimer
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {clubs.length === 0 && (
-                <tr><td colSpan={5} style={{ ...TD, textAlign: 'center', padding: '48px 16px', color: '#4b5563' }}>Aucun club</td></tr>
+                <tr><td colSpan={6} style={{ ...TD, textAlign: 'center', padding: '48px 16px', color: '#4b5563' }}>Aucun club</td></tr>
               )}
             </tbody>
           </table>
@@ -101,8 +169,8 @@ export default function Clubs() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
           <div style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 480, boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 16 }}>Nouveau club</div>
-              <button onClick={() => setModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}><X size={18} /></button>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: 16 }}>{editingId ? 'Modifier le club' : 'Nouveau club'}</div>
+              <button onClick={handleCloseModal} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}><X size={18} /></button>
             </div>
             <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -116,13 +184,13 @@ export default function Clubs() {
               </div>
               <div><label style={LABEL}>Coach</label><input style={INPUT} {...f('coach_name')} /></div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
-                <button onClick={() => setModal(false)} style={{ padding: '8px 16px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
+                <button onClick={handleCloseModal} style={{ padding: '8px 16px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
                 <button
                   onClick={() => create.mutate(form)}
                   disabled={!form.short_name || !form.name || create.isPending}
-                  style={{ padding: '8px 18px', borderRadius: 9, background: form.short_name && form.name ? '#dc2626' : '#7f1d1d', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: form.short_name && form.name ? 'pointer' : 'not-allowed' }}
+                  style={{ padding: '8px 18px', borderRadius: 9, background: form.short_name && form.name ? (editingId ? '#3b82f6' : '#10b981') : (editingId ? '#1e40af' : '#065f46'), color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: form.short_name && form.name ? 'pointer' : 'not-allowed' }}
                 >
-                  {create.isPending ? 'Création…' : 'Créer'}
+                  {create.isPending ? (editingId ? 'Modification…' : 'Création…') : (editingId ? 'Modifier' : 'Créer')}
                 </button>
               </div>
             </div>
