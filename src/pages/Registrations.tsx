@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { Upload, Search, Users, X, FileText, AlertCircle, Plus, Trash2, Edit2 } from 'lucide-react';
+import { Upload, Search, Users, X, FileText, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -27,12 +27,11 @@ interface RegForm {
 export default function Registrations() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
-  const [search,           setSearch]           = useState('');
-  const [showImport,       setShowImport]       = useState(false);
-  const [showAddForm,      setShowAddForm]      = useState(false);
-  const [editingRegId,     setEditingRegId]     = useState<string | null>(null);
-  const [csvText,          setCsvText]          = useState('');
-  const [formData,         setFormData]         = useState<RegForm>({ athlete_id: '', final_age_category: '', final_style: '' });
+  const [search,      setSearch]      = useState('');
+  const [showImport,  setShowImport]  = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [csvText,     setCsvText]     = useState('');
+  const [formData,    setFormData]    = useState<RegForm>({ athlete_id: '', final_age_category: '', final_style: '' });
 
   const { data: regs = [], isLoading } = useQuery({
     queryKey: ['registrations', id],
@@ -70,7 +69,6 @@ export default function Registrations() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['registrations', id] });
       toast.success('Inscription supprimée');
-      setEditingRegId(null);
     },
     onError: () => toast.error('Erreur lors de la suppression'),
   });
@@ -208,14 +206,9 @@ export default function Registrations() {
                         : <span style={{ background: w.bg, color: w.color, borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>{w.label}</span>}
                     </td>
                     <td style={{ ...TD, textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
-                        <button onClick={() => setEditingRegId(r.id)} style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', color: '#60a5fa', padding: '4px 8px', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                          <Edit2 size={12} /> Éditer
-                        </button>
-                        <button onClick={() => handleDeleteReg(r.id)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', padding: '4px 8px', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                          <Trash2 size={12} /> Supprimer
-                        </button>
-                      </div>
+                      <button onClick={() => handleDeleteReg(r.id)} style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', padding: '4px 8px', borderRadius: 5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                        <Trash2 size={12} /> Supprimer
+                      </button>
                     </td>
                   </tr>
                 );
