@@ -6,8 +6,6 @@ import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
-import React from 'react';
-
 const STATUS_STYLE: Record<string, { color: string; bg: string; border: string }> = {
   waiting:  { color: '#4b5563', bg: 'rgba(75,85,99,0.08)',    border: 'rgba(75,85,99,0.15)'    },
   ready:    { color: '#60a5fa', bg: 'rgba(96,165,250,0.08)',  border: 'rgba(96,165,250,0.2)'   },
