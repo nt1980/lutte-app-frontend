@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { Upload, Search, Users, X, FileText, AlertCircle } from 'lucide-react';
+import { Upload, Search, Users, X, FileText, AlertCircle, Plus, Trash2 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -18,12 +18,20 @@ const TD: React.CSSProperties = { padding: '11px 16px', fontSize: 13, borderBott
 
 import React from 'react';
 
+interface RegForm {
+  athlete_id: string;
+  final_age_category: string;
+  final_style: string;
+}
+
 export default function Registrations() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
-  const [search,     setSearch]     = useState('');
-  const [showImport, setShowImport] = useState(false);
-  const [csvText,    setCsvText]    = useState('');
+  const [search,       setSearch]       = useState('');
+  const [showImport,   setShowImport]   = useState(false);
+  const [showAddForm,  setShowAddForm]  = useState(false);
+  const [csvText,      setCsvText]      = useState('');
+  const [formData,     setFormData]     = useState<RegForm>({ athlete_id: '', final_age_category: '', final_style: '' });
 
   const { data: regs = [], isLoading } = useQuery({
     queryKey: ['registrations', id],
@@ -39,6 +47,41 @@ export default function Registrations() {
       setShowImport(false); setCsvText('');
     },
     onError: () => toast.error('Erreur lors de l\'import'),
+  });
+
+  const addRegMutation = useMutation({
+    mutationFn: (data: RegForm) => api.post(`/api/tournaments/${id}/registrations`, {
+      athlete_id: data.athlete_id,
+      final_age_category: data.final_age_category || null,
+      final_style: data.final_style || null,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['registrations', id] });
+      toast.success('Combattant inscrit');
+      setShowAddForm(false);
+      setFormData({ athlete_id: '', final_age_category: '', final_style: '' });
+    },
+    onError: () => toast.error('Erreur lors de l\'inscription'),
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: () => api.delete(`/api/tournaments/${id}/registrations`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['registrations', id] });
+      toast.success('Toutes les inscriptions supprimées');
+    },
+    onError: () => toast.error('Erreur lors de la suppression'),
+  });
+
+  const handleDeleteAll = () => {
+    if (confirm('⚠️ Êtes-vous sûr ? Cette action est irréversible.')) {
+      deleteAllMutation.mutate();
+    }
+  };
+
+  const { data: athletes = [] } = useQuery({
+    queryKey: ['athletes'],
+    queryFn: () => api.get('/api/athletes').then(r => r.data),
   });
 
   const filtered = regs.filter((r: any) =>
@@ -59,9 +102,19 @@ export default function Registrations() {
         title="Inscriptions"
         subtitle={`${regs.length} combattants · ${done} pesées validées`}
         actions={
-          <button onClick={() => setShowImport(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}>
-            <Upload size={14} /> Importer CSV FFLDA
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => setShowAddForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#10b981', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
+              <Plus size={14} /> Ajouter
+            </button>
+            <button onClick={() => setShowImport(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#3b82f6', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }}>
+              <Upload size={14} /> Importer CSV
+            </button>
+            {regs.length > 0 && (
+              <button onClick={handleDeleteAll} disabled={deleteAllMutation.isPending} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#ef4444', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: deleteAllMutation.isPending ? 'not-allowed' : 'pointer', opacity: deleteAllMutation.isPending ? 0.5 : 1, boxShadow: '0 4px 12px rgba(239,68,68,0.3)' }}>
+                <Trash2 size={14} /> {deleteAllMutation.isPending ? 'Suppression…' : 'Tout effacer'}
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -145,6 +198,56 @@ export default function Registrations() {
         </div>
       </div>
 
+      {/* Add Registration Modal */}
+      {showAddForm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
+          <div style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 500, boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, background: '#121212' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Plus size={16} color="#10b981" />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>Inscrire un combattant</div>
+                  <div style={{ fontSize: 12, color: '#4b5563' }}>Saisie manuelle</div>
+                </div>
+              </div>
+              <button onClick={() => setShowAddForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}><X size={18} /></button>
+            </div>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Combattant *</label>
+                <select value={formData.athlete_id} onChange={(e) => setFormData({...formData, athlete_id: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }}>
+                  <option value="">Sélectionner…</option>
+                  {athletes.map((a: any) => (
+                    <option key={a.id} value={a.id}>{a.last_name} {a.first_name} ({a.license_number})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Catégorie d'âge</label>
+                <input type="text" value={formData.final_age_category} onChange={(e) => setFormData({...formData, final_age_category: e.target.value})} placeholder="ex: U13, U15…" style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#d1d5db', marginBottom: 6 }}>Style</label>
+                <select value={formData.final_style} onChange={(e) => setFormData({...formData, final_style: e.target.value})} style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }}>
+                  <option value="">—</option>
+                  <option value="libre">Libre</option>
+                  <option value="greco">Gréco-romaine</option>
+                  <option value="feminine">Féminin</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <button onClick={() => setShowAddForm(false)} style={{ padding: '8px 16px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
+              <button onClick={() => addRegMutation.mutate(formData)} disabled={!formData.athlete_id || addRegMutation.isPending} style={{ padding: '8px 18px', borderRadius: 9, background: formData.athlete_id ? '#10b981' : '#065f46', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: (formData.athlete_id && !addRegMutation.isPending) ? 'pointer' : 'not-allowed' }}>
+                {addRegMutation.isPending ? 'Inscription…' : 'Inscrire'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Import Modal */}
       {showImport && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
@@ -156,7 +259,7 @@ export default function Registrations() {
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>Importer CSV FFLDA</div>
-                  <div style={{ fontSize: 12, color: '#4b5563' }}>Séparateur point-virgule</div>
+                  <div style={{ fontSize: 12, color: '#4b5563' }}>Détection automatique du séparateur</div>
                 </div>
               </div>
               <button onClick={() => { setShowImport(false); setCsvText(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}>
@@ -164,9 +267,9 @@ export default function Registrations() {
               </button>
             </div>
             <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.18)', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#fbbf24' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: '#60a5fa' }}>
                 <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>Collez le contenu exporté depuis le site FFLDA. Format : <code style={{ fontFamily: 'monospace', color: '#fcd34d' }}>"Style";"Catégorie d'âge";"Statut";"N° Licence"…</code></span>
+                <span>Collez le CSV exporté de FFLDA. Format reconnu : point-virgule <code style={{ fontFamily: 'monospace', color: '#93c5fd' }}>;</code> ou virgule <code style={{ fontFamily: 'monospace', color: '#93c5fd' }}>,</code></span>
               </div>
               <textarea
                 style={{ width: '100%', height: 180, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 12, fontSize: 12, color: '#fff', fontFamily: 'monospace', resize: 'none', outline: 'none' }}
