@@ -28,11 +28,13 @@ export default function WeighIn() {
   const qc = useQueryClient();
   const isMobile = useIsMobile();
 
-  const [search,   setSearch]   = useState('');
-  const [selected, setSelected] = useState<any>(null);
-  const [weight,   setWeight]   = useState('');
-  const [status,   setStatus]   = useState('done');
-  const [filter,   setFilter]   = useState('all');
+  const [search,      setSearch]      = useState('');
+  const [selected,    setSelected]    = useState<any>(null);
+  const [weight,      setWeight]      = useState('');
+  const [status,      setStatus]      = useState('done');
+  const [filter,      setFilter]      = useState('all');
+  const [filterAge,   setFilterAge]   = useState('all');
+  const [filterClub,  setFilterClub]  = useState('all');
 
   // Bloquer le scroll du body quand le bottom sheet est ouvert sur mobile
   useEffect(() => {
@@ -66,10 +68,16 @@ export default function WeighIn() {
   const noShow     = regs.filter((r: any) => r.weigh_in_status === 'no_show').length;
   const progress   = regs.length > 0 ? Math.round(((done + overweight + noShow) / regs.length) * 100) : 0;
 
+  // Options dynamiques dérivées des inscrits
+  const ageOptions: string[]  = [...new Set((regs as any[]).map((r: any) => r.final_age_category).filter(Boolean))].sort() as string[];
+  const clubOptions: string[] = [...new Set((regs as any[]).map((r: any) => r.club_name).filter(Boolean))].sort() as string[];
+
   const filtered = regs.filter((r: any) => {
     const matchSearch = !search || `${r.last_name} ${r.first_name} ${r.license_number}`.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'all' || r.weigh_in_status === filter;
-    return matchSearch && matchFilter;
+    const matchFilter    = filter      === 'all' || r.weigh_in_status === filter;
+    const matchAge       = filterAge   === 'all' || r.final_age_category === filterAge;
+    const matchClub      = filterClub  === 'all' || r.club_name === filterClub;
+    return matchSearch && matchFilter && matchAge && matchClub;
   });
 
   const openSelected = (reg: any) => {
@@ -178,9 +186,10 @@ export default function WeighIn() {
           </div>
         </div>
 
-        {/* Recherche + filtre */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
+        {/* Recherche + filtres */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Barre de recherche */}
+          <div style={{ position: 'relative' }}>
             <Search size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
             <input
               style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 12px 10px 36px', fontSize: 14, color: '#fff', outline: 'none', boxSizing: 'border-box' }}
@@ -188,16 +197,60 @@ export default function WeighIn() {
               value={search} onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <select
-            value={filter} onChange={e => setFilter(e.target.value)}
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '10px 10px', fontSize: 13, color: '#d1d5db', outline: 'none', cursor: 'pointer' }}
-          >
-            <option value="all">Tous</option>
-            <option value="pending">Attente</option>
-            <option value="done">Pesés</option>
-            <option value="overweight">Hors cat.</option>
-            <option value="no_show">Absents</option>
-          </select>
+
+          {/* Sélecteurs de filtre */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {/* Statut */}
+            <select
+              value={filter} onChange={e => setFilter(e.target.value)}
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '9px 10px', fontSize: 13, color: filter === 'all' ? '#6b7280' : '#d1d5db', outline: 'none', cursor: 'pointer', minWidth: 110 }}
+            >
+              <option value="all">Tous statuts</option>
+              <option value="pending">En attente</option>
+              <option value="done">Pesés</option>
+              <option value="overweight">Hors cat.</option>
+              <option value="no_show">Absents</option>
+            </select>
+
+            {/* Catégorie d'âge */}
+            {ageOptions.length > 0 && (
+              <select
+                value={filterAge} onChange={e => setFilterAge(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${filterAge !== 'all' ? 'rgba(220,38,38,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: '9px 10px', fontSize: 13, color: filterAge === 'all' ? '#6b7280' : '#f87171', outline: 'none', cursor: 'pointer', minWidth: 120 }}
+              >
+                <option value="all">Toutes catégories</option>
+                {ageOptions.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </select>
+            )}
+
+            {/* Club */}
+            {clubOptions.length > 0 && (
+              <select
+                value={filterClub} onChange={e => setFilterClub(e.target.value)}
+                style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${filterClub !== 'all' ? 'rgba(220,38,38,0.5)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: '9px 10px', fontSize: 13, color: filterClub === 'all' ? '#6b7280' : '#f87171', outline: 'none', cursor: 'pointer', flex: 1, minWidth: 140 }}
+              >
+                <option value="all">Tous les clubs</option>
+                {clubOptions.map(club => <option key={club} value={club}>{club}</option>)}
+              </select>
+            )}
+
+            {/* Bouton effacer si filtres actifs */}
+            {(filterAge !== 'all' || filterClub !== 'all' || filter !== 'all') && (
+              <button
+                onClick={() => { setFilter('all'); setFilterAge('all'); setFilterClub('all'); }}
+                style={{ padding: '9px 12px', borderRadius: 10, background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                × Effacer
+              </button>
+            )}
+          </div>
+
+          {/* Compteur résultats filtrés */}
+          {filtered.length !== regs.length && (
+            <div style={{ fontSize: 11, color: '#4b5563' }}>
+              {filtered.length} résultat{filtered.length !== 1 ? 's' : ''} sur {regs.length}
+            </div>
+          )}
         </div>
 
         {/* Layout : liste + panel (desktop) ou liste uniquement (mobile) */}
