@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import {
   Users, Grid3X3, CheckCircle, Activity, Scale, Settings,
-  Trophy, ArrowRight, Swords, Clock, AlertTriangle, Building2,
+  ArrowRight, Swords, Clock, AlertTriangle, Building2,
   TrendingUp, Zap,
 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
