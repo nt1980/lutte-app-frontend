@@ -3,26 +3,26 @@ import { useParams } from 'react-router-dom';
 import api from '../lib/api';
 
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
+  const [v, setV] = useState(() => window.innerWidth < 700);
   useEffect(() => {
-    const fn = () => setIsMobile(window.innerWidth < 640);
+    const fn = () => setV(window.innerWidth < 700);
     window.addEventListener('resize', fn);
     return () => window.removeEventListener('resize', fn);
   }, []);
-  return isMobile;
+  return v;
 }
 
 export default function MatLive() {
-  const { matId } = useParams<{ matId: string }>();
-  const [data, setData]       = useState<any>(null);
-  const [timer, setTimer]     = useState(0);
+  const { matId }         = useParams<{ matId: string }>();
+  const [data, setData]   = useState<any>(null);
+  const [timer, setTimer] = useState(0);
   const [running, setRunning] = useState(false);
-  const isMobile              = useIsMobile();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    const doFetch = () => api.get(`/api/mats/${matId}/live`).then(r => setData(r.data)).catch(() => {});
-    doFetch();
-    const iv = setInterval(doFetch, 3000);
+    const fetch = () => api.get(`/api/mats/${matId}/live`).then(r => setData(r.data)).catch(() => {});
+    fetch();
+    const iv = setInterval(fetch, 3000);
     return () => clearInterval(iv);
   }, [matId]);
 
@@ -32,183 +32,237 @@ export default function MatLive() {
     return () => clearInterval(t);
   }, [running]);
 
-  const fmt = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+  const fmt = (s: number) =>
+    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   const current = data?.current;
-  const next    = data?.next || [];
+  const next    = data?.next ?? [];
+
+  // ──────────────────────────────────────────
+  // Styles communs
+  // ──────────────────────────────────────────
+  const scoreStyle: React.CSSProperties = {
+    fontSize: isMobile ? '5rem' : '9rem',
+    fontWeight: 900,
+    lineHeight: 1,
+    color: '#fff',
+    fontVariantNumeric: 'tabular-nums',
+    textShadow: '0 4px 32px rgba(0,0,0,0.5)',
+  };
+
+  const nameStyle: React.CSSProperties = {
+    fontSize: isMobile ? 16 : 22,
+    fontWeight: 900,
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: '-0.5px',
+    lineHeight: 1.1,
+  };
+
+  const clubStyle: React.CSSProperties = {
+    fontSize: isMobile ? 11 : 13,
+    color: 'rgba(255,255,255,0.55)',
+    marginTop: 3,
+    fontWeight: 400,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: isMobile ? 9 : 10,
+    fontWeight: 800,
+    letterSpacing: '0.15em',
+    color: 'rgba(255,255,255,0.45)',
+    textTransform: 'uppercase',
+  };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col select-none">
+    <div style={{ height: '100vh', background: '#080808', display: 'flex', flexDirection: 'column', overflow: 'hidden', userSelect: 'none' }}>
 
-      {/* Header */}
-      <div className="bg-black/80 border-b border-white/10 px-4 py-2 flex items-center justify-between shrink-0">
-        <div className="text-xs font-bold uppercase tracking-widest text-gray-500">
+      {/* ── Header ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: isMobile ? '10px 16px' : '12px 24px',
+        background: 'rgba(0,0,0,0.6)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        flexShrink: 0,
+        zIndex: 10,
+      }}>
+        <div style={{ fontSize: isMobile ? 11 : 12, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
           {data?.mat_name || 'Tapis'}
         </div>
+
         {current && (
-          <div className="flex items-center gap-2 text-xs text-gray-400 flex-wrap justify-center">
-            <span className="uppercase">{current.age_category}</span>
-            <span className="text-gray-700">·</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: isMobile ? 10 : 11, color: '#9ca3af' }}>
+            <span style={{ fontWeight: 600, color: '#d1d5db' }}>{current.age_category}</span>
+            <span style={{ color: '#374151' }}>·</span>
             <span>{current.weight_category} kg</span>
-            {!isMobile && <><span className="text-gray-700">·</span><span className="capitalize">{current.style}</span></>}
+            {!isMobile && <><span style={{ color: '#374151' }}>·</span><span style={{ textTransform: 'capitalize' }}>{current.style}</span></>}
           </div>
         )}
-        <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${running ? 'bg-red-500/20 text-red-400 animate-pulse' : 'text-gray-600'}`}>
-          {running ? '● LIVE' : 'LIVE'}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: running ? '#ef4444' : '#374151', boxShadow: running ? '0 0 8px rgba(239,68,68,0.7)' : 'none', transition: 'all 0.3s' }} />
+          <span style={{ fontSize: isMobile ? 9 : 10, fontWeight: 800, color: running ? '#ef4444' : '#374151', letterSpacing: '0.15em' }}>LIVE</span>
         </div>
       </div>
 
-      {/* ── Layout principal ── */}
-      {isMobile ? (
-        /* ═══ MOBILE : vertical ═══ */
-        <div className="flex-1 flex flex-col min-h-0">
+      {/* ── Zone principale ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: 0 }}>
 
-          {/* Rouge */}
-          <div className="flex-1 relative flex items-center justify-between px-8 overflow-hidden" style={{ minHeight: '30vh' }}>
-            <div className="absolute inset-0 bg-gradient-to-r from-red-900/80 to-red-950/60" />
-            <div className="absolute top-0 left-0 bottom-0 w-1 bg-red-500" />
-            <div className="relative z-10">
-              <div className="text-base font-black uppercase tracking-tight text-white leading-tight">{current?.red_name || '—'}</div>
-              <div className="text-xs text-red-300/60 mt-0.5">{current?.red_club || ''}</div>
+        {/* ══ ROUGE ══ */}
+        <div style={{
+          flex: 1,
+          background: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 40%, #b91c1c 100%)',
+          display: 'flex', flexDirection: 'column',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          {/* Barre couleur */}
+          <div style={{ height: isMobile ? 3 : 4, background: '#ef4444', flexShrink: 0 }} />
+
+          {/* Contenu */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: isMobile ? '14px 18px' : '28px 40px' }}>
+            {/* Nom en haut */}
+            <div>
+              <div style={labelStyle}>Rouge</div>
+              <div style={{ ...nameStyle, marginTop: 4 }}>
+                {current?.red_name
+                  ? <>
+                      <span>{current.red_name.split(' ')[0]}</span>
+                      {current.red_name.split(' ').length > 1 && (
+                        <span style={{ fontWeight: 400, display: 'block', fontSize: isMobile ? 13 : 18 }}>
+                          {current.red_name.split(' ').slice(1).join(' ')}
+                        </span>
+                      )}
+                    </>
+                  : <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>
+                }
+              </div>
+              {current?.red_club && <div style={clubStyle}>{current.red_club}</div>}
             </div>
-            <div className="relative z-10 text-7xl font-black tabular-nums text-red-400 drop-shadow-lg">
-              {current?.score_red ?? 0}
+
+            {/* Score au centre */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={scoreStyle}>{current?.score_red ?? 0}</div>
             </div>
           </div>
+        </div>
 
-          {/* Centre : chrono */}
-          <div className="bg-[#050505] border-y border-white/[0.06] py-3 flex items-center justify-center gap-6 shrink-0">
-            <div className="text-4xl font-black font-mono tabular-nums text-white tracking-tighter">
+        {/* ══ Centre : chrono ══ */}
+        <div style={{
+          background: '#050505',
+          borderTop: isMobile ? '1px solid rgba(255,255,255,0.06)' : 'none',
+          borderBottom: isMobile ? '1px solid rgba(255,255,255,0.06)' : 'none',
+          borderLeft: isMobile ? 'none' : '1px solid rgba(255,255,255,0.06)',
+          borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.06)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: isMobile ? 24 : 0,
+          flexDirection: isMobile ? 'row' : 'column',
+          padding: isMobile ? '12px 24px' : '24px 20px',
+          flexShrink: 0,
+          width: isMobile ? 'auto' : 200,
+        }}>
+          {/* Chrono */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              fontSize: isMobile ? '2rem' : '3.5rem',
+              fontWeight: 900, fontFamily: 'monospace',
+              color: '#fff', letterSpacing: '-2px',
+              lineHeight: 1,
+            }}>
               {fmt(timer)}
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setRunning(r => !r)}
-                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${running ? 'bg-amber-500 text-black hover:bg-amber-400' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
-              >
-                {running ? '⏸ PAUSE' : '▶ START'}
-              </button>
-              <button
-                onClick={() => { setTimer(0); setRunning(false); }}
-                className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 text-sm"
-              >
-                ↺
-              </button>
-            </div>
+            <div style={{ fontSize: 9, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: 4 }}>Chrono</div>
           </div>
 
-          {/* Bleu */}
-          <div className="flex-1 relative flex items-center justify-between px-8 overflow-hidden" style={{ minHeight: '30vh' }}>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-950/60 to-blue-900/80" />
-            <div className="absolute top-0 left-0 bottom-0 w-1 bg-blue-500" />
-            <div className="relative z-10">
-              <div className="text-base font-black uppercase tracking-tight text-white leading-tight">{current?.blue_name || '—'}</div>
-              <div className="text-xs text-blue-300/60 mt-0.5">{current?.blue_club || ''}</div>
+          {/* Boutons */}
+          <div style={{ display: 'flex', gap: 8, flexDirection: isMobile ? 'row' : 'column', width: isMobile ? 'auto' : '100%' }}>
+            <button
+              onClick={() => setRunning(r => !r)}
+              style={{
+                padding: isMobile ? '8px 18px' : '10px 0',
+                borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                background: running ? '#f59e0b' : '#16a34a',
+                color: running ? '#000' : '#fff',
+                width: isMobile ? 'auto' : '100%',
+                transition: 'background 0.15s',
+              }}
+            >
+              {running ? '⏸ PAUSE' : '▶ START'}
+            </button>
+            <button
+              onClick={() => { setTimer(0); setRunning(false); }}
+              style={{
+                padding: isMobile ? '8px 14px' : '8px 0',
+                borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer',
+                background: 'rgba(255,255,255,0.04)', color: '#6b7280', fontSize: 13,
+                width: isMobile ? 'auto' : '100%',
+              }}
+            >
+              ↺ Reset
+            </button>
+          </div>
+
+          {!current && (
+            <div style={{ fontSize: isMobile ? 18 : 28, fontWeight: 900, color: '#374151' }}>VS</div>
+          )}
+        </div>
+
+        {/* ══ BLEU ══ */}
+        <div style={{
+          flex: 1,
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #2563eb 100%)',
+          display: 'flex', flexDirection: 'column',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ height: isMobile ? 3 : 4, background: '#3b82f6', flexShrink: 0 }} />
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: isMobile ? '14px 18px' : '28px 40px', alignItems: isMobile ? 'flex-start' : 'flex-end' }}>
+            <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
+              <div style={labelStyle}>Bleu</div>
+              <div style={{ ...nameStyle, marginTop: 4 }}>
+                {current?.blue_name
+                  ? <>
+                      <span>{current.blue_name.split(' ')[0]}</span>
+                      {current.blue_name.split(' ').length > 1 && (
+                        <span style={{ fontWeight: 400, display: 'block', fontSize: isMobile ? 13 : 18 }}>
+                          {current.blue_name.split(' ').slice(1).join(' ')}
+                        </span>
+                      )}
+                    </>
+                  : <span style={{ color: 'rgba(255,255,255,0.3)' }}>—</span>
+                }
+              </div>
+              {current?.blue_club && <div style={clubStyle}>{current.blue_club}</div>}
             </div>
-            <div className="relative z-10 text-7xl font-black tabular-nums text-blue-400 drop-shadow-lg">
-              {current?.score_blue ?? 0}
+
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              <div style={scoreStyle}>{current?.score_blue ?? 0}</div>
             </div>
           </div>
         </div>
-      ) : (
-        /* ═══ DESKTOP : horizontal ═══ */
-        <div className="flex-1 flex min-h-0">
+      </div>
 
-          {/* Red side */}
-          <div className="flex-1 relative flex flex-col items-center justify-center p-8 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-900 via-red-800 to-red-950" />
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-0 left-0 right-0 h-1 bg-red-500" />
-            <div className="relative z-10 text-center">
-              <div className="text-[7rem] font-black leading-none tabular-nums drop-shadow-lg">
-                {current?.score_red ?? 0}
-              </div>
-              <div className="mt-4 text-2xl font-black uppercase tracking-wide text-white/90 drop-shadow">
-                {current?.red_name || '—'}
-              </div>
-              <div className="mt-2 text-base text-red-300/70 font-medium">
-                {current?.red_club || ''}
-              </div>
-            </div>
-          </div>
-
-          {/* Center panel */}
-          <div className="w-52 bg-[#050505] flex flex-col items-center justify-center gap-6 shrink-0 border-x border-white/[0.06]">
-            <div className="text-center">
-              <div className="text-6xl font-black font-mono tabular-nums text-white tracking-tighter">
-                {fmt(timer)}
-              </div>
-              <div className="text-[10px] text-gray-600 uppercase tracking-widest mt-2">Chrono</div>
-            </div>
-            <div className="flex flex-col gap-2 w-full px-4">
-              <button
-                onClick={() => setRunning(r => !r)}
-                className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${running ? 'bg-amber-500 text-black hover:bg-amber-400' : 'bg-emerald-600 text-white hover:bg-emerald-500'}`}
-              >
-                {running ? '⏸ PAUSE' : '▶ START'}
-              </button>
-              <button
-                onClick={() => { setTimer(0); setRunning(false); }}
-                className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 text-sm transition-colors"
-              >
-                ↺ Reset
-              </button>
-            </div>
-            {!current && <div className="text-gray-700 text-2xl font-black">VS</div>}
-          </div>
-
-          {/* Blue side */}
-          <div className="flex-1 relative flex flex-col items-center justify-center p-8 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-bl from-blue-900 via-blue-800 to-blue-950" />
-            <div className="absolute inset-0 bg-black/20" />
-            <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500" />
-            <div className="relative z-10 text-center">
-              <div className="text-[7rem] font-black leading-none tabular-nums drop-shadow-lg">
-                {current?.score_blue ?? 0}
-              </div>
-              <div className="mt-4 text-2xl font-black uppercase tracking-wide text-white/90 drop-shadow">
-                {current?.blue_name || '—'}
-              </div>
-              <div className="mt-2 text-base text-blue-300/70 font-medium">
-                {current?.blue_club || ''}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Prochains combats */}
+      {/* ── Prochains combats ── */}
       {next.length > 0 && (
-        <div className="bg-[#050505] border-t border-white/[0.06] px-4 py-3 shrink-0">
-          <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-2 font-semibold">Prochains combats</div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+        <div style={{ background: '#050505', borderTop: '1px solid rgba(255,255,255,0.06)', padding: isMobile ? '10px 14px' : '12px 24px', flexShrink: 0 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8 }}>Prochains combats</div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2 }}>
             {next.map((m: any, i: number) => (
-              <div
-                key={m.id}
-                className="shrink-0 flex items-center gap-3 bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2"
-              >
-                <span className="text-gray-600 text-xs font-mono">#{i + 1}</span>
-                <span className="text-sm font-bold text-red-400">{m.red_name || '?'}</span>
-                <span className="text-gray-700 text-xs">vs</span>
-                <span className="text-sm font-bold text-blue-400">{m.blue_name || '?'}</span>
-                {!isMobile && (
-                  <span className="text-xs text-gray-600 border-l border-white/10 pl-3 ml-1">
-                    {m.age_category} · {m.weight_category}kg
-                  </span>
-                )}
+              <div key={m.id} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '8px 12px' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#4b5563' }}>#{i + 1}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#fca5a5' }}>{m.red_name || '?'}</span>
+                <span style={{ fontSize: 10, color: '#374151' }}>vs</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#93c5fd' }}>{m.blue_name || '?'}</span>
+                {!isMobile && <span style={{ fontSize: 10, color: '#4b5563', borderLeft: '1px solid rgba(255,255,255,0.08)', paddingLeft: 10 }}>{m.age_category} · {m.weight_category}kg</span>}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* État vide */}
+      {/* ── État vide ── */}
       {!current && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center opacity-25">
-            <div className="text-7xl font-black text-gray-700">—</div>
-            <div className="text-gray-600 mt-3 uppercase tracking-widest text-sm">En attente d'un combat</div>
-          </div>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
+          <div style={{ fontSize: isMobile ? 56 : 80, fontWeight: 900, color: '#1f2937', lineHeight: 1 }}>—</div>
+          <div style={{ fontSize: 12, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: 12 }}>En attente d'un combat</div>
         </div>
       )}
     </div>

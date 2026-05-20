@@ -115,12 +115,8 @@ export default function WeighIn() {
           style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px', fontSize: isMobile ? 36 : 28, fontWeight: 900, color: '#fff', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' }}
           value={weight}
           onChange={e => {
-            // Accepte virgule ET point comme séparateur décimal
-            let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
-            // Empêche plusieurs points
-            const parts = v.split('.');
-            if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-            setWeight(v);
+            // Remplace virgule → point, tout le reste accepté tel quel
+            setWeight(e.target.value.replace(',', '.'));
           }}
           placeholder="0.0"
           autoFocus
