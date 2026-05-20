@@ -72,7 +72,10 @@ export default function Competitions() {
       const label = [filterStyle ? STYLE_LABELS[filterStyle] ?? filterStyle : null, filterAge].filter(Boolean).join(' · ');
       toast.success(`${r.data.created} compétitions générées${label ? ` (${label})` : ''}`);
     },
-    onError: () => toast.error('Erreur lors de la génération'),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || 'Erreur lors de la génération';
+      toast.error(msg, { duration: 6000 });
+    },
   });
 
   // Filtrer la liste affichée selon les chips sélectionnés
