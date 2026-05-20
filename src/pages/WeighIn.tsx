@@ -336,7 +336,7 @@ export default function WeighIn() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     {reg.weigh_in_weight_kg && <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{reg.weigh_in_weight_kg} kg</span>}
-                    {reg.final_weight_category && <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', background: 'rgba(220,38,38,0.1)', borderRadius: 5, padding: '2px 6px' }}>{reg.final_weight_category} kg</span>}
+                    {reg.final_weight_category && hasWeightCategories(reg.final_age_category || '') && <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', background: 'rgba(220,38,38,0.1)', borderRadius: 5, padding: '2px 6px' }}>{reg.final_weight_category} kg</span>}
                     <span style={{ background: s.bg, color: s.color, borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 600 }}>{s.label}</span>
                   </div>
                 </button>
@@ -357,7 +357,7 @@ export default function WeighIn() {
                 {filtered.map((reg: any) => {
                   const s = STATUS_INFO[reg.weigh_in_status] || STATUS_INFO.pending;
                   const isSel = selected?.id === reg.id;
-                  const missingCat = reg.weigh_in_status === 'done' && !reg.final_weight_category;
+                  const missingCat = reg.weigh_in_status === 'done' && !reg.final_weight_category && hasWeightCategories(reg.final_age_category || '');
                   return (
                     <button key={reg.id} onClick={() => openSelected(reg)} style={{
                       display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10,
@@ -378,7 +378,7 @@ export default function WeighIn() {
                         {reg.weigh_in_weight_kg && <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{reg.weigh_in_weight_kg} kg</span>}
                         {reg.final_weight_category
                           ? <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', background: 'rgba(220,38,38,0.1)', borderRadius: 5, padding: '2px 6px' }}>{reg.final_weight_category} kg</span>
-                          : reg.weigh_in_status === 'done' && <span style={{ fontSize: 10, color: '#ef4444' }} title="Catégorie de poids manquante">⚠</span>
+                          : reg.weigh_in_status === 'done' && hasWeightCategories(reg.final_age_category || '') && <span style={{ fontSize: 10, color: '#ef4444' }} title="Catégorie de poids manquante">⚠</span>
                         }
                         <span style={{ background: s.bg, color: s.color, borderRadius: 5, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>{s.label}</span>
                       </div>
