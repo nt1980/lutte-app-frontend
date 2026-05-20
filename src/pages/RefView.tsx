@@ -38,7 +38,6 @@ export default function RefView() {
   const [timer,     setTimer]     = useState(0);
   const [running,   setRunning]   = useState(false);
   const [period,    setPeriod]    = useState(1);
-  const [showWinMenu, setShowWinMenu] = useState(false);
 
   const { data: match } = useQuery({
     queryKey: ['match', matchId],
@@ -74,7 +73,6 @@ export default function RefView() {
     onSuccess: () => {
       toast.success('Résultat enregistré');
       qc.invalidateQueries({ queryKey: ['match', matchId] });
-      setShowWinMenu(false);
     },
     onError: () => toast.error('Erreur lors de l\'enregistrement'),
   });
