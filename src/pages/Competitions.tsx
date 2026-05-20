@@ -5,6 +5,7 @@ import { Zap, Grid3X3, RefreshCw, Users, Filter } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { sortAgeCategories, sortGroupEntries } from '../lib/ageSort';
 
 const FORMAT: Record<string, { label: string; color: string; bg: string }> = {
   nordic:             { label: 'Nordique (≤5)',          color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'  },
@@ -58,7 +59,7 @@ export default function Competitions() {
   });
 
   const styles: string[]        = options?.styles        ?? [];
-  const ageCategories: string[] = options?.age_categories ?? [];
+  const ageCategories: string[] = sortAgeCategories(options?.age_categories ?? []);
 
   const generate = useMutation({
     mutationFn: () => api.post(`/api/tournaments/${id}/competitions/generate`, {
@@ -204,7 +205,7 @@ export default function Competitions() {
             <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>Modifiez les filtres ou cliquez sur Générer pour créer des compétitions dans cette sélection</div>
           </div>
         ) : (
-          Object.entries(grouped).map(([cat, comps]) => (
+          sortGroupEntries(Object.entries(grouped)).map(([cat, comps]) => (
             <section key={cat}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{cat}</span>

@@ -5,6 +5,7 @@ import { Search, X, Scale } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { sortAgeCategories } from '../lib/ageSort';
 
 const STATUS_INFO: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   pending:    { label: 'En attente',     color: '#6b7280', bg: 'rgba(107,114,128,0.1)',  dot: '#4b5563'  },
@@ -69,7 +70,7 @@ export default function WeighIn() {
   const progress   = regs.length > 0 ? Math.round(((done + overweight + noShow) / regs.length) * 100) : 0;
 
   // Options dynamiques dérivées des inscrits
-  const ageOptions: string[]  = [...new Set((regs as any[]).map((r: any) => r.final_age_category).filter(Boolean))].sort() as string[];
+  const ageOptions: string[]  = sortAgeCategories([...new Set((regs as any[]).map((r: any) => r.final_age_category).filter(Boolean))] as string[]);
   const clubOptions: string[] = [...new Set((regs as any[]).map((r: any) => r.club_name).filter(Boolean))].sort() as string[];
 
   const filtered = regs.filter((r: any) => {
