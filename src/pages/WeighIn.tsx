@@ -110,10 +110,20 @@ export default function WeighIn() {
       <div>
         <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Poids relevé (kg)</label>
         <input
-          type="number" step="0.1" min="0" max="200"
+          type="text"
           inputMode="decimal"
           style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px', fontSize: isMobile ? 36 : 28, fontWeight: 900, color: '#fff', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' }}
-          value={weight} onChange={e => setWeight(e.target.value)} placeholder="0.0" autoFocus
+          value={weight}
+          onChange={e => {
+            // Accepte virgule ET point comme séparateur décimal
+            let v = e.target.value.replace(',', '.').replace(/[^\d.]/g, '');
+            // Empêche plusieurs points
+            const parts = v.split('.');
+            if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+            setWeight(v);
+          }}
+          placeholder="0.0"
+          autoFocus
         />
       </div>
 
