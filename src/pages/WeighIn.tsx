@@ -6,6 +6,7 @@ import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { sortAgeCategories } from '../lib/ageSort';
+import { getWeightCategory, hasWeightCategories } from '../lib/weightCategories';
 
 const STATUS_INFO: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   pending:    { label: 'En attente',     color: '#6b7280', bg: 'rgba(107,114,128,0.1)',  dot: '#4b5563'  },
@@ -37,6 +38,16 @@ export default function WeighIn() {
   const [filter,      setFilter]      = useState('all');
   const [filterAge,   setFilterAge]   = useState('all');
   const [filterClub,  setFilterClub]  = useState('all');
+
+  // Auto-calcul de la catégorie de poids dès que le poids change
+  useEffect(() => {
+    if (!selected) return;
+    const w = parseFloat(weight);
+    if (isNaN(w) || w <= 0) return;
+    const cat = getWeightCategory(w, selected.final_age_category || '', selected.final_style || '');
+    if (cat !== null) setWeightCat(cat);
+    // Si pas de catégorie fixe (U9/U11…), on laisse le champ libre
+  }, [weight, selected?.id]); // déclenche sur changement de poids OU d'athlète sélectionné
 
   // Bloquer le scroll du body quand le bottom sheet est ouvert sur mobile
   useEffect(() => {
@@ -142,7 +153,11 @@ export default function WeighIn() {
         <div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Catégorie de poids
-            <span style={{ color: '#ef4444', marginLeft: 3 }}>*</span>
+            {hasWeightCategories(selected.final_age_category || '') && (
+              <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 600, color: weightCat ? '#4ade80' : '#374151', background: weightCat ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)', borderRadius: 4, padding: '1px 5px', textTransform: 'none', letterSpacing: 0 }}>
+                {weightCat ? '● auto' : '○ auto'}
+              </span>
+            )}
           </label>
           <input
             type="text"
@@ -150,7 +165,7 @@ export default function WeighIn() {
             style={{ width: '100%', background: weightCat ? 'rgba(220,38,38,0.07)' : 'rgba(255,255,255,0.04)', border: `1px solid ${weightCat ? 'rgba(220,38,38,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: '14px', fontSize: isMobile ? 32 : 26, fontWeight: 900, color: weightCat ? '#f87171' : '#6b7280', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' as const }}
             value={weightCat}
             onChange={e => setWeightCat(e.target.value.replace(',', '.'))}
-            placeholder="ex: 38"
+            placeholder={hasWeightCategories(selected.final_age_category || '') ? 'auto' : 'libre'}
           />
         </div>
       </div>
@@ -173,11 +188,11 @@ export default function WeighIn() {
         </div>
       </div>
 
-      {/* Alerte si catégorie de poids manquante (statut done/overweight) */}
-      {(status === 'done' || status === 'overweight') && !weightCat && (
+      {/* Alerte si catégorie de poids manquante (seulement pour les catégories avec poids fixes) */}
+      {(status === 'done' || status === 'overweight') && !weightCat && hasWeightCategories(selected.final_age_category || '') && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#f87171' }}>
           <span>⚠</span>
-          <span>La catégorie de poids est requise pour générer les compétitions</span>
+          <span>Entrez le poids mesuré pour calculer automatiquement la catégorie</span>
         </div>
       )}
 
