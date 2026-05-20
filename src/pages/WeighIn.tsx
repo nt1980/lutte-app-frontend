@@ -32,6 +32,7 @@ export default function WeighIn() {
   const [search,      setSearch]      = useState('');
   const [selected,    setSelected]    = useState<any>(null);
   const [weight,      setWeight]      = useState('');
+  const [weightCat,   setWeightCat]   = useState('');
   const [status,      setStatus]      = useState('done');
   const [filter,      setFilter]      = useState('all');
   const [filterAge,   setFilterAge]   = useState('all');
@@ -58,7 +59,7 @@ export default function WeighIn() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['registrations', id] });
       toast.success('Pesée enregistrée');
-      setSelected(null); setWeight(''); setStatus('done');
+      setSelected(null); setWeight(''); setWeightCat(''); setStatus('done');
     },
     onError: () => toast.error('Erreur lors de la pesée'),
   });
@@ -84,6 +85,7 @@ export default function WeighIn() {
   const openSelected = (reg: any) => {
     setSelected(reg);
     setWeight(reg.weigh_in_weight_kg || '');
+    setWeightCat(reg.final_weight_category ? String(reg.final_weight_category) : '');
     setStatus(reg.weigh_in_status === 'pending' ? 'done' : (reg.weigh_in_status || 'done'));
   };
 
@@ -108,28 +110,49 @@ export default function WeighIn() {
         </button>
       </div>
 
-      {selected.default_weight_kg && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 12px' }}>
-          <span style={{ fontSize: 12, color: '#6b7280' }}>Poids licence</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{selected.default_weight_kg} kg</span>
-        </div>
-      )}
+      {/* Infos référence */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {selected.default_weight_kg && (
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '9px 12px' }}>
+            <span style={{ fontSize: 11, color: '#6b7280' }}>Poids licence</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{selected.default_weight_kg} kg</span>
+          </div>
+        )}
+        {selected.final_age_category && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(96,165,250,0.07)', border: '1px solid rgba(96,165,250,0.18)', borderRadius: 10, padding: '9px 12px' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#60a5fa' }}>{selected.final_age_category}</span>
+          </div>
+        )}
+      </div>
 
-      {/* Weight input */}
-      <div>
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Poids relevé (kg)</label>
-        <input
-          type="text"
-          inputMode="decimal"
-          style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px', fontSize: isMobile ? 36 : 28, fontWeight: 900, color: '#fff', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' }}
-          value={weight}
-          onChange={e => {
-            // Remplace virgule → point, tout le reste accepté tel quel
-            setWeight(e.target.value.replace(',', '.'));
-          }}
-          placeholder="0.0"
-          autoFocus
-        />
+      {/* Poids mesuré + catégorie de poids sur la même ligne */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Poids relevé (kg)</label>
+          <input
+            type="text"
+            inputMode="decimal"
+            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '14px', fontSize: isMobile ? 32 : 26, fontWeight: 900, color: '#fff', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' as const }}
+            value={weight}
+            onChange={e => setWeight(e.target.value.replace(',', '.'))}
+            placeholder="0.0"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            Catégorie de poids
+            <span style={{ color: '#ef4444', marginLeft: 3 }}>*</span>
+          </label>
+          <input
+            type="text"
+            inputMode="decimal"
+            style={{ width: '100%', background: weightCat ? 'rgba(220,38,38,0.07)' : 'rgba(255,255,255,0.04)', border: `1px solid ${weightCat ? 'rgba(220,38,38,0.4)' : 'rgba(255,255,255,0.08)'}`, borderRadius: 10, padding: '14px', fontSize: isMobile ? 32 : 26, fontWeight: 900, color: weightCat ? '#f87171' : '#6b7280', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' as const }}
+            value={weightCat}
+            onChange={e => setWeightCat(e.target.value.replace(',', '.'))}
+            placeholder="ex: 38"
+          />
+        </div>
       </div>
 
       {/* Status buttons */}
@@ -150,9 +173,24 @@ export default function WeighIn() {
         </div>
       </div>
 
+      {/* Alerte si catégorie de poids manquante (statut done/overweight) */}
+      {(status === 'done' || status === 'overweight') && !weightCat && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#f87171' }}>
+          <span>⚠</span>
+          <span>La catégorie de poids est requise pour générer les compétitions</span>
+        </div>
+      )}
+
       {/* Submit */}
       <button
-        onClick={() => mutation.mutate({ regId: selected.id, data: { weigh_in_weight_kg: parseFloat(weight) || null, weigh_in_status: status } })}
+        onClick={() => mutation.mutate({
+          regId: selected.id,
+          data: {
+            weigh_in_weight_kg: parseFloat(weight) || null,
+            weigh_in_status: status,
+            final_weight_category: weightCat ? weightCat.trim() : null,
+          },
+        })}
         disabled={mutation.isPending}
         style={{ width: '100%', padding: isMobile ? '16px' : '12px', borderRadius: 10, background: '#dc2626', color: '#fff', fontSize: isMobile ? 16 : 14, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(220,38,38,0.3)' }}
       >
@@ -283,6 +321,7 @@ export default function WeighIn() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     {reg.weigh_in_weight_kg && <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{reg.weigh_in_weight_kg} kg</span>}
+                    {reg.final_weight_category && <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', background: 'rgba(220,38,38,0.1)', borderRadius: 5, padding: '2px 6px' }}>{reg.final_weight_category} kg</span>}
                     <span style={{ background: s.bg, color: s.color, borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 600 }}>{s.label}</span>
                   </div>
                 </button>
@@ -303,11 +342,12 @@ export default function WeighIn() {
                 {filtered.map((reg: any) => {
                   const s = STATUS_INFO[reg.weigh_in_status] || STATUS_INFO.pending;
                   const isSel = selected?.id === reg.id;
+                  const missingCat = reg.weigh_in_status === 'done' && !reg.final_weight_category;
                   return (
                     <button key={reg.id} onClick={() => openSelected(reg)} style={{
                       display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10,
-                      background: isSel ? 'rgba(220,38,38,0.08)' : 'rgba(255,255,255,0.025)',
-                      border: `1px solid ${isSel ? 'rgba(220,38,38,0.35)' : 'rgba(255,255,255,0.06)'}`,
+                      background: isSel ? 'rgba(220,38,38,0.08)' : missingCat ? 'rgba(239,68,68,0.04)' : 'rgba(255,255,255,0.025)',
+                      border: `1px solid ${isSel ? 'rgba(220,38,38,0.35)' : missingCat ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)'}`,
                       cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.1s',
                     }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
@@ -319,8 +359,12 @@ export default function WeighIn() {
                           {reg.final_age_category && <> · <span style={{ color: '#6b7280' }}>{reg.final_age_category}</span></>}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                         {reg.weigh_in_weight_kg && <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{reg.weigh_in_weight_kg} kg</span>}
+                        {reg.final_weight_category
+                          ? <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', background: 'rgba(220,38,38,0.1)', borderRadius: 5, padding: '2px 6px' }}>{reg.final_weight_category} kg</span>
+                          : reg.weigh_in_status === 'done' && <span style={{ fontSize: 10, color: '#ef4444' }} title="Catégorie de poids manquante">⚠</span>
+                        }
                         <span style={{ background: s.bg, color: s.color, borderRadius: 5, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>{s.label}</span>
                       </div>
                     </button>
