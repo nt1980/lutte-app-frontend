@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import {
   Trophy, LayoutDashboard, Users, Building2, ListChecks, Scale, Zap,
-  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft,
+  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft, Menu, X,
 } from 'lucide-react';
 
 const globalNav = [
@@ -23,33 +24,78 @@ const tournamentNav = (id: string) => [
   { to: `/t/${id}/settings`,      label: 'Paramètres',    icon: Settings        },
 ];
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const fn = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', fn);
+    return () => window.removeEventListener('resize', fn);
+  }, []);
+  return isMobile;
+}
+
 export default function Layout({ children, tournamentId }: { children: React.ReactNode; tournamentId?: string }) {
   const { user, logout } = useAuth();
   const location  = useLocation();
   const navigate  = useNavigate();
+  const isMobile  = useIsMobile();
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed,  setCollapsed]  = useState(false);
+
+  // Fermer le drawer au changement de route
+  useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
   const initials = user?.name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 
-  // Tournament admins without a global role only see the tournament they manage
   const isGlobalAdmin = (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
   const showGlobalNav = isGlobalAdmin || !tournamentId;
+  const showLabel     = isMobile || !collapsed;
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#080808', overflow: 'hidden' }}>
 
+      {/* ── Overlay mobile ── */}
+      {isMobile && drawerOpen && (
+        <div
+          onClick={() => setDrawerOpen(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 40,
+          }}
+        />
+      )}
+
       {/* ── Sidebar ── */}
       <aside style={{
-        width: 220,
+        width: isMobile ? 240 : (collapsed ? 56 : 220),
         flexShrink: 0,
         background: '#0d0d0d',
         borderRight: '1px solid rgba(255,255,255,0.055)',
         display: 'flex',
         flexDirection: 'column',
+        transition: 'width 0.22s ease, transform 0.22s ease',
+        overflow: 'hidden',
+        ...(isMobile ? {
+          position: 'fixed',
+          top: 0, left: 0, bottom: 0,
+          width: 240,
+          zIndex: 50,
+          transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)',
+        } : {}),
       }}>
 
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 14px', borderBottom: '1px solid rgba(255,255,255,0.055)' }}>
+        {/* Logo + bouton collapse / fermer */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: collapsed && !isMobile ? '16px 12px' : '16px 14px',
+          borderBottom: '1px solid rgba(255,255,255,0.055)',
+          overflow: 'hidden',
+          justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+        }}>
           <div style={{
             width: 32, height: 32, borderRadius: 9,
             background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
@@ -59,39 +105,66 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
           }}>
             <Trophy size={15} color="#fff" strokeWidth={2.2} />
           </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px' }}>Lutte App</div>
-            <div style={{ fontSize: 10, color: '#4b5563', fontWeight: 500, marginTop: 1 }}>FFLDA / UWW</div>
-          </div>
+
+          {showLabel && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>Lutte App</div>
+              <div style={{ fontSize: 10, color: '#4b5563', fontWeight: 500, marginTop: 1 }}>FFLDA / UWW</div>
+            </div>
+          )}
+
+          {/* Bouton collapse (desktop) */}
+          {!isMobile && (
+            <button
+              onClick={() => setCollapsed(c => !c)}
+              title={collapsed ? 'Développer' : 'Réduire'}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#4b5563', display: 'flex', padding: 4, flexShrink: 0,
+                marginLeft: collapsed ? 0 : 'auto',
+              }}
+            >
+              <ChevronLeft
+                size={14}
+                style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'transform 0.22s' }}
+              />
+            </button>
+          )}
+
+          {/* Bouton fermer (mobile) */}
+          {isMobile && (
+            <button
+              onClick={() => setDrawerOpen(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', display: 'flex', padding: 4, flexShrink: 0, marginLeft: 'auto' }}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
         <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-          {/* Global nav — hidden for tournament-only admins */}
           {showGlobalNav && globalNav.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
-            return (
-              <NavLink key={to} to={to} label={label} icon={Icon} active={active} />
-            );
+            return <NavLink key={to} to={to} label={label} icon={Icon} active={active} collapsed={collapsed && !isMobile} />;
           })}
 
-          {/* Tournament nav */}
           {tournamentId && (
             <>
-              <div style={{ padding: '16px 8px 6px' }}>
-                {isGlobalAdmin && (
+              <div style={{ padding: '16px 8px 6px', overflow: 'hidden' }}>
+                {isGlobalAdmin && showLabel && (
                   <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#4b5563', textDecoration: 'none', marginBottom: 8 }}>
                     <ChevronLeft size={10} /> Tous les tournois
                   </Link>
                 )}
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ce tournoi</div>
+                {showLabel && (
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ce tournoi</div>
+                )}
               </div>
               {tournamentNav(tournamentId).map(({ to, label, icon: Icon }) => {
                 const active = location.pathname === to;
-                return (
-                  <NavLink key={to} to={to} label={label} icon={Icon} active={active} />
-                );
+                return <NavLink key={to} to={to} label={label} icon={Icon} active={active} collapsed={collapsed && !isMobile} />;
               })}
             </>
           )}
@@ -99,27 +172,64 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
 
         {/* User footer */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.055)', padding: '10px 8px' }}>
-          <UserRow initials={initials} name={user?.name} email={user?.email} onLogout={handleLogout} />
+          <UserRow initials={initials} name={user?.name} email={user?.email} onLogout={handleLogout} collapsed={collapsed && !isMobile} />
         </div>
       </aside>
 
-      {/* ── Main content ── */}
-      <main style={{ flex: 1, overflowY: 'auto', minWidth: 0 }}>
-        {children}
-      </main>
+      {/* ── Zone principale ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+
+        {/* Barre top mobile (hamburger) */}
+        {isMobile && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '11px 16px',
+            background: '#0d0d0d',
+            borderBottom: '1px solid rgba(255,255,255,0.055)',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', padding: 4 }}
+            >
+              <Menu size={20} />
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: 7,
+                background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Trophy size={11} color="#fff" strokeWidth={2.2} />
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#fff' }}>Lutte App</span>
+            </div>
+          </div>
+        )}
+
+        <main style={{ flex: 1, overflowY: 'auto', minWidth: 0 }}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
 
-function NavLink({ to, label, icon: Icon, active }: { to: string; label: string; icon: any; active: boolean }) {
+function NavLink({
+  to, label, icon: Icon, active, collapsed,
+}: {
+  to: string; label: string; icon: any; active: boolean; collapsed: boolean;
+}) {
   return (
     <Link
       to={to}
+      title={collapsed ? label : undefined}
       style={{
         display: 'flex',
         alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
         gap: 9,
-        padding: '7px 10px',
+        padding: collapsed ? '8px' : '7px 10px',
         borderRadius: 8,
         textDecoration: 'none',
         fontSize: 13,
@@ -131,12 +241,39 @@ function NavLink({ to, label, icon: Icon, active }: { to: string; label: string;
       }}
     >
       <Icon size={14} color={active ? '#ef4444' : '#4b5563'} />
-      {label}
+      {!collapsed && label}
     </Link>
   );
 }
 
-function UserRow({ initials, name, email, onLogout }: { initials: string; name?: string; email?: string; onLogout: () => void }) {
+function UserRow({
+  initials, name, email, onLogout, collapsed,
+}: {
+  initials: string; name?: string; email?: string; onLogout: () => void; collapsed: boolean;
+}) {
+  if (collapsed) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: 8,
+          background: 'rgba(220,38,38,0.15)',
+          border: '1px solid rgba(220,38,38,0.25)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 10, fontWeight: 800, color: '#f87171',
+        }}>
+          {initials}
+        </div>
+        <button
+          onClick={onLogout}
+          title="Se déconnecter"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#4b5563', display: 'flex', alignItems: 'center' }}
+        >
+          <LogOut size={13} color="#4b5563" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '8px 8px', borderRadius: 10 }}>
       <div style={{
@@ -180,17 +317,17 @@ export function PageHeader({
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
       borderBottom: '1px solid rgba(255,255,255,0.055)',
-      padding: '14px 24px',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+      padding: '12px 16px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
     }}>
       <div style={{ minWidth: 0 }}>
-        <h1 style={{ fontSize: 17, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h1>
+        <h1 style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: '-0.4px', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</h1>
         {subtitle && (
-          <p style={{ fontSize: 12, color: '#4b5563', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</p>
+          <p style={{ fontSize: 11, color: '#4b5563', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{subtitle}</p>
         )}
       </div>
       {actions && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>{actions}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>{actions}</div>
       )}
     </div>
   );
