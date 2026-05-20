@@ -5,7 +5,6 @@ import { Zap, Grid3X3, RefreshCw, Users, Filter } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import React from 'react';
 
 const FORMAT: Record<string, { label: string; color: string; bg: string }> = {
   nordic:             { label: 'Nordique (≤5)',          color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'  },
