@@ -27,68 +27,100 @@ const STYLE_LABELS: Record<string, string> = {
   feminine: 'Lutte féminine',
 };
 
+// ─── Bracket tree layout constants ──────────────────────────────────────────
+const BK = {
+  cardH:  112,   // estimated card height with name + club + button
+  cardW:  192,   // card width
+  unitH:  132,   // vertical slot height per match in round 0 (cardH + 20px gap)
+  lineW:  50,    // width of SVG connector zone between columns
+  labelH: 30,    // column label height
+} as const;
+
+/** Vertical offset (px) from top of bracket area for match at (col, idx) */
+function bMatchTop(colIdx: number, idx: number): number {
+  const slots = Math.pow(2, colIdx);
+  return (idx * slots + (slots - 1) / 2) * BK.unitH;
+}
+
 function MatchCard({ match }: { match: any }) {
   const s = STATUS_STYLE[match.status] || STATUS_STYLE.waiting;
   const isFinished = match.status === 'finished';
   const isBye = !!match.is_bye;
-  // winner_color may not always be present; fall back to comparing IDs
   const winnerIsRed = match.winner_color === 'red'
     || (!match.winner_color && match.winner_id != null && match.winner_id === match.red_athlete_id);
 
   const redName  = match.red_name  || (match.red_athlete_id  == null && isBye ? 'BYE' : '?');
   const blueName = match.blue_name || (match.blue_athlete_id == null && isBye ? 'BYE' : '?');
+  const redIsBye  = redName  === 'BYE';
+  const blueIsBye = blueName === 'BYE';
 
   return (
-    <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10, padding: '10px 12px', minWidth: 170, fontSize: 12 }}>
+    <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10, padding: '9px 11px', fontSize: 12 }}>
       {/* Red row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: redName === 'BYE' ? '#374151' : '#ef4444', flexShrink: 0 }} />
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: redName === 'BYE' ? '#374151' : (isFinished && winnerIsRed ? '#fff' : '#f87171'), fontWeight: isFinished && winnerIsRed ? 700 : 400 }}>
-          {redName}
-        </span>
-        {isFinished && !isBye && <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 700, flexShrink: 0 }}>{match.score_red ?? ''}</span>}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: redIsBye ? '#374151' : '#ef4444', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3,
+            color: redIsBye ? '#374151' : (isFinished && winnerIsRed ? '#fff' : '#f87171'),
+            fontWeight: isFinished && winnerIsRed ? 700 : 500 }}>
+            {redName}
+          </div>
+          {!redIsBye && match.red_club && (
+            <div style={{ fontSize: 10, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+              {match.red_club}
+            </div>
+          )}
+        </div>
+        {isFinished && !isBye && (
+          <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 700, flexShrink: 0, fontSize: 12 }}>
+            {match.score_red ?? ''}
+          </span>
+        )}
       </div>
       {/* Blue row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: blueName === 'BYE' ? '#374151' : '#3b82f6', flexShrink: 0 }} />
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: blueName === 'BYE' ? '#374151' : (isFinished && !winnerIsRed ? '#fff' : '#60a5fa'), fontWeight: isFinished && !winnerIsRed ? 700 : 400 }}>
-          {blueName}
-        </span>
-        {isFinished && !isBye && <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 700, flexShrink: 0 }}>{match.score_blue ?? ''}</span>}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: blueIsBye ? '#374151' : '#3b82f6', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3,
+            color: blueIsBye ? '#374151' : (isFinished && !winnerIsRed ? '#fff' : '#60a5fa'),
+            fontWeight: isFinished && !winnerIsRed ? 700 : 500 }}>
+            {blueName}
+          </div>
+          {!blueIsBye && match.blue_club && (
+            <div style={{ fontSize: 10, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+              {match.blue_club}
+            </div>
+          )}
+        </div>
+        {isFinished && !isBye && (
+          <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 700, flexShrink: 0, fontSize: 12 }}>
+            {match.score_blue ?? ''}
+          </span>
+        )}
       </div>
-      {/* Status / win type */}
+      {/* Status */}
       {match.status === 'on_mat' && (
         <div style={{ marginTop: 6, fontSize: 10, color: '#fbbf24', fontWeight: 600 }}>● En cours</div>
       )}
       {isFinished && !isBye && match.win_type && (
-        <div style={{ marginTop: 4, fontSize: 10, color: '#4b5563', textTransform: 'capitalize' }}>{match.win_type}</div>
+        <div style={{ marginTop: 3, fontSize: 10, color: '#4b5563', textTransform: 'capitalize' }}>{match.win_type}</div>
       )}
       {/* BYE badge */}
       {isBye && (
-        <div style={{ marginTop: 8, fontSize: 10, color: '#34d399', fontWeight: 700, textAlign: 'center', letterSpacing: '0.04em' }}>
+        <div style={{ marginTop: 7, fontSize: 10, color: '#34d399', fontWeight: 700, textAlign: 'center' }}>
           ✓ Avance automatiquement
         </div>
       )}
-      {/* Arbitrer link — hidden for BYE matches */}
+      {/* Arbitrer */}
       {match.id && !isBye && (
         <Link
           to={`/ref/${match.id}`}
           target="_blank"
-          style={{ display: 'block', marginTop: 8, textAlign: 'center', fontSize: 10, background: 'rgba(220,38,38,0.15)', color: '#f87171', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 600 }}
+          style={{ display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, background: 'rgba(220,38,38,0.15)', color: '#f87171', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 600 }}
         >
           Arbitrer →
         </Link>
       )}
-    </div>
-  );
-}
-
-function RoundColumn({ matches, label }: { matches: any[]; label: string }) {
-  if (matches.length === 0) return null;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 185 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', marginBottom: 4 }}>{label}</div>
-      {matches.map((m: any) => <MatchCard key={m.id} match={m} />)}
     </div>
   );
 }
@@ -131,49 +163,203 @@ function NordicView({ matches, pools }: { matches: any[]; pools: any[] }) {
 }
 
 function BracketView({ matches }: { matches: any[] }) {
-  // 'final' bracket is the last main-bracket round — include it
+  // 'final' = last main-bracket match; include it
   const mainMatches = matches.filter((m: any) =>
     m.bracket === 'main' || m.bracket === 'final' || !m.bracket
   );
-  const repMatches = matches.filter((m: any) => m.bracket === 'repechage');
+  // Include both repechage rounds and bronze finals
+  const repMatches = matches.filter((m: any) =>
+    m.bracket === 'repechage' || m.bracket === 'bronze'
+  );
 
-  const toRounds = (arr: any[]) => arr.reduce((acc: any, m: any) => {
-    const r = m.round ?? 0;
-    if (!acc[r]) acc[r] = [];
-    acc[r].push(m);
-    return acc;
-  }, {});
-
-  const mainRounds = Object.entries(toRounds(mainMatches)).sort(([a], [b]) => Number(a) - Number(b));
-  const repRounds  = Object.entries(toRounds(repMatches)).sort(([a], [b]) => Number(a) - Number(b));
-
-  // Label based on match count in the round (more robust than index-from-end)
-  const roundLabel = (matchCount: number) => {
-    if (matchCount === 1)  return 'Finale';
-    if (matchCount === 2)  return '1/2';
-    if (matchCount === 4)  return '1/4';
-    if (matchCount === 8)  return '1/8';
-    if (matchCount === 16) return '1/16';
-    if (matchCount === 32) return '1/32';
-    return 'Tour';
+  const toRounds = (arr: any[]): Record<number, any[]> => {
+    const map: Record<number, any[]> = {};
+    for (const m of arr) {
+      const r = m.round ?? 0;
+      if (!map[r]) map[r] = [];
+      map[r].push(m);
+    }
+    // Sort matches within each round by their position
+    for (const r of Object.values(map)) {
+      r.sort((a, b) => (a.index_in_round ?? 0) - (b.index_in_round ?? 0));
+    }
+    return map;
   };
 
+  const mainRounds = Object.entries(toRounds(mainMatches))
+    .sort(([a], [b]) => Number(a) - Number(b)) as [string, any[]][];
+  const repRounds = Object.entries(toRounds(repMatches))
+    .sort(([a], [b]) => Number(a) - Number(b)) as [string, any[]][];
+
+  const ROUND_LABEL: Record<number, string> = {
+    1: 'Finale', 2: '1/2 Finale', 4: '1/4 de Finale',
+    8: '1/8e de Finale', 16: '1/16e de Finale', 32: '1/32e de Finale',
+  };
+
+  const firstCount = mainRounds[0]?.[1]?.length ?? 0;
+  // Total height of the bracket area (below labels)
+  const bracketH = firstCount > 0 ? (firstCount - 1) * BK.unitH + BK.cardH : BK.cardH;
+  const numCols  = mainRounds.length;
+  const colW     = BK.cardW + BK.lineW;
+  const totalW   = numCols * colW + 128; // 128 = winner box width + margin
+  const connClr  = 'rgba(255,255,255,0.2)';
+  const midX     = BK.lineW / 2;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+      {/* ── Tableau principal (bracket tree) ── */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           <Trophy size={14} color="#fbbf24" />
           <span style={{ fontSize: 13, fontWeight: 700, color: '#d1d5db' }}>Tableau principal</span>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ display: 'flex', gap: 16, minWidth: 'max-content', paddingBottom: 8 }}>
-            {mainRounds.map(([round, rMatches]: [string, any]) => (
-              <RoundColumn key={round} matches={rMatches} label={roundLabel((rMatches as any[]).length)} />
-            ))}
-            {mainRounds.length === 0 && <div style={{ color: '#4b5563', fontSize: 13 }}>Tableau non encore généré</div>}
+
+        {mainRounds.length === 0 ? (
+          <div style={{ color: '#4b5563', fontSize: 13 }}>Tableau non encore généré</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ position: 'relative', width: totalW, height: BK.labelH + bracketH + 20 }}>
+
+              {/* ── Column labels ── */}
+              {mainRounds.map(([rk, rMatches], colIdx) => (
+                <div
+                  key={`lbl-${rk}`}
+                  style={{
+                    position: 'absolute', top: 0, left: colIdx * colW, width: BK.cardW,
+                    height: BK.labelH,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 700, color: '#4b5563',
+                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                  }}
+                >
+                  {ROUND_LABEL[rMatches.length] ?? 'Tour'}
+                </div>
+              ))}
+
+              {/* ── "VAINQUEUR" label above winner box ── */}
+              <div style={{
+                position: 'absolute', top: 0, left: numCols * colW, width: 120,
+                height: BK.labelH,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, fontWeight: 700, color: '#ca8a04',
+                textTransform: 'uppercase', letterSpacing: '0.1em',
+              }}>
+                Vainqueur
+              </div>
+
+              {/* ── Match cards ── */}
+              {mainRounds.map(([rk, rMatches], colIdx) =>
+                (rMatches as any[]).map((m, idx) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      position: 'absolute',
+                      top: BK.labelH + bMatchTop(colIdx, idx),
+                      left: colIdx * colW,
+                      width: BK.cardW,
+                    }}
+                  >
+                    <MatchCard match={m} />
+                  </div>
+                ))
+              )}
+
+              {/* ── SVG connector lines ── */}
+              {mainRounds.map(([rk, rMatches], colIdx) => {
+                const isLastCol = colIdx === numCols - 1;
+                return (
+                  <svg
+                    key={`svg-${rk}`}
+                    style={{
+                      position: 'absolute',
+                      top: BK.labelH,
+                      left: colIdx * colW + BK.cardW,
+                      width: BK.lineW,
+                      height: bracketH,
+                      overflow: 'visible',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    {(rMatches as any[]).map((m, idx) => {
+                      const cy = bMatchTop(colIdx, idx) + BK.cardH / 2;
+
+                      if (isLastCol) {
+                        // Finale → winner box: simple horizontal stub
+                        return (
+                          <line key={m.id}
+                            x1={0} y1={cy} x2={BK.lineW} y2={cy}
+                            stroke={connClr} strokeWidth={1.5} />
+                        );
+                      }
+
+                      if (idx % 2 === 0) {
+                        // Even match: draw full elbow connector for this pair
+                        const sibLen = (rMatches as any[]).length;
+                        const sibY   = idx + 1 < sibLen
+                          ? bMatchTop(colIdx, idx + 1) + BK.cardH / 2
+                          : cy;
+                        const nextY  = bMatchTop(colIdx + 1, Math.floor(idx / 2)) + BK.cardH / 2;
+                        // Path: stub right → vertical → jump to midpoint → stub right to next col
+                        return (
+                          <path key={m.id}
+                            d={`M0,${cy} H${midX} V${sibY} M${midX},${nextY} H${BK.lineW}`}
+                            fill="none" stroke={connClr} strokeWidth={1.5}
+                          />
+                        );
+                      }
+
+                      // Odd match: just the horizontal stub (vertical drawn by even sibling)
+                      return (
+                        <line key={m.id}
+                          x1={0} y1={cy} x2={midX} y2={cy}
+                          stroke={connClr} strokeWidth={1.5} />
+                      );
+                    })}
+                  </svg>
+                );
+              })}
+
+              {/* ── Winner box ── */}
+              {numCols > 0 && (() => {
+                const finaleMatches = mainRounds[numCols - 1]?.[1] as any[] ?? [];
+                // Box is vertically centered on the finale match
+                const boxCenterY = BK.labelH + bMatchTop(numCols - 1, 0) + BK.cardH / 2;
+                return (
+                  <div style={{
+                    position: 'absolute',
+                    top: boxCenterY - 40,
+                    left: numCols * colW,
+                    width: 112,
+                    height: 80,
+                    border: '2px solid rgba(202,138,4,0.55)',
+                    borderRadius: 12,
+                    background: 'rgba(202,138,4,0.07)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                  }}>
+                    <Trophy size={20} color="#fbbf24" />
+                    {/* Show winner name if finale is finished */}
+                    {finaleMatches[0]?.status === 'finished' && (
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', textAlign: 'center', padding: '0 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                        {finaleMatches[0]?.winner_id === finaleMatches[0]?.red_athlete_id
+                          ? finaleMatches[0]?.red_name
+                          : finaleMatches[0]?.blue_name}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* ── Repêchage ── */}
       {repMatches.length > 0 && (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -181,10 +367,19 @@ function BracketView({ matches }: { matches: any[] }) {
             <span style={{ fontSize: 13, fontWeight: 700, color: '#d1d5db' }}>Repêchage (2× Bronze)</span>
           </div>
           <div style={{ overflowX: 'auto' }}>
-            <div style={{ display: 'flex', gap: 16, minWidth: 'max-content', paddingBottom: 8, opacity: 0.85 }}>
-              {repRounds.map(([round, rMatches]: [string, any], idx) => (
-                <RoundColumn key={round} matches={rMatches} label={`Repêchage T${idx + 1}`} />
-              ))}
+            <div style={{ display: 'flex', gap: 14, minWidth: 'max-content', paddingBottom: 8, opacity: 0.85 }}>
+              {repRounds.map(([rk, rMatches]: [string, any], idx) => {
+                const label = (rMatches as any[]).length <= 2
+                  ? `Bronze` : `Repêchage T${idx + 1}`;
+                return (
+                  <div key={rk} style={{ display: 'flex', flexDirection: 'column', gap: 8, width: BK.cardW }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', height: BK.labelH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {label}
+                    </div>
+                    {(rMatches as any[]).map((m: any) => <MatchCard key={m.id} match={m} />)}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
