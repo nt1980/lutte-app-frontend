@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../store/auth';
+import api from '../lib/api';
 import {
   Trophy, LayoutDashboard, Users, Building2, ListChecks, Scale, Zap,
   Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft, Menu, X,
@@ -50,8 +52,28 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
   const initials = user?.name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
 
   const isGlobalAdmin = (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
+
+  // Rôle de l'utilisateur dans ce tournoi
+  const { data: tournamentUsers = [] } = useQuery({
+    queryKey: ['tournament-users', tournamentId],
+    queryFn: () => api.get(`/api/tournaments/${tournamentId}/users`).then(r => r.data).catch(() => []),
+    enabled: !!tournamentId && !isGlobalAdmin,
+    staleTime: 60000,
+  });
+  const myTournamentRole: string = tournamentId
+    ? (tournamentUsers.find((u: any) => u.user_id === user?.id)?.role ?? '')
+    : '';
+  const isReferee = myTournamentRole === 'referee';
+
   const showGlobalNav = isGlobalAdmin || !tournamentId;
   const showLabel     = isMobile || !collapsed;
+
+  // Navigation filtrée selon le rôle
+  const visibleTournamentNav = (id: string) => {
+    const all = tournamentNav(id);
+    if (isReferee) return all.filter(n => n.label === 'Tapis');
+    return all;
+  };
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#080808', overflow: 'hidden' }}>
@@ -145,7 +167,7 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
         {/* Navigation */}
         <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-          {showGlobalNav && globalNav.map(({ to, label, icon: Icon }) => {
+          {showGlobalNav && !isReferee && globalNav.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to;
             return <NavLink key={to} to={to} label={label} icon={Icon} active={active} collapsed={collapsed && !isMobile} />;
           })}
@@ -153,7 +175,7 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
           {tournamentId && (
             <>
               <div style={{ padding: '16px 8px 6px', overflow: 'hidden' }}>
-                {isGlobalAdmin && showLabel && (
+                {isGlobalAdmin && !isReferee && showLabel && (
                   <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#4b5563', textDecoration: 'none', marginBottom: 8 }}>
                     <ChevronLeft size={10} /> Tous les tournois
                   </Link>
@@ -162,7 +184,7 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ce tournoi</div>
                 )}
               </div>
-              {tournamentNav(tournamentId).map(({ to, label, icon: Icon }) => {
+              {visibleTournamentNav(tournamentId).map(({ to, label, icon: Icon }) => {
                 const active = location.pathname === to;
                 return <NavLink key={to} to={to} label={label} icon={Icon} active={active} collapsed={collapsed && !isMobile} />;
               })}

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical } from 'lucide-react';
+import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical, UserCheck } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
+import { useAuth } from '../store/auth';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
@@ -24,6 +25,7 @@ export default function MatManager() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
   // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -36,13 +38,31 @@ export default function MatManager() {
     refetchInterval: 10000,
   });
 
+  // Utilisateurs du tournoi (pour la liste d'arbitres)
+  const { data: tournamentUsers = [] } = useQuery({
+    queryKey: ['tournament-users', id],
+    queryFn: () => api.get(`/api/tournaments/${id}/users`).then(r => r.data).catch(() => []),
+    staleTime: 30000,
+  });
+  const refereeUsers = tournamentUsers.filter((u: any) => u.role === 'referee');
+
+  // Rôle de l'utilisateur courant dans ce tournoi
+  const myRole: string = tournamentUsers.find((u: any) => u.user_id === user?.id)?.role ?? '';
+  const isReferee = myRole === 'referee';
+  const isAdmin   = myRole === 'tournament_admin' || myRole === 'mat_manager'
+    || (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
+
   const { data: queue = [] } = useQuery({
     queryKey: ['queue', id],
     queryFn: () => api.get(`/api/tournaments/${id}/queue`).then(r => r.data),
     refetchInterval: 5000,
   });
 
-  const mats = allMats.filter((m: any) => m.is_active !== false);
+  // Pour un arbitre : seulement son tapis. Pour les autres : tous les tapis actifs.
+  const activeMats = allMats.filter((m: any) => m.is_active !== false);
+  const mats = isReferee
+    ? activeMats.filter((m: any) => m.referee_id === user?.id)
+    : activeMats;
 
   /* ── Mutations queue ── */
   const assign = useMutation({
@@ -77,6 +97,13 @@ export default function MatManager() {
     onError: () => toast.error('Erreur réordonnancement'),
   });
 
+  const assignReferee = useMutation({
+    mutationFn: ({ matId, refereeId }: { matId: string; refereeId: string | null }) =>
+      api.put(`/api/mats/${matId}/referee`, { referee_id: refereeId }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['mats', id] }); toast.success('Arbitre mis à jour'); },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur', { duration: 5000 }),
+  });
+
   /* ── Données dérivées ── */
   const byMat = mats.reduce((acc: any, mat: any) => {
     const matches = queue
@@ -86,7 +113,8 @@ export default function MatManager() {
     return acc;
   }, {});
 
-  const unassigned: any[] = queue
+  // Un arbitre ne voit que la file de son tapis, pas la file globale
+  const unassigned: any[] = isReferee ? [] : queue
     .filter((q: any) => !q.mat_id && q.status === 'ready')
     .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
 
@@ -118,8 +146,12 @@ export default function MatManager() {
         {mats.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16 }}>
             <Activity size={28} color="#374151" strokeWidth={1.5} style={{ marginBottom: 12 }} />
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>Aucun tapis actif</div>
-            <div style={{ fontSize: 12, color: '#4b5563' }}>Ajoutez des tapis dans les Paramètres du tournoi</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+              {isReferee ? 'Aucun tapis affecté' : 'Aucun tapis actif'}
+            </div>
+            <div style={{ fontSize: 12, color: '#4b5563' }}>
+              {isReferee ? 'Contactez le responsable du tournoi pour être affecté à un tapis' : 'Ajoutez des tapis dans les Paramètres du tournoi'}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12, alignItems: 'start' }}>
@@ -149,6 +181,44 @@ export default function MatManager() {
                     </Link>
                   </div>
 
+                  {/* ── Sélecteur d'arbitre (admins uniquement) ── */}
+                  {isAdmin && (
+                    <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <UserCheck size={11} color="#4b5563" style={{ flexShrink: 0 }} />
+                        <select
+                          value={mat.referee_id ?? ''}
+                          disabled={hasActivity || assignReferee.isPending}
+                          onChange={e => assignReferee.mutate({ matId: mat.id, refereeId: e.target.value || null })}
+                          title={hasActivity ? 'Impossible de changer l\'arbitre pendant un combat' : 'Sélectionner un arbitre'}
+                          style={{
+                            flex: 1, fontSize: 11, background: hasActivity ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${mat.referee_id ? 'rgba(96,165,250,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                            borderRadius: 7, color: mat.referee_id ? '#93c5fd' : '#4b5563',
+                            padding: '4px 8px', outline: 'none', cursor: hasActivity ? 'not-allowed' : 'pointer',
+                            opacity: hasActivity ? 0.5 : 1,
+                          }}
+                        >
+                          <option value="">— Aucun arbitre —</option>
+                          {refereeUsers.map((u: any) => (
+                            <option key={u.user_id} value={u.user_id}>{u.user_name || u.user_email}</option>
+                          ))}
+                        </select>
+                        {hasActivity && (
+                          <span style={{ fontSize: 9, color: '#4b5563', flexShrink: 0 }}>Combat en cours</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Arbitre affiché (vue arbitre) ── */}
+                  {isReferee && mat.referee_name && (
+                    <div style={{ padding: '6px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <UserCheck size={10} color="#60a5fa" />
+                      <span style={{ fontSize: 11, color: '#60a5fa', fontWeight: 600 }}>{mat.referee_name}</span>
+                    </div>
+                  )}
+
                   <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {current ? (
                       <CurrentMatchCard
@@ -157,11 +227,12 @@ export default function MatManager() {
                         onPromote={() => promote.mutate(current.id)}
                         isUnassigning={unassign.isPending}
                         isPromoting={promote.isPending}
+                        isReferee={isReferee}
                       />
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', color: '#2d2d2d', fontSize: 12 }}>Tapis libre</div>
                     )}
-                    {matQueue.length > 0 && (
+                    {matQueue.length > 0 && !isReferee && (
                       <MatQueueSection
                         items={matQueue}
                         onUnassign={qid => unassign.mutate(qid)}
@@ -245,10 +316,10 @@ export default function MatManager() {
 /* ─── Sous-composants ─── */
 
 function CurrentMatchCard({
-  match, onUnassign, onPromote, isUnassigning, isPromoting,
+  match, onUnassign, onPromote, isUnassigning, isPromoting, isReferee,
 }: {
   match: any; onUnassign: () => void; onPromote: () => void;
-  isUnassigning: boolean; isPromoting: boolean;
+  isUnassigning: boolean; isPromoting: boolean; isReferee?: boolean;
 }) {
   const isOnMat = match.status === 'on_mat';
   return (
@@ -257,16 +328,18 @@ function CurrentMatchCard({
         <span style={{ fontSize: 9, fontWeight: 800, color: isOnMat ? '#fbbf24' : '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {isOnMat ? '● Combat en cours' : '▶ Prochain combat'}
         </span>
-        {/* Bouton dissocier */}
-        <button
-          onClick={onUnassign}
-          disabled={isUnassigning}
-          title="Dissocier du tapis — remettre en file globale"
-          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', cursor: 'pointer' }}
-        >
-          <CornerDownLeft size={10} />
-          Dissocier
-        </button>
+        {/* Bouton dissocier — masqué pour les arbitres */}
+        {!isReferee && (
+          <button
+            onClick={onUnassign}
+            disabled={isUnassigning}
+            title="Dissocier du tapis — remettre en file globale"
+            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', cursor: 'pointer' }}
+          >
+            <CornerDownLeft size={10} />
+            Dissocier
+          </button>
+        )}
       </div>
       <div style={{ padding: '12px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -286,10 +359,10 @@ function CurrentMatchCard({
 
         {isOnMat && match.match_id ? (
           <Link to={`/ref/${match.match_id}`} target="_blank" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#fff', background: '#dc2626', borderRadius: 8, padding: '8px 0', textDecoration: 'none' }}>
-            Vue arbitre →
+            Arbitrer ce combat →
           </Link>
-        ) : !isOnMat ? (
-          /* Bouton "Lancer ce combat" — passe de ready → on_mat */
+        ) : !isOnMat && !isReferee ? (
+          /* Bouton "Lancer ce combat" — passe de ready → on_mat (réservé aux admins/mat_manager) */
           <button
             onClick={onPromote}
             disabled={isPromoting}
@@ -297,6 +370,10 @@ function CurrentMatchCard({
           >
             ▶ {isPromoting ? 'Lancement…' : 'Lancer ce combat'}
           </button>
+        ) : !isOnMat && isReferee ? (
+          <div style={{ textAlign: 'center', padding: '8px 0', fontSize: 11, color: '#4b5563' }}>
+            En attente du lancement par le responsable tapis
+          </div>
         ) : null}
       </div>
     </div>

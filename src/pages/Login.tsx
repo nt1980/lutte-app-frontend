@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
 import { Trophy, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import api from '../lib/api';
 
 export default function Login() {
   const [email, setEmail]       = useState('');
@@ -18,6 +19,14 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
+      // Vérifier si l'utilisateur est arbitre affecté à un tapis
+      try {
+        const { data } = await api.get('/api/users/me/referee-mat');
+        if (data?.tournament_id) {
+          navigate(`/t/${data.tournament_id}/mats`);
+          return;
+        }
+      } catch {}
       navigate('/dashboard');
     } catch {
       setError('Email ou mot de passe incorrect');
