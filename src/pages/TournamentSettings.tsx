@@ -356,6 +356,30 @@ export default function TournamentSettings() {
           </div>
         </div>
 
+        {/* ── Gestion des combats ── */}
+        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <Activity size={14} color="#4b5563" />
+            <span style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Gestion des combats</span>
+          </div>
+          <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={LABEL}>Temps de repos minimum entre 2 combats (minutes)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  type="number" min="0" max="120" step="1"
+                  style={{ ...INPUT, maxWidth: 100 }}
+                  value={form.min_rest_minutes ?? 5}
+                  onChange={e => setForm((p: any) => ({ ...p, min_rest_minutes: parseInt(e.target.value) || 0 }))}
+                />
+                <span style={{ fontSize: 12, color: '#4b5563' }}>
+                  Si un combattant n'a pas respecté ce délai, la ligne est bloquée en jaune dans la file des combats.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* ── Sauvegarder ── */}
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <button

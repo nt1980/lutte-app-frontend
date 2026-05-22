@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical, UserCheck } from 'lucide-react';
+import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical, UserCheck, RefreshCw } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import { useAuth } from '../store/auth';
 import api from '../lib/api';
@@ -10,6 +10,36 @@ import toast from 'react-hot-toast';
 const STYLE_SHORT: Record<string, string> = {
   libre: 'Libre', greco: 'Gréco', feminine: 'Fém.',
 };
+
+// Elapsed time since last fight (shortest of the two fighters)
+function restElapsedMs(q: any, now: number): number | null {
+  const red  = q.red_last_fight_at  ? now - new Date(q.red_last_fight_at).getTime()  : null;
+  const blue = q.blue_last_fight_at ? now - new Date(q.blue_last_fight_at).getTime() : null;
+  if (red === null && blue === null) return null;
+  if (red === null) return blue;
+  if (blue === null) return red;
+  return Math.min(red, blue);
+}
+
+function formatElapsed(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}:${sec.toString().padStart(2, '0')}`;
+}
+
+function GBadgeSm({ g }: { g: string }) {
+  const cfg = g === 'M'
+    ? { text: 'M', bg: 'rgba(59,130,246,0.15)',  color: '#60a5fa', border: 'rgba(59,130,246,0.3)' }
+    : g === 'F'
+    ? { text: 'F', bg: 'rgba(236,72,153,0.15)',  color: '#f472b6', border: 'rgba(236,72,153,0.3)' }
+    : { text: 'MX', bg: 'rgba(167,139,250,0.15)', color: '#a78bfa', border: 'rgba(167,139,250,0.3)' };
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 16, borderRadius: 4, fontSize: 9, fontWeight: 800, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+      {cfg.text}
+    </span>
+  );
+}
 
 function roundLabel(q: any): string {
   if (q.match_type === 'final')     return 'Finale';
@@ -50,7 +80,21 @@ export default function MatManager() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
+  // Horloge locale pour les temps de repos (tick chaque seconde)
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
   /* ── Data ── */
+  const { data: tournament } = useQuery({
+    queryKey: ['tournament', id],
+    queryFn: () => api.get(`/api/tournaments/${id}`).then(r => r.data),
+    staleTime: 30000,
+  });
+  const minRestMs = ((tournament?.min_rest_minutes ?? 5) as number) * 60_000;
+
   const { data: allMats = [] } = useQuery({
     queryKey: ['mats', id],
     queryFn: () => api.get(`/api/tournaments/${id}/mats`).then(r => r.data),
@@ -286,66 +330,149 @@ export default function MatManager() {
         {/* ── File globale non affectée ── */}
         {unassigned.length > 0 && (
           <div style={{ background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '12px 14px' : '13px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '10px 14px' : '11px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <AlertCircle size={13} color="#f87171" />
               <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Combats en attente</span>
               <span style={{ background: 'rgba(248,113,113,0.14)', color: '#f87171', borderRadius: 6, padding: '1px 9px', fontSize: 11, fontWeight: 700 }}>{unassigned.length}</span>
+              <button
+                onClick={() => { qc.invalidateQueries({ queryKey: ['queue', id] }); setNow(Date.now()); }}
+                title="Actualiser les temps de repos"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#6b7280', borderRadius: 7, padding: '3px 9px', fontSize: 11, cursor: 'pointer' }}
+              >
+                <RefreshCw size={11} /> Actualiser
+              </button>
               <span style={{ marginLeft: 'auto', fontSize: 10, color: '#374151' }}>Affecter à un tapis →</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {unassigned.map((q: any, idx: number) => (
-                <div
-                  key={q.id}
-                  draggable
-                  onDragStart={() => { setDraggedId(q.id); setDragOverId(null); }}
-                  onDragOver={e => { e.preventDefault(); setDragOverId(q.id); }}
-                  onDragLeave={() => setDragOverId(null)}
-                  onDrop={() => { handleDrop(draggedId!, q.id, unassigned); setDraggedId(null); setDragOverId(null); }}
-                  onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: isMobile ? '10px 14px' : '9px 18px',
-                    borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                    background: dragOverId === q.id ? 'rgba(96,165,250,0.06)' : (idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'),
-                    opacity: draggedId === q.id ? 0.4 : 1,
-                    cursor: 'grab',
-                    transition: 'background 0.1s',
-                  }}
-                >
-                  <GripVertical size={12} color="#374151" style={{ flexShrink: 0 }} />
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#374151', width: 18, textAlign: 'center', flexShrink: 0 }}>{q.position ?? idx + 1}</span>
-                  {/* Rouge */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
-                    </div>
-                    {q.red_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingLeft: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
-                  </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#2d2d2d', flexShrink: 0 }}>vs</span>
-                  {/* Bleu */}
-                  <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_name || '?'}</span>
-                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
-                    </div>
-                    {q.blue_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingRight: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
-                  </div>
-                  {/* Cat + tour */}
-                  <div style={{ flexShrink: 0, textAlign: 'right', display: isMobile ? 'none' : 'block' }}>
-                    {roundLabel(q) && <div style={{ fontSize: 10, fontWeight: 700, color: '#92400e', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 4, padding: '1px 6px', marginBottom: 3, display: 'inline-block' }}>{roundLabel(q)}</div>}
-                    <div style={{ fontSize: 10, color: '#4b5563', whiteSpace: 'nowrap' }}>{q.age_category} · {q.weight_category}kg</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
-                    {mats.map((mat: any) => (
-                      <button key={mat.id} onClick={() => assign.mutate({ queueId: q.id, matId: mat.id })} title={`Affecter à ${mat.name}`}
-                        style={{ fontSize: 10, fontWeight: 700, padding: '4px 9px', borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        {mat.name.replace('Tapis ', '')}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
+            {/* Colonnes header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 32px 1fr 60px 44px 36px 28px 56px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.02)' }}>
+              {['#','Rouge','','Bleu','Tour','Âge','Poids','S','Repos',''].map((h, i) => (
+                <div key={i} style={{ fontSize: 9, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: i >= 4 ? 'center' : (i === 3 ? 'right' : 'left') }}>{h}</div>
               ))}
+            </div>
+
+            {/* Rows */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {unassigned.map((q: any, idx: number) => {
+                const elapsedMs = restElapsedMs(q, now);
+                const tooSoon   = elapsedMs !== null && elapsedMs < minRestMs;
+                const rowBg     = dragOverId === q.id
+                  ? 'rgba(96,165,250,0.06)'
+                  : tooSoon
+                  ? 'rgba(251,191,36,0.06)'
+                  : (idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)');
+                const borderColor = tooSoon ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)';
+
+                return (
+                  <div
+                    key={q.id}
+                    draggable={!tooSoon}
+                    onDragStart={() => { if (!tooSoon) { setDraggedId(q.id); setDragOverId(null); } }}
+                    onDragOver={e => { e.preventDefault(); if (!tooSoon) setDragOverId(q.id); }}
+                    onDragLeave={() => setDragOverId(null)}
+                    onDrop={() => { handleDrop(draggedId!, q.id, unassigned); setDraggedId(null); setDragOverId(null); }}
+                    onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '28px 1fr 32px 1fr 60px 44px 36px 28px 56px auto',
+                      alignItems: 'center',
+                      gap: 0,
+                      padding: '7px 14px',
+                      borderTop: idx > 0 ? `1px solid ${borderColor}` : 'none',
+                      background: rowBg,
+                      opacity: draggedId === q.id ? 0.4 : 1,
+                      cursor: tooSoon ? 'not-allowed' : 'grab',
+                      transition: 'background 0.15s',
+                    }}
+                  >
+                    {/* # position */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <GripVertical size={10} color={tooSoon ? '#92400e' : '#2d2d2d'} />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: tooSoon ? '#92400e' : '#374151' }}>{q.position ?? idx + 1}</span>
+                    </div>
+
+                    {/* Rouge */}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
+                      </div>
+                      {q.red_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
+                    </div>
+
+                    {/* vs */}
+                    <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: '#2d2d2d' }}>vs</div>
+
+                    {/* Bleu */}
+                    <div style={{ minWidth: 0, textAlign: 'right' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_name || '?'}</span>
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                      </div>
+                      {q.blue_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
+                    </div>
+
+                    {/* Tour */}
+                    <div style={{ textAlign: 'center' }}>
+                      {roundLabel(q) && (
+                        <span style={{ display: 'inline-block', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24', borderRadius: 4, padding: '1px 6px', fontSize: 9, fontWeight: 800 }}>
+                          {roundLabel(q)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Âge */}
+                    <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#6b7280' }}>{q.age_category || '—'}</div>
+
+                    {/* Poids */}
+                    <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#6b7280' }}>{q.weight_category ? `${q.weight_category}kg` : '—'}</div>
+
+                    {/* Sexe */}
+                    <div style={{ textAlign: 'center' }}><GBadgeSm g={q.gender} /></div>
+
+                    {/* Repos */}
+                    <div style={{ textAlign: 'center' }}>
+                      {elapsedMs === null ? (
+                        <span style={{ fontSize: 10, color: '#374151' }}>—</span>
+                      ) : (
+                        <span style={{
+                          fontSize: 10, fontWeight: 800,
+                          color: tooSoon ? '#fbbf24' : '#4ade80',
+                          background: tooSoon ? 'rgba(251,191,36,0.1)' : 'rgba(74,222,128,0.08)',
+                          border: `1px solid ${tooSoon ? 'rgba(251,191,36,0.3)' : 'rgba(74,222,128,0.2)'}`,
+                          borderRadius: 4, padding: '1px 5px',
+                        }}>
+                          {formatElapsed(elapsedMs)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Boutons tapis */}
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                      {mats.map((mat: any) => (
+                        <button
+                          key={mat.id}
+                          onClick={() => !tooSoon && assign.mutate({ queueId: q.id, matId: mat.id })}
+                          disabled={tooSoon}
+                          title={tooSoon ? `Repos insuffisant (min ${tournament?.min_rest_minutes ?? 5} min)` : `Affecter à ${mat.name}`}
+                          style={{
+                            fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6,
+                            background: tooSoon ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.06)',
+                            border: `1px solid ${tooSoon ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.1)'}`,
+                            color: tooSoon ? '#92400e' : '#9ca3af',
+                            cursor: tooSoon ? 'not-allowed' : 'pointer',
+                            whiteSpace: 'nowrap' as const,
+                            opacity: tooSoon ? 0.6 : 1,
+                          }}
+                        >
+                          {mat.name.replace('Tapis ', '')}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
