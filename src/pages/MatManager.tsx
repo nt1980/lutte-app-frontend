@@ -166,7 +166,7 @@ export default function MatManager() {
 
                       {/* Combat en cours */}
                       {current ? (
-                        <CurrentMatchCard match={current} isMobile={isMobile} />
+                        <CurrentMatchCard match={current} />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', color: '#2d2d2d', fontSize: 12 }}>
                           Tapis libre
@@ -244,7 +244,7 @@ export default function MatManager() {
       {showManage && (
         <ManageMatsModal
           mats={mats}
-          tournamentId={id!}
+
           newMatName={newMatName}
           setNewMatName={setNewMatName}
           editingId={editingId}
@@ -285,7 +285,7 @@ function EmptyState({ onManage }: { onManage: () => void }) {
   );
 }
 
-function CurrentMatchCard({ match, isMobile }: { match: any; isMobile: boolean }) {
+function CurrentMatchCard({ match }: { match: any }) {
   const isOnMat = match.status === 'on_mat';
   return (
     <div style={{ background: isOnMat ? 'rgba(251,191,36,0.06)' : 'rgba(96,165,250,0.05)', border: `1px solid ${isOnMat ? 'rgba(251,191,36,0.18)' : 'rgba(96,165,250,0.15)'}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -357,7 +357,7 @@ function MatQueueSection({ items, onUnassign, isPending }: { items: any[]; onUna
 }
 
 function ManageMatsModal({
-  mats, tournamentId,
+  mats,
   newMatName, setNewMatName,
   editingId, editingName, setEditingId, setEditingName,
   confirmDeleteId, setConfirmDeleteId,
