@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
@@ -61,6 +61,17 @@ export default function RefView() {
 
   const fmt = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+  // Broadcast live-score en temps réel vers l'écran live (debounce 400ms)
+  const liveScoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!matchId) return;
+    if (liveScoreTimer.current) clearTimeout(liveScoreTimer.current);
+    liveScoreTimer.current = setTimeout(() => {
+      api.put(`/api/matches/${matchId}/live-score`, { score_red: scoreRed, score_blue: scoreBlue }).catch(() => {});
+    }, 400);
+    return () => { if (liveScoreTimer.current) clearTimeout(liveScoreTimer.current); };
+  }, [scoreRed, scoreBlue, matchId]);
 
   const addPoint = useCallback((side: 'red' | 'blue', pts: number) => {
     if (side === 'red')  setScoreRed(p  => Math.max(0, p + pts));

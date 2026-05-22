@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Activity, Tv, AlertCircle, Clock, CornerDownLeft } from 'lucide-react';
+import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -25,6 +25,10 @@ export default function MatManager() {
   const qc = useQueryClient();
   const isMobile = useIsMobile();
 
+  // Drag state
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
   /* ── Data ── */
   const { data: allMats = [] } = useQuery({
     queryKey: ['mats', id],
@@ -38,7 +42,6 @@ export default function MatManager() {
     refetchInterval: 5000,
   });
 
-  // Tapis actifs uniquement pour la vue opérationnelle
   const mats = allMats.filter((m: any) => m.is_active !== false);
 
   /* ── Mutations queue ── */
@@ -55,6 +58,19 @@ export default function MatManager() {
     onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur', { duration: 5000 }),
   });
 
+  const confirm = useMutation({
+    mutationFn: (queueId: string) => api.put(`/api/queue/${queueId}/confirm`, {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['queue', id] }); },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur'),
+  });
+
+  const reorder = useMutation({
+    mutationFn: (items: { id: string; position: number }[]) =>
+      api.put(`/api/tournaments/${id}/queue/reorder`, { items }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['queue', id] }),
+    onError: () => toast.error('Erreur réordonnancement'),
+  });
+
   /* ── Données dérivées ── */
   const byMat = mats.reduce((acc: any, mat: any) => {
     const matches = queue
@@ -69,6 +85,19 @@ export default function MatManager() {
     .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
 
   const activeCount = queue.filter((q: any) => q.status === 'on_mat').length;
+
+  /* ── Drag helpers ── */
+  const handleDrop = useCallback((dragId: string, targetId: string, list: any[]) => {
+    if (!dragId || dragId === targetId) return;
+    const newList = [...list];
+    const fromIdx = newList.findIndex(x => x.id === dragId);
+    const toIdx   = newList.findIndex(x => x.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [removed] = newList.splice(fromIdx, 1);
+    newList.splice(toIdx, 0, removed);
+    const items = newList.map((item, idx) => ({ id: item.id, position: idx + 1 }));
+    reorder.mutate(items);
+  }, [reorder]);
 
   return (
     <Layout tournamentId={id}>
@@ -87,9 +116,9 @@ export default function MatManager() {
             <div style={{ fontSize: 12, color: '#4b5563' }}>Ajoutez des tapis dans les Paramètres du tournoi</div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12, alignItems: 'start' }}>
             {Object.values(byMat).map(({ mat, matches }: any) => {
-              const current = matches.find((m: any) => m.status === 'on_mat') ?? matches[0] ?? null;
+              const current  = matches.find((m: any) => m.status === 'on_mat') ?? matches[0] ?? null;
               const matQueue = matches.filter((m: any) => m !== current);
               const hasActivity = current?.status === 'on_mat';
 
@@ -116,12 +145,27 @@ export default function MatManager() {
 
                   <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {current ? (
-                      <CurrentMatchCard match={current} />
+                      <CurrentMatchCard
+                        match={current}
+                        onUnassign={() => unassign.mutate(current.id)}
+                        isUnassigning={unassign.isPending}
+                      />
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', color: '#2d2d2d', fontSize: 12 }}>Tapis libre</div>
                     )}
                     {matQueue.length > 0 && (
-                      <MatQueueSection items={matQueue} onUnassign={qid => unassign.mutate(qid)} isPending={unassign.isPending} />
+                      <MatQueueSection
+                        items={matQueue}
+                        onUnassign={qid => unassign.mutate(qid)}
+                        onConfirm={qid => confirm.mutate(qid)}
+                        isPending={unassign.isPending}
+                        isConfirming={confirm.isPending}
+                        draggedId={draggedId}
+                        dragOverId={dragOverId}
+                        setDraggedId={setDraggedId}
+                        setDragOverId={setDragOverId}
+                        onDrop={(dId, tId) => handleDrop(dId, tId, matQueue)}
+                      />
                     )}
                   </div>
                 </div>
@@ -141,7 +185,25 @@ export default function MatManager() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {unassigned.map((q: any, idx: number) => (
-                <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: isMobile ? '10px 14px' : '9px 18px', borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                <div
+                  key={q.id}
+                  draggable
+                  onDragStart={() => { setDraggedId(q.id); setDragOverId(null); }}
+                  onDragOver={e => { e.preventDefault(); setDragOverId(q.id); }}
+                  onDragLeave={() => setDragOverId(null)}
+                  onDrop={() => { handleDrop(draggedId!, q.id, unassigned); setDraggedId(null); setDragOverId(null); }}
+                  onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: isMobile ? '10px 14px' : '9px 18px',
+                    borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                    background: dragOverId === q.id ? 'rgba(96,165,250,0.06)' : (idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)'),
+                    opacity: draggedId === q.id ? 0.4 : 1,
+                    cursor: 'grab',
+                    transition: 'background 0.1s',
+                  }}
+                >
+                  <GripVertical size={12} color="#374151" style={{ flexShrink: 0 }} />
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#374151', width: 18, textAlign: 'center', flexShrink: 0 }}>{q.position ?? idx + 1}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
@@ -167,7 +229,6 @@ export default function MatManager() {
           </div>
         )}
 
-
       </div>
     </Layout>
   );
@@ -175,14 +236,24 @@ export default function MatManager() {
 
 /* ─── Sous-composants ─── */
 
-function CurrentMatchCard({ match }: { match: any }) {
+function CurrentMatchCard({ match, onUnassign, isUnassigning }: { match: any; onUnassign: () => void; isUnassigning: boolean }) {
   const isOnMat = match.status === 'on_mat';
   return (
     <div style={{ background: isOnMat ? 'rgba(251,191,36,0.06)' : 'rgba(96,165,250,0.05)', border: `1px solid ${isOnMat ? 'rgba(251,191,36,0.18)' : 'rgba(96,165,250,0.15)'}`, borderRadius: 12, overflow: 'hidden' }}>
-      <div style={{ padding: '6px 12px', background: isOnMat ? 'rgba(251,191,36,0.08)' : 'rgba(96,165,250,0.07)', borderBottom: `1px solid ${isOnMat ? 'rgba(251,191,36,0.12)' : 'rgba(96,165,250,0.1)'}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px 6px 12px', background: isOnMat ? 'rgba(251,191,36,0.08)' : 'rgba(96,165,250,0.07)', borderBottom: `1px solid ${isOnMat ? 'rgba(251,191,36,0.12)' : 'rgba(96,165,250,0.1)'}` }}>
         <span style={{ fontSize: 9, fontWeight: 800, color: isOnMat ? '#fbbf24' : '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {isOnMat ? '● Combat en cours' : '▶ Prochain combat'}
         </span>
+        {/* Bouton dissocier */}
+        <button
+          onClick={onUnassign}
+          disabled={isUnassigning}
+          title="Dissocier du tapis — remettre en file globale"
+          style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', cursor: 'pointer' }}
+        >
+          <CornerDownLeft size={10} />
+          Dissocier
+        </button>
       </div>
       <div style={{ padding: '12px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -209,7 +280,16 @@ function CurrentMatchCard({ match }: { match: any }) {
   );
 }
 
-function MatQueueSection({ items, onUnassign, isPending }: { items: any[]; onUnassign: (id: string) => void; isPending: boolean }) {
+function MatQueueSection({
+  items, onUnassign, onConfirm, isPending, isConfirming,
+  draggedId, dragOverId, setDraggedId, setDragOverId, onDrop,
+}: {
+  items: any[]; onUnassign: (id: string) => void; onConfirm: (id: string) => void;
+  isPending: boolean; isConfirming: boolean;
+  draggedId: string | null; dragOverId: string | null;
+  setDraggedId: (id: string | null) => void; setDragOverId: (id: string | null) => void;
+  onDrop: (dragId: string, targetId: string) => void;
+}) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
@@ -219,23 +299,65 @@ function MatQueueSection({ items, onUnassign, isPending }: { items: any[]; onUna
         </span>
       </div>
       <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, overflow: 'hidden' }}>
-        {items.map((q: any, i: number) => (
-          <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#374151', width: 14, textAlign: 'center', flexShrink: 0 }}>{q.position ?? i + 1}</span>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
-            <span style={{ fontSize: 9, color: '#2d2d2d', fontWeight: 700 }}>vs</span>
-            <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{q.blue_name || '?'}</span>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
-            <span style={{ fontSize: 9, color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>{q.age_category}·{q.weight_category}kg</span>
-            {q.status === 'ready' && (
-              <button onClick={() => onUnassign(q.id)} disabled={isPending} title="Désaffecter — remettre en attente"
-                style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', cursor: 'pointer', padding: 0 }}>
+        {items.map((q: any, i: number) => {
+          const isConfirmed = q.confirmed === true;
+          return (
+            <div
+              key={q.id}
+              draggable
+              onDragStart={() => { setDraggedId(q.id); setDragOverId(null); }}
+              onDragOver={e => { e.preventDefault(); setDragOverId(q.id); }}
+              onDragLeave={() => setDragOverId(null)}
+              onDrop={() => { if (draggedId) onDrop(draggedId, q.id); setDraggedId(null); setDragOverId(null); }}
+              onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '7px 10px',
+                borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
+                background: dragOverId === q.id ? 'rgba(96,165,250,0.08)' : (i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'),
+                opacity: draggedId === q.id ? 0.4 : 1,
+                cursor: 'grab',
+                transition: 'background 0.1s',
+              }}
+            >
+              <GripVertical size={11} color="#2d2d2d" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 9, fontWeight: 700, color: '#374151', width: 14, textAlign: 'center', flexShrink: 0 }}>{q.position ?? i + 1}</span>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
+              <span style={{ fontSize: 9, color: '#2d2d2d', fontWeight: 700 }}>vs</span>
+              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{q.blue_name || '?'}</span>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+
+              {/* Confirmer / infirmer */}
+              <button
+                onClick={() => onConfirm(q.id)}
+                disabled={isConfirming}
+                title={isConfirmed ? 'Retirer la confirmation (masque du live)' : 'Confirmer — afficher sur l\'écran live'}
+                style={{
+                  flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3,
+                  fontSize: 9, fontWeight: 700, padding: '3px 7px', borderRadius: 5,
+                  background: isConfirmed ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${isConfirmed ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                  color: isConfirmed ? '#4ade80' : '#4b5563',
+                  cursor: 'pointer',
+                }}
+              >
+                <Check size={9} />
+                {isConfirmed ? 'OK' : '?'}
+              </button>
+
+              {/* Dissocier */}
+              <button
+                onClick={() => onUnassign(q.id)}
+                disabled={isPending}
+                title="Dissocier — remettre en attente"
+                style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', cursor: 'pointer', padding: 0 }}
+              >
                 <CornerDownLeft size={11} />
               </button>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
