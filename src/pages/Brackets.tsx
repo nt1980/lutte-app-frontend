@@ -172,24 +172,69 @@ function BracketView({ matches }: { matches: any[] }) {
   );
 }
 
-/** Calcule le classement d'une poule depuis les matchs terminés */
+/**
+ * Points de classement UWW selon le type de victoire :
+ *   fall / forfeit / abandon / dq → 5:0
+ *   superiority (adversaire sans points) → 4:0
+ *   superiority (adversaire avec points) → 4:1
+ *   points (adversaire sans points)      → 3:0
+ *   points (adversaire avec points)      → 3:1
+ *   double disqualification              → 0:0
+ */
+function uwwClassificationPts(winType: string, loserScore: number): { w: number; l: number } {
+  if (['fall', 'forfeit', 'abandon', 'dq'].includes(winType)) return { w: 5, l: 0 };
+  if (winType === 'superiority') return { w: 4, l: loserScore > 0 ? 1 : 0 };
+  return { w: 3, l: loserScore > 0 ? 1 : 0 }; // 'points' ou défaut
+}
+
+/** Calcule le classement UWW d'une poule depuis les matchs terminés */
 function computePoolRankings(
   poolId: string,
   athletes: Array<{ id: string; name: string; club: string | null }>,
   matches: any[]
 ) {
-  const stats: Record<string, { name: string; club: string; pts: number; tech: number }> = {};
+  const finished = matches.filter(m => m.pool_id === poolId && m.status === 'finished');
+
+  const stats: Record<string, { name: string; club: string; pts: number; tech: number; conceded: number }> = {};
   for (const a of athletes) {
-    if (a?.id) stats[a.id] = { name: a.name || '?', club: a.club || '', pts: 0, tech: 0 };
+    if (a?.id) stats[a.id] = { name: a.name || '?', club: a.club || '', pts: 0, tech: 0, conceded: 0 };
   }
-  for (const m of matches.filter(m => m.pool_id === poolId && m.status === 'finished')) {
-    const { red_athlete_id: rid, blue_athlete_id: bid, winner_id: wid, score_red: sr, score_blue: sb } = m;
-    if (rid && stats[rid]) { if (wid === rid) stats[rid].pts += 2; stats[rid].tech += sr ?? 0; }
-    if (bid && stats[bid]) { if (wid === bid) stats[bid].pts += 2; stats[bid].tech += sb ?? 0; }
+
+  for (const m of finished) {
+    const rid = m.red_athlete_id, bid = m.blue_athlete_id, wid = m.winner_id;
+    const sr: number = m.score_red  ?? 0;
+    const sb: number = m.score_blue ?? 0;
+
+    if (!wid) {
+      // Double disqualification → 0 pts pour les deux
+    } else {
+      const redWins   = wid === rid;
+      const loserScore = redWins ? sb : sr;
+      const { w, l }  = uwwClassificationPts(m.win_type || 'points', loserScore);
+      if (rid && stats[rid]) { stats[rid].pts += redWins ? w : l; stats[rid].tech += sr; stats[rid].conceded += sb; }
+      if (bid && stats[bid]) { stats[bid].pts += redWins ? l : w; stats[bid].tech += sb; stats[bid].conceded += sr; }
+    }
   }
-  return Object.entries(stats)
-    .map(([id, s]) => ({ id, ...s }))
-    .sort((a, b) => b.pts - a.pts || b.tech - a.tech);
+
+  const ranked = Object.entries(stats).map(([id, s]) => ({ id, ...s }));
+
+  return ranked.sort((a, b) => {
+    // 1. Points de classement
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    // 2. Points techniques marqués
+    if (b.tech !== a.tech) return b.tech - a.tech;
+    // 3. Confrontation directe
+    const h2h = finished.find(m =>
+      (m.red_athlete_id === a.id && m.blue_athlete_id === b.id) ||
+      (m.red_athlete_id === b.id && m.blue_athlete_id === a.id)
+    );
+    if (h2h?.winner_id === a.id) return -1;
+    if (h2h?.winner_id === b.id) return  1;
+    // 4. Moins de points encaissés
+    if (a.conceded !== b.conceded) return a.conceded - b.conceded;
+    // 5. Égalité parfaite
+    return 0;
+  });
 }
 
 function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {

@@ -108,7 +108,7 @@ export default function RefView() {
   const finished = match.status === 'finished';
 
   // ─── Boutons de points ───
-  const POINTS = [1, 2, 3, 4];
+  const POINTS = [1, 2, 3, 4, 5];
 
   /* ════════════════════════════════════════════════
      VUE MOBILE — inspirée de l'interface de référence
@@ -175,7 +175,7 @@ export default function RefView() {
           <div style={{ display: 'flex', gap: 8, padding: '10px 12px', flexShrink: 0 }}>
             {/* Rouge : +1 +2 +3 +4 */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
                 {POINTS.map(p => (
                   <button key={p} onClick={() => addPoint('red', p)} style={{
                     background: '#b91c1c', color: '#fff', border: 'none', borderRadius: 10,
@@ -200,7 +200,7 @@ export default function RefView() {
 
             {/* Bleu : +1 +2 +3 +4 */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
                 {POINTS.map(p => (
                   <button key={p} onClick={() => addPoint('blue', p)} style={{
                     background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 10,
@@ -380,22 +380,22 @@ export default function RefView() {
           </div>
           {!finished && (
             <div style={{ padding: '0 32px 16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, maxWidth: 320 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, maxWidth: 400 }}>
                 {POINTS.map(p => (
-                  <button key={p} onClick={() => addPoint('red', p)} style={{ background: '#b91c1c', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 900, fontSize: 22, cursor: 'pointer', padding: '18px 0', boxShadow: '0 4px 16px rgba(185,28,28,0.4)', transition: 'transform 0.08s' }}
+                  <button key={p} onClick={() => addPoint('red', p)} style={{ background: '#b91c1c', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 900, fontSize: 18, cursor: 'pointer', padding: '18px 0', boxShadow: '0 4px 16px rgba(185,28,28,0.4)', transition: 'transform 0.08s' }}
                     onPointerDown={e => (e.currentTarget.style.transform = 'scale(0.95)')}
                     onPointerUp={e => (e.currentTarget.style.transform = 'scale(1)')}
                     onPointerLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
                   >+{p}</button>
                 ))}
               </div>
-              <button onClick={() => addPoint('red', -1)} style={{ marginTop: 6, width: '100%', maxWidth: 320, padding: '9px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', fontSize: 13, cursor: 'pointer' }}>−1 correction</button>
+              <button onClick={() => addPoint('red', -1)} style={{ marginTop: 6, width: '100%', maxWidth: 400, padding: '9px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', fontSize: 13, cursor: 'pointer' }}>−1 correction</button>
             </div>
           )}
           {!finished && (
             <div style={{ padding: '0 32px 24px' }}>
               <button onClick={() => finish(match.red_athlete_id, match.blue_athlete_id)} disabled={mutation.isPending}
-                style={{ width: '100%', maxWidth: 320, padding: '14px', borderRadius: 14, background: '#7f1d1d', border: '2px solid rgba(239,68,68,0.3)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 20px rgba(127,29,29,0.4)' }}>
+                style={{ width: '100%', maxWidth: 400, padding: '14px', borderRadius: 14, background: '#7f1d1d', border: '2px solid rgba(239,68,68,0.3)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 20px rgba(127,29,29,0.4)' }}>
                 🏆 Victoire ROUGE
               </button>
             </div>
@@ -453,22 +453,22 @@ export default function RefView() {
           </div>
           {!finished && (
             <div style={{ padding: '0 32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, width: '100%', maxWidth: 320 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, width: '100%', maxWidth: 400 }}>
                 {POINTS.map(p => (
-                  <button key={p} onClick={() => addPoint('blue', p)} style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 900, fontSize: 22, cursor: 'pointer', padding: '18px 0', boxShadow: '0 4px 16px rgba(29,78,216,0.4)', transition: 'transform 0.08s' }}
+                  <button key={p} onClick={() => addPoint('blue', p)} style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 900, fontSize: 18, cursor: 'pointer', padding: '18px 0', boxShadow: '0 4px 16px rgba(29,78,216,0.4)', transition: 'transform 0.08s' }}
                     onPointerDown={e => (e.currentTarget.style.transform = 'scale(0.95)')}
                     onPointerUp={e => (e.currentTarget.style.transform = 'scale(1)')}
                     onPointerLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
                   >+{p}</button>
                 ))}
               </div>
-              <button onClick={() => addPoint('blue', -1)} style={{ marginTop: 6, width: '100%', maxWidth: 320, padding: '9px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', fontSize: 13, cursor: 'pointer' }}>−1 correction</button>
+              <button onClick={() => addPoint('blue', -1)} style={{ marginTop: 6, width: '100%', maxWidth: 400, padding: '9px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', fontSize: 13, cursor: 'pointer' }}>−1 correction</button>
             </div>
           )}
           {!finished && (
             <div style={{ padding: '0 32px 24px', display: 'flex', justifyContent: 'flex-end' }}>
               <button onClick={() => finish(match.blue_athlete_id, match.red_athlete_id)} disabled={mutation.isPending}
-                style={{ width: '100%', maxWidth: 320, padding: '14px', borderRadius: 14, background: '#1e3a8a', border: '2px solid rgba(59,130,246,0.3)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 20px rgba(30,58,138,0.4)' }}>
+                style={{ width: '100%', maxWidth: 400, padding: '14px', borderRadius: 14, background: '#1e3a8a', border: '2px solid rgba(59,130,246,0.3)', color: '#fff', fontWeight: 900, fontSize: 15, cursor: 'pointer', boxShadow: '0 4px 20px rgba(30,58,138,0.4)' }}>
                 🏆 Victoire BLEU
               </button>
             </div>
