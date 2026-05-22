@@ -361,8 +361,8 @@ export default function RefView() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#7f1d1d,#991b1b)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ height: 3, background: '#ef4444', flexShrink: 0 }} />
           <div style={{ padding: '24px 32px' }}>
-            <div style={{ fontSize: 22, fontWeight: 900, textTransform: 'uppercase', color: '#fff' }}>{match.red_name || 'ROUGE'}</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{match.red_club}</div>
+            <div style={{ fontSize: 30, fontWeight: 900, textTransform: 'uppercase', color: '#fff', lineHeight: 1.1 }}>{match.red_name || 'ROUGE'}</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>{match.red_club}</div>
           </div>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: '9rem', fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', textShadow: '0 4px 32px rgba(0,0,0,0.5)' }}>{scoreRed}</div>
@@ -434,15 +434,15 @@ export default function RefView() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'linear-gradient(160deg,#1e3a8a,#1d4ed8)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ height: 3, background: '#3b82f6', flexShrink: 0 }} />
           <div style={{ padding: '24px 32px', textAlign: 'right' }}>
-            <div style={{ fontSize: 22, fontWeight: 900, textTransform: 'uppercase', color: '#fff' }}>{match.blue_name || 'BLEU'}</div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>{match.blue_club}</div>
+            <div style={{ fontSize: 30, fontWeight: 900, textTransform: 'uppercase', color: '#fff', lineHeight: 1.1 }}>{match.blue_name || 'BLEU'}</div>
+            <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>{match.blue_club}</div>
           </div>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: '9rem', fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', textShadow: '0 4px 32px rgba(0,0,0,0.5)' }}>{scoreBlue}</div>
           </div>
           {!finished && (
             <div style={{ padding: '0 32px 16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, maxWidth: 320 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, width: '100%', maxWidth: 320 }}>
                 {POINTS.map(p => (
                   <button key={p} onClick={() => addPoint('blue', p)} style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 14, fontWeight: 900, fontSize: 22, cursor: 'pointer', padding: '18px 0', boxShadow: '0 4px 16px rgba(29,78,216,0.4)', transition: 'transform 0.08s' }}
                     onPointerDown={e => (e.currentTarget.style.transform = 'scale(0.95)')}

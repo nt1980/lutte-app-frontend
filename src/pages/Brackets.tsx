@@ -210,6 +210,7 @@ export default function Brackets() {
   const { user } = useAuth();
   const [selectedComp, setSelectedComp] = useState<string | null>(null);
   const [deleteModal, setDeleteModal] = useState<'single' | 'bulk' | null>(null);
+  const [forceDelete, setForceDelete] = useState(false);
 
   // Vérification des droits admin
   const isGlobalAdmin = (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
@@ -257,9 +258,11 @@ export default function Brackets() {
   });
 
   const deleteSingle = useMutation({
-    mutationFn: (cid: string) => api.delete(`/api/competitions/${cid}/bracket`),
+    mutationFn: ({ cid, force }: { cid: string; force: boolean }) =>
+      api.delete(`/api/competitions/${cid}/bracket`, { params: force ? { force: 'true' } : {} }),
     onSuccess: () => {
       setDeleteModal(null);
+      setForceDelete(false);
       qc.invalidateQueries({ queryKey: ['bracket', compId] });
       toast.success('Tableau supprimé');
     },
@@ -270,10 +273,11 @@ export default function Brackets() {
   });
 
   const deleteBulk = useMutation({
-    mutationFn: (ageCategory: string) =>
-      api.delete(`/api/tournaments/${id}/brackets`, { params: { age_category: ageCategory } }),
+    mutationFn: ({ ageCategory, force }: { ageCategory: string; force: boolean }) =>
+      api.delete(`/api/tournaments/${id}/brackets`, { params: { age_category: ageCategory, ...(force ? { force: 'true' } : {}) } }),
     onSuccess: (r) => {
       setDeleteModal(null);
+      setForceDelete(false);
       qc.invalidateQueries({ queryKey: ['bracket'] });
       toast.success(`${r.data.deleted} tableau${r.data.deleted !== 1 ? 'x' : ''} supprimé${r.data.deleted !== 1 ? 's' : ''}`);
     },
@@ -288,9 +292,9 @@ export default function Brackets() {
   const handleConfirmDelete = () => {
     if (!comp) return;
     if (deleteModal === 'single') {
-      deleteSingle.mutate(comp.id);
+      deleteSingle.mutate({ cid: comp.id, force: forceDelete });
     } else if (deleteModal === 'bulk') {
-      deleteBulk.mutate(comp.age_category);
+      deleteBulk.mutate({ ageCategory: comp.age_category, force: forceDelete });
     }
   };
 
@@ -466,10 +470,32 @@ export default function Brackets() {
               )}
             </div>
 
+            {/* Option force — super admin uniquement */}
+            {isGlobalAdmin && (
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 9, border: `1px solid ${forceDelete ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.07)'}`, background: forceDelete ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.02)' }}>
+                  <input
+                    type="checkbox"
+                    checked={forceDelete}
+                    onChange={e => setForceDelete(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: '#ef4444', width: 15, height: 15, flexShrink: 0, cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: forceDelete ? '#f87171' : '#6b7280' }}>
+                      ⚡ Forcer la suppression (super admin)
+                    </div>
+                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>
+                      Supprime même les combats en cours ou déjà validés — les résultats seront perdus
+                    </div>
+                  </div>
+                </label>
+              </div>
+            )}
+
             {/* Actions */}
             <div style={{ display: 'flex', gap: 10 }}>
               <button
-                onClick={() => setDeleteModal(null)}
+                onClick={() => { setDeleteModal(null); setForceDelete(false); }}
                 disabled={isPendingDelete}
                 style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
               >
@@ -478,12 +504,12 @@ export default function Brackets() {
               <button
                 onClick={handleConfirmDelete}
                 disabled={isPendingDelete}
-                style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', background: '#dc2626', color: '#fff', fontSize: 13, fontWeight: 700, cursor: isPendingDelete ? 'not-allowed' : 'pointer', opacity: isPendingDelete ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', background: forceDelete ? '#7f1d1d' : '#dc2626', color: '#fff', fontSize: 13, fontWeight: 700, cursor: isPendingDelete ? 'not-allowed' : 'pointer', opacity: isPendingDelete ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 {isPendingDelete ? (
                   <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> Suppression…</>
                 ) : (
-                  <><Trash2 size={13} /> Confirmer la suppression</>
+                  <><Trash2 size={13} /> {forceDelete ? 'Forcer la suppression' : 'Confirmer la suppression'}</>
                 )}
               </button>
             </div>
