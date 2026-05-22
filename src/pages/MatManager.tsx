@@ -11,6 +11,25 @@ const STYLE_SHORT: Record<string, string> = {
   libre: 'Libre', greco: 'Gréco', feminine: 'Fém.',
 };
 
+function roundLabel(q: any): string {
+  if (q.match_type === 'final')     return 'Finale';
+  if (q.match_type === 'semifinal') return '1/2';
+  if (q.match_type === 'bronze')    return 'Bronze';
+  if (q.bracket === 'repechage')    return 'Repêchage';
+  if (q.bracket === 'bronze')       return 'Bronze';
+  if (q.pool_id) return q.pool_name || 'Poule';
+  if (q.round != null && q.max_round != null) {
+    const fromEnd = (q.max_round as number) - (q.round as number);
+    if (fromEnd === 0) return 'Finale';
+    if (fromEnd === 1) return '1/2';
+    if (fromEnd === 2) return '1/4';
+    if (fromEnd === 3) return '1/8';
+    if (fromEnd === 4) return '1/16';
+    return `Tour ${(q.round as number) + 1}`;
+  }
+  return '';
+}
+
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
@@ -155,14 +174,21 @@ export default function MatManager() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12, alignItems: 'start' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'start' }}>
             {Object.values(byMat).map(({ mat, matches }: any) => {
               const current  = matches.find((m: any) => m.status === 'on_mat') ?? matches[0] ?? null;
               const matQueue = matches.filter((m: any) => m !== current);
               const hasActivity = current?.status === 'on_mat';
 
               return (
-                <div key={mat.id} style={{ background: '#0e0e0e', border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 16, overflow: 'hidden' }}>
+                <div key={mat.id} style={{
+                  flex: isMobile ? '1 1 100%' : (hasActivity ? '2 1 420px' : '1 1 260px'),
+                  minWidth: isMobile ? undefined : (hasActivity ? 380 : 240),
+                  transition: 'flex 0.35s ease, min-width 0.35s ease',
+                  background: '#0e0e0e',
+                  border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                  borderRadius: 16, overflow: 'hidden',
+                }}>
                   {/* Header tapis */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${hasActivity ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.05)'}`, background: hasActivity ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -288,16 +314,28 @@ export default function MatManager() {
                 >
                   <GripVertical size={12} color="#374151" style={{ flexShrink: 0 }} />
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#374151', width: 18, textAlign: 'center', flexShrink: 0 }}>{q.position ?? idx + 1}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
+                  {/* Rouge */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
+                    </div>
+                    {q.red_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingLeft: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
                   </div>
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#2d2d2d', flexShrink: 0 }}>vs</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{q.blue_name || '?'}</span>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                  {/* Bleu */}
+                  <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, justifyContent: 'flex-end' }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_name || '?'}</span>
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                    </div>
+                    {q.blue_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingRight: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
                   </div>
-                  <span style={{ fontSize: 10, color: '#4b5563', whiteSpace: 'nowrap', flexShrink: 0, display: isMobile ? 'none' : 'block' }}>{q.age_category} · {q.weight_category}kg</span>
+                  {/* Cat + tour */}
+                  <div style={{ flexShrink: 0, textAlign: 'right', display: isMobile ? 'none' : 'block' }}>
+                    {roundLabel(q) && <div style={{ fontSize: 10, fontWeight: 700, color: '#92400e', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 4, padding: '1px 6px', marginBottom: 3, display: 'inline-block' }}>{roundLabel(q)}</div>}
+                    <div style={{ fontSize: 10, color: '#4b5563', whiteSpace: 'nowrap' }}>{q.age_category} · {q.weight_category}kg</div>
+                  </div>
                   <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
                     {mats.map((mat: any) => (
                       <button key={mat.id} onClick={() => assign.mutate({ queueId: q.id, matId: mat.id })} title={`Affecter à ${mat.name}`}
@@ -346,15 +384,30 @@ function CurrentMatchCard({
         )}
       </div>
       <div style={{ padding: '12px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.red_name || '?'}</span>
+        {/* Round badge */}
+        {roundLabel(match) && (
+          <div style={{ textAlign: 'center', marginBottom: 8 }}>
+            <span style={{ display: 'inline-block', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24', borderRadius: 5, padding: '1px 8px', fontSize: 10, fontWeight: 800, letterSpacing: '0.06em' }}>
+              {roundLabel(match)}
+            </span>
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>vs</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{match.blue_name || '?'}</span>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+        )}
+        {/* Combattants */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'start', gap: 8, marginBottom: 6 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.red_name || '?'}</span>
+            </div>
+            {match.red_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 2, paddingLeft: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.red_club}</div>}
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', marginTop: 2 }}>vs</span>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.blue_name || '?'}</span>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+            </div>
+            {match.blue_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 2, paddingRight: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.blue_club}</div>}
           </div>
         </div>
         <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center', marginBottom: 10 }}>
@@ -426,11 +479,28 @@ function MatQueueSection({
             >
               <GripVertical size={11} color="#2d2d2d" style={{ flexShrink: 0 }} />
               <span style={{ fontSize: 9, fontWeight: 700, color: '#374151', width: 14, textAlign: 'center', flexShrink: 0 }}>{q.position ?? i + 1}</span>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
-              <span style={{ fontSize: 9, color: '#2d2d2d', fontWeight: 700 }}>vs</span>
-              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{q.blue_name || '?'}</span>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+              {/* Rouge */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
+                </div>
+                {q.red_club && <div style={{ fontSize: 9, color: '#374151', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
+              </div>
+              <span style={{ fontSize: 9, color: '#2d2d2d', fontWeight: 700, flexShrink: 0 }}>vs</span>
+              {/* Bleu */}
+              <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_name || '?'}</span>
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                </div>
+                {q.blue_club && <div style={{ fontSize: 9, color: '#374151', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
+              </div>
+              {/* Infos cat + tour */}
+              <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                {roundLabel(q) && <div style={{ fontSize: 9, fontWeight: 700, color: '#92400e', background: 'rgba(251,191,36,0.1)', borderRadius: 3, padding: '1px 5px', marginBottom: 2 }}>{roundLabel(q)}</div>}
+                <div style={{ fontSize: 9, color: '#374151', whiteSpace: 'nowrap' }}>{q.age_category} · {q.weight_category}kg</div>
+              </div>
 
               {/* Confirmer / infirmer */}
               <button
