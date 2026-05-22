@@ -75,7 +75,7 @@ export default function MatLive() {
             setScoreRed(msg.score_red);
             setScoreBlue(msg.score_blue);
           }
-          if (['match_finished', 'match_assigned', 'match_unassigned', 'queue_confirmed', 'queue_reordered'].includes(msg.type)) {
+          if (['match_finished', 'match_assigned', 'match_unassigned', 'match_promoted', 'queue_confirmed', 'queue_reordered'].includes(msg.type)) {
             fetchData();
           }
         } catch {}

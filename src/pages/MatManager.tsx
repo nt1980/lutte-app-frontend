@@ -58,6 +58,12 @@ export default function MatManager() {
     onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur', { duration: 5000 }),
   });
 
+  const promote = useMutation({
+    mutationFn: (queueId: string) => api.put(`/api/queue/${queueId}/promote`, {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['queue', id] }); toast.success('Combat lancé sur le tapis'); },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur', { duration: 5000 }),
+  });
+
   const confirm = useMutation({
     mutationFn: (queueId: string) => api.put(`/api/queue/${queueId}/confirm`, {}),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['queue', id] }); },
@@ -148,7 +154,9 @@ export default function MatManager() {
                       <CurrentMatchCard
                         match={current}
                         onUnassign={() => unassign.mutate(current.id)}
+                        onPromote={() => promote.mutate(current.id)}
                         isUnassigning={unassign.isPending}
+                        isPromoting={promote.isPending}
                       />
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', color: '#2d2d2d', fontSize: 12 }}>Tapis libre</div>
@@ -236,7 +244,12 @@ export default function MatManager() {
 
 /* ─── Sous-composants ─── */
 
-function CurrentMatchCard({ match, onUnassign, isUnassigning }: { match: any; onUnassign: () => void; isUnassigning: boolean }) {
+function CurrentMatchCard({
+  match, onUnassign, onPromote, isUnassigning, isPromoting,
+}: {
+  match: any; onUnassign: () => void; onPromote: () => void;
+  isUnassigning: boolean; isPromoting: boolean;
+}) {
   const isOnMat = match.status === 'on_mat';
   return (
     <div style={{ background: isOnMat ? 'rgba(251,191,36,0.06)' : 'rgba(96,165,250,0.05)', border: `1px solid ${isOnMat ? 'rgba(251,191,36,0.18)' : 'rgba(96,165,250,0.15)'}`, borderRadius: 12, overflow: 'hidden' }}>
@@ -267,14 +280,24 @@ function CurrentMatchCard({ match, onUnassign, isUnassigning }: { match: any; on
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
           </div>
         </div>
-        <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center', marginBottom: isOnMat && match.match_id ? 10 : 0 }}>
+        <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center', marginBottom: 10 }}>
           {match.age_category} · {match.weight_category}kg · {STYLE_SHORT[match.style] ?? match.style}
         </div>
-        {isOnMat && match.match_id && (
+
+        {isOnMat && match.match_id ? (
           <Link to={`/ref/${match.match_id}`} target="_blank" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#fff', background: '#dc2626', borderRadius: 8, padding: '8px 0', textDecoration: 'none' }}>
             Vue arbitre →
           </Link>
-        )}
+        ) : !isOnMat ? (
+          /* Bouton "Lancer ce combat" — passe de ready → on_mat */
+          <button
+            onClick={onPromote}
+            disabled={isPromoting}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 13, fontWeight: 800, color: '#fff', background: 'rgba(34,197,94,0.85)', border: 'none', borderRadius: 8, padding: '10px 0', cursor: 'pointer', letterSpacing: '0.02em' }}
+          >
+            ▶ {isPromoting ? 'Lancement…' : 'Lancer ce combat'}
+          </button>
+        ) : null}
       </div>
     </div>
   );
