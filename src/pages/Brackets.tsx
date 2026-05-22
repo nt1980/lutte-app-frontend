@@ -249,7 +249,7 @@ function BracketView({ matches }: { matches: any[] }) {
               </div>
 
               {/* ── Match cards ── */}
-              {mainRounds.map(([rk, rMatches], colIdx) =>
+              {mainRounds.map(([, rMatches], colIdx) =>
                 (rMatches as any[]).map((m, idx) => (
                   <div
                     key={m.id}
@@ -451,6 +451,15 @@ function computePoolRankings(
     // 5. Égalité parfaite
     return 0;
   });
+}
+
+function RoundColumn({ matches, label }: { matches: any[]; label: string }) {
+  return (
+    <div style={{ minWidth: 220, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{label}</div>
+      {matches.map((m: any) => <MatchCard key={m.id} match={m} />)}
+    </div>
+  );
 }
 
 function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
