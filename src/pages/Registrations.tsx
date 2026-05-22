@@ -18,6 +18,19 @@ const TD: React.CSSProperties = { padding: '11px 16px', fontSize: 13, borderBott
 
 import React from 'react';
 
+function GBadge({ g }: { g: string }) {
+  const cfg = g === 'M'
+    ? { text: 'M', bg: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: 'rgba(59,130,246,0.25)' }
+    : g === 'F'
+    ? { text: 'F', bg: 'rgba(236,72,153,0.12)', color: '#f472b6', border: 'rgba(236,72,153,0.25)' }
+    : { text: '?', bg: 'rgba(107,114,128,0.1)',  color: '#9ca3af', border: 'rgba(107,114,128,0.2)' };
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, flexShrink: 0 }}>
+      {cfg.text}
+    </span>
+  );
+}
+
 interface RegForm {
   athlete_id: string;
   final_age_category: string;
@@ -191,7 +204,7 @@ export default function Registrations() {
                 const w = WEIGH_STATUS[r.weigh_in_status] || WEIGH_STATUS.pending;
                 return (
                   <tr key={r.id}>
-                    <td style={TD}><span style={{ fontWeight: 600, color: '#fff' }}>{r.last_name} {r.first_name}</span></td>
+                    <td style={TD}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#fff' }}><GBadge g={r.gender} />{r.last_name} {r.first_name}</span></td>
                     <td style={TD}><span style={{ fontFamily: 'monospace', fontSize: 12, color: '#6b7280', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: 5 }}>{r.license_number || '—'}</span></td>
                     <td style={{ ...TD, color: '#6b7280' }}>{r.club_short || r.club_name || '—'}</td>
                     <td style={TD}>

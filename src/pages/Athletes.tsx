@@ -22,9 +22,23 @@ interface FormData {
   default_weight_kg: string;
 }
 
+function GBadge({ g }: { g: string }) {
+  const cfg = g === 'M'
+    ? { text: 'M',   bg: 'rgba(59,130,246,0.12)',  color: '#60a5fa', border: 'rgba(59,130,246,0.25)' }
+    : g === 'F'
+    ? { text: 'F',   bg: 'rgba(236,72,153,0.12)',  color: '#f472b6', border: 'rgba(236,72,153,0.25)' }
+    : { text: '?',   bg: 'rgba(107,114,128,0.1)',  color: '#9ca3af', border: 'rgba(107,114,128,0.2)' };
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+      {cfg.text}
+    </span>
+  );
+}
+
 export default function Athletes() {
   const qc = useQueryClient();
   const [search,       setSearch]       = useState('');
+  const [filterGender, setFilterGender] = useState<string | null>(null);
   const [showImport,   setShowImport]   = useState(false);
   const [showAddForm,  setShowAddForm]  = useState(false);
   const [csvText,      setCsvText]      = useState('');
@@ -40,10 +54,13 @@ export default function Athletes() {
     default_weight_kg: '',
   });
 
-  const { data: athletes = [], isLoading } = useQuery({
+  const { data: athletesRaw = [], isLoading } = useQuery({
     queryKey: ['athletes', search],
     queryFn: () => api.get('/api/athletes', { params: { search } }).then(r => r.data),
   });
+  const athletes = filterGender
+    ? athletesRaw.filter((a: any) => a.gender === filterGender)
+    : athletesRaw;
 
   const importMutation = useMutation({
     mutationFn: (csv: string) => api.post('/api/import/athletes', { csv_data: csv }),
@@ -99,7 +116,7 @@ export default function Athletes() {
     <Layout>
       <PageHeader
         title="Licenciés FFLDA"
-        subtitle={`${athletes.length} athlètes dans la base`}
+        subtitle={`${athletesRaw.length} athlètes dans la base`}
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button onClick={() => setShowAddForm(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#10b981', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)' }}>
@@ -119,20 +136,48 @@ export default function Athletes() {
 
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Search */}
-        <div style={{ position: 'relative', maxWidth: 340 }}>
-          <Search size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-          <input
-            style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 36px', fontSize: 13, color: '#fff', outline: 'none' }}
-            placeholder="Nom, prénom, numéro de licence…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-          {search && (
-            <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}>
-              <X size={13} />
-            </button>
-          )}
+        {/* Gender filter + Search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Gender pills */}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[{ label: 'Tous', val: null }, { label: 'M', val: 'M' }, { label: 'F', val: 'F' }].map(({ label, val }) => {
+              const active = filterGender === val;
+              const isM = val === 'M', isF = val === 'F';
+              return (
+                <button key={label} onClick={() => setFilterGender(val)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: active ? 700 : 500, cursor: 'pointer', border: 'none',
+                    background: active
+                      ? (isM ? 'rgba(59,130,246,0.25)' : isF ? 'rgba(236,72,153,0.25)' : 'rgba(255,255,255,0.1)')
+                      : 'rgba(255,255,255,0.04)',
+                    color: active
+                      ? (isM ? '#60a5fa' : isF ? '#f472b6' : '#fff')
+                      : '#6b7280',
+                    boxShadow: active
+                      ? (isM ? '0 0 0 1px rgba(59,130,246,0.4)' : isF ? '0 0 0 1px rgba(236,72,153,0.4)' : '0 0 0 1px rgba(255,255,255,0.15)')
+                      : 'none',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          {/* Search */}
+          <div style={{ position: 'relative', maxWidth: 300, flex: 1 }}>
+            <Search size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <input
+              style={{ width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 36px', fontSize: 13, color: '#fff', outline: 'none' }}
+              placeholder="Nom, prénom, numéro de licence…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}>
+                <X size={13} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -159,10 +204,11 @@ export default function Athletes() {
               {athletes.map((a: any) => (
                 <tr key={a.id}>
                   <td style={TD}>
-                    <div style={{ fontWeight: 600, color: '#fff' }}>{a.last_name} {a.first_name}</div>
-                    <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>
-                      {a.gender === 'M' ? '♂ Masculin' : '♀ Féminin'}{a.nationality ? ` · ${a.nationality}` : ''}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <GBadge g={a.gender} />
+                      <span style={{ fontWeight: 600, color: '#fff' }}>{a.last_name} {a.first_name}</span>
                     </div>
+                    {a.nationality && <div style={{ fontSize: 11, color: '#374151', marginTop: 2, paddingLeft: 24 }}>{a.nationality}</div>}
                   </td>
                   <td style={TD}><span style={{ fontFamily: 'monospace', fontSize: 12, color: '#6b7280', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: 5 }}>{a.license_number || '—'}</span></td>
                   <td style={{ ...TD, color: '#6b7280' }}>{a.club_short || a.club_name || '—'}</td>

@@ -737,7 +737,7 @@ export default function Brackets() {
                     onClick={() => setSelectedComp(c.id)}
                     style={{ padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#dc2626' : 'rgba(255,255,255,0.06)', color: isActive ? '#fff' : '#6b7280', transition: 'all 0.15s' }}
                   >
-                    {c.age_category} · {c.weight_category}kg {c.gender === 'M' ? '♂' : '♀'}
+                    {c.age_category} · {c.weight_category}kg {c.gender}
                   </button>
                 );
               })}
@@ -835,7 +835,7 @@ export default function Brackets() {
                     Ce tableau uniquement
                   </div>
                   <div style={{ fontSize: 11, color: '#4b5563', marginTop: 3 }}>
-                    {comp.weight_category}kg {comp.gender === 'M' ? '♂' : '♀'} · {comp.age_category} · {STYLE_LABELS[comp.style] ?? comp.style}
+                    {comp.weight_category}kg {comp.gender} · {comp.age_category} · {STYLE_LABELS[comp.style] ?? comp.style}
                   </div>
                 </div>
               </button>

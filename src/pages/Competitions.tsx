@@ -45,8 +45,9 @@ export default function Competitions() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
 
-  const [filterStyle, setFilterStyle]   = useState<string | null>(null);
-  const [filterAge,   setFilterAge]     = useState<string | null>(null);
+  const [filterStyle,  setFilterStyle]  = useState<string | null>(null);
+  const [filterAge,    setFilterAge]    = useState<string | null>(null);
+  const [filterGender, setFilterGender] = useState<string | null>(null);
 
   const { data: competitions = [] } = useQuery({
     queryKey: ['competitions', id],
@@ -80,8 +81,9 @@ export default function Competitions() {
 
   // Filtrer la liste affichée selon les chips sélectionnés
   const visible = competitions.filter((c: any) => {
-    if (filterStyle && c.style !== filterStyle) return false;
-    if (filterAge   && c.age_category !== filterAge) return false;
+    if (filterStyle  && c.style !== filterStyle)             return false;
+    if (filterAge    && c.age_category !== filterAge)        return false;
+    if (filterGender && c.gender !== filterGender)           return false;
     return true;
   });
 
@@ -94,12 +96,13 @@ export default function Competitions() {
 
   const generateLabel = (() => {
     const parts = [];
-    if (filterStyle) parts.push(STYLE_LABELS[filterStyle] ?? filterStyle);
-    if (filterAge)   parts.push(filterAge);
+    if (filterStyle)  parts.push(STYLE_LABELS[filterStyle] ?? filterStyle);
+    if (filterAge)    parts.push(filterAge);
+    if (filterGender) parts.push(filterGender === 'M' ? 'Masculin' : filterGender === 'F' ? 'Féminin' : 'Mixte');
     return parts.length ? `Générer — ${parts.join(' · ')}` : 'Générer les compétitions';
   })();
 
-  const hasFilters = filterStyle !== null || filterAge !== null;
+  const hasFilters = filterStyle !== null || filterAge !== null || filterGender !== null;
 
   return (
     <Layout tournamentId={id}>
@@ -137,7 +140,7 @@ export default function Competitions() {
               </span>
               {hasFilters && (
                 <button
-                  onClick={() => { setFilterStyle(null); setFilterAge(null); }}
+                  onClick={() => { setFilterStyle(null); setFilterAge(null); setFilterGender(null); }}
                   style={{ marginLeft: 'auto', fontSize: 11, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Effacer
@@ -181,6 +184,21 @@ export default function Competitions() {
               </div>
             )}
 
+            {/* Genre */}
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Genre</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <Chip label="Tous" active={filterGender === null} onClick={() => setFilterGender(null)} />
+                {[
+                  { value: 'M',  label: 'Masculin' },
+                  { value: 'F',  label: 'Féminin'  },
+                  { value: 'MX', label: 'Mixte'    },
+                ].map(({ value, label }) => (
+                  <Chip key={value} label={label} active={filterGender === value} onClick={() => setFilterGender(filterGender === value ? null : value)} />
+                ))}
+              </div>
+            </div>
+
             {/* Info résultat */}
             {hasFilters && (
               <div style={{ fontSize: 11, color: '#4b5563', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 10, marginTop: 2 }}>
@@ -221,8 +239,11 @@ export default function Competitions() {
                     <div key={c.id} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                         <div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
-                            {c.weight_category} kg · {c.gender === 'M' ? '♂ Masculin' : '♀ Féminin'}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700, color: '#fff' }}>
+                            {c.weight_category} kg
+                            {c.gender === 'M'  && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.25)' }}>M</span>}
+                            {c.gender === 'F'  && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: 'rgba(236,72,153,0.12)', color: '#f472b6', border: '1px solid rgba(236,72,153,0.25)' }}>F</span>}
+                            {c.gender === 'MX' && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: 'rgba(167,139,250,0.12)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.25)' }}>MX</span>}
                           </div>
                           <div style={{ fontSize: 12, color: '#4b5563', marginTop: 3, textTransform: 'capitalize' }}>
                             {STYLE_LABELS[c.style] ?? c.style}
