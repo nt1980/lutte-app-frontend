@@ -184,18 +184,18 @@ export default function Athletes() {
         <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>{['Combattant', 'Licence', 'Club', 'Catégorie', 'Style', 'Poids', 'Naissance'].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
+              <tr>{['Sexe', 'Combattant', 'Licence', 'Club', 'Catégorie', 'Style', 'Poids', 'Naissance'].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={7} style={{ ...TD, textAlign: 'center', padding: '48px 16px' }}>
+                <tr><td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '48px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 5 }}>
                     {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#374151', animation: 'bounce 1s infinite', animationDelay: `${i * 150}ms` }} />)}
                   </div>
                 </td></tr>
               )}
               {!isLoading && athletes.length === 0 && (
-                <tr><td colSpan={7} style={{ ...TD, textAlign: 'center', padding: '64px 16px' }}>
+                <tr><td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '64px 16px' }}>
                   <Users size={28} color="#374151" style={{ margin: '0 auto 10px' }} />
                   <div style={{ color: '#4b5563', fontWeight: 500 }}>{search ? 'Aucun résultat' : 'Aucun licencié'}</div>
                   {!search && <div style={{ color: '#374151', fontSize: 12, marginTop: 4 }}>Importez un fichier CSV FFLDA pour peupler la base</div>}
@@ -203,12 +203,10 @@ export default function Athletes() {
               )}
               {athletes.map((a: any) => (
                 <tr key={a.id}>
+                  <td style={{ ...TD, textAlign: 'center', width: 52 }}><GBadge g={a.gender} /></td>
                   <td style={TD}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <GBadge g={a.gender} />
-                      <span style={{ fontWeight: 600, color: '#fff' }}>{a.last_name} {a.first_name}</span>
-                    </div>
-                    {a.nationality && <div style={{ fontSize: 11, color: '#374151', marginTop: 2, paddingLeft: 24 }}>{a.nationality}</div>}
+                    <span style={{ fontWeight: 600, color: '#fff' }}>{a.last_name} {a.first_name}</span>
+                    {a.nationality && <div style={{ fontSize: 11, color: '#374151', marginTop: 2 }}>{a.nationality}</div>}
                   </td>
                   <td style={TD}><span style={{ fontFamily: 'monospace', fontSize: 12, color: '#6b7280', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: 5 }}>{a.license_number || '—'}</span></td>
                   <td style={{ ...TD, color: '#6b7280' }}>{a.club_short || a.club_name || '—'}</td>

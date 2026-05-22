@@ -180,21 +180,21 @@ export default function Registrations() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Combattant', 'Licence', 'Club', 'Catégorie', 'Style', 'Pesée', 'Actions'].map(h => (
+                {['Combattant', 'Sexe', 'Licence', 'Club', 'Catégorie', 'Style', 'Pesée', 'Actions'].map(h => (
                   <th key={h} style={TH}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {isLoading && (
-                <tr><td colSpan={7} style={{ ...TD, textAlign: 'center', padding: '48px 16px' }}>
+                <tr><td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '48px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 5 }}>
                     {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#374151', animation: 'bounce 1s infinite', animationDelay: `${i * 150}ms` }} />)}
                   </div>
                 </td></tr>
               )}
               {!isLoading && filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ ...TD, textAlign: 'center', padding: '64px 16px' }}>
+                <tr><td colSpan={8} style={{ ...TD, textAlign: 'center', padding: '64px 16px' }}>
                   <Users size={28} color="#374151" style={{ margin: '0 auto 10px' }} />
                   <div style={{ color: '#4b5563', fontWeight: 500 }}>{search ? 'Aucun résultat' : 'Aucun combattant inscrit'}</div>
                   {!search && <div style={{ color: '#374151', fontSize: 12, marginTop: 4 }}>Importez un fichier CSV FFLDA pour commencer</div>}
@@ -204,7 +204,8 @@ export default function Registrations() {
                 const w = WEIGH_STATUS[r.weigh_in_status] || WEIGH_STATUS.pending;
                 return (
                   <tr key={r.id}>
-                    <td style={TD}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#fff' }}><GBadge g={r.gender} />{r.last_name} {r.first_name}</span></td>
+                    <td style={TD}><span style={{ fontWeight: 600, color: '#fff' }}>{r.last_name} {r.first_name}</span></td>
+                    <td style={{ ...TD, textAlign: 'center', width: 52 }}><GBadge g={r.gender} /></td>
                     <td style={TD}><span style={{ fontFamily: 'monospace', fontSize: 12, color: '#6b7280', background: 'rgba(255,255,255,0.04)', padding: '2px 6px', borderRadius: 5 }}>{r.license_number || '—'}</span></td>
                     <td style={{ ...TD, color: '#6b7280' }}>{r.club_short || r.club_name || '—'}</td>
                     <td style={TD}>
