@@ -44,7 +44,8 @@ export default function MatManager() {
     queryFn: () => api.get(`/api/tournaments/${id}/users`).then(r => r.data).catch(() => []),
     staleTime: 30000,
   });
-  const refereeUsers = tournamentUsers.filter((u: any) => u.role === 'referee');
+  // Tous les utilisateurs du tournoi peuvent être assignés comme arbitres sur un tapis
+  const refereeUsers = tournamentUsers;
 
   // Rôle de l'utilisateur courant dans ce tournoi
   const myRole: string = tournamentUsers.find((u: any) => u.user_id === user?.id)?.role ?? '';
@@ -200,8 +201,11 @@ export default function MatManager() {
                           }}
                         >
                           <option value="">— Aucun arbitre —</option>
+                          {refereeUsers.length === 0 && (
+                            <option disabled value="">Ajoutez des utilisateurs dans "Utilisateurs"</option>
+                          )}
                           {refereeUsers.map((u: any) => (
-                            <option key={u.user_id} value={u.user_id}>{u.user_name || u.user_email}</option>
+                            <option key={u.user_id} value={u.user_id}>{u.user_name || u.name || u.user_email || u.email}</option>
                           ))}
                         </select>
                         {hasActivity && (

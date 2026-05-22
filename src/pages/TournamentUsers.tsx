@@ -95,15 +95,15 @@ export default function TournamentUsers() {
           ) : (
             users.map((u: any, i: number) => {
               const role = ROLES.find(r => r.value === u.role) || { label: u.role, color: '#6b7280', bg: 'rgba(107,114,128,0.1)' };
-              const initials = u.name?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+              const initials = (u.user_name || u.name)?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
               return (
                 <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
                   <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#9ca3af', flexShrink: 0 }}>
                     {initials}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{u.name}</div>
-                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>{u.email}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{u.user_name || u.name}</div>
+                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>{u.user_email || u.email}</div>
                   </div>
                   <span style={{ background: role.bg, color: role.color, borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
                     {role.label}
