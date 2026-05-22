@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Activity, Tv, AlertCircle, Clock, ChevronRight } from 'lucide-react';
+import { Activity, Tv, AlertCircle, Clock, Plus, Trash2, Pencil, Check, X, Settings2, CornerDownLeft } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -27,6 +27,13 @@ export default function MatManager() {
   const qc = useQueryClient();
   const isMobile = useIsMobile();
 
+  const [showManage, setShowManage] = useState(false);
+  const [newMatName, setNewMatName] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  /* ── Data ── */
   const { data: mats = [] } = useQuery({
     queryKey: ['mats', id],
     queryFn: () => api.get(`/api/tournaments/${id}/mats`).then(r => r.data),
@@ -38,19 +45,62 @@ export default function MatManager() {
     refetchInterval: 5000,
   });
 
+  /* ── Mutations queue ── */
   const assign = useMutation({
-    mutationFn: ({ queueId, matId }: any) => api.put(`/api/queue/${queueId}/assign-mat`, { mat_id: matId }),
+    mutationFn: ({ queueId, matId }: { queueId: string; matId: string }) =>
+      api.put(`/api/queue/${queueId}/assign-mat`, { mat_id: matId }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['queue', id] }); toast.success('Combat affecté'); },
     onError: () => toast.error('Erreur'),
   });
 
-  // Matches par tapis
+  const unassign = useMutation({
+    mutationFn: (queueId: string) => api.put(`/api/queue/${queueId}/unassign`, {}),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['queue', id] }); toast.success('Combat remis en attente'); },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur', { duration: 5000 }),
+  });
+
+  /* ── Mutations tapis ── */
+  const addMat = useMutation({
+    mutationFn: (name: string) => api.post(`/api/tournaments/${id}/mats`, { name }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mats', id] });
+      setNewMatName('');
+      toast.success('Tapis ajouté');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur'),
+  });
+
+  const renameMat = useMutation({
+    mutationFn: ({ matId, name }: { matId: string; name: string }) =>
+      api.put(`/api/mats/${matId}`, { name }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mats', id] });
+      setEditingId(null);
+      toast.success('Tapis renommé');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur'),
+  });
+
+  const deleteMat = useMutation({
+    mutationFn: (matId: string) => api.delete(`/api/mats/${matId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mats', id] });
+      qc.invalidateQueries({ queryKey: ['queue', id] });
+      setConfirmDeleteId(null);
+      toast.success('Tapis supprimé');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur', { duration: 6000 }),
+  });
+
+  /* ── Données dérivées ── */
   const byMat = mats.reduce((acc: any, mat: any) => {
-    acc[mat.id] = { mat, matches: queue.filter((q: any) => q.mat_id === mat.id) };
+    const matches = queue
+      .filter((q: any) => q.mat_id === mat.id)
+      .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
+    acc[mat.id] = { mat, matches };
     return acc;
   }, {});
 
-  // Queue globale non affectée, triée par position
   const unassigned: any[] = queue
     .filter((q: any) => !q.mat_id && q.status === 'ready')
     .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
@@ -62,18 +112,20 @@ export default function MatManager() {
       <PageHeader
         title="Gestion des tapis"
         subtitle={`${mats.length} tapis · ${activeCount} combat${activeCount !== 1 ? 's' : ''} en cours${unassigned.length > 0 ? ` · ${unassigned.length} en attente` : ''}`}
+        actions={
+          <button
+            onClick={() => setShowManage(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.06)', color: '#d1d5db', padding: '7px 14px', borderRadius: 9, fontSize: 12, fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
+          >
+            <Settings2 size={13} /> Gérer les tapis
+          </button>
+        }
       />
 
       <div style={{ padding: isMobile ? '12px' : '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {queue.length === 0 && mats.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16 }}>
-            <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <Activity size={28} color="#374151" strokeWidth={1.5} />
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Aucun tapis configuré</div>
-            <div style={{ fontSize: 13, color: '#4b5563' }}>Configurez les tapis dans les paramètres du tournoi</div>
-          </div>
+        {mats.length === 0 ? (
+          <EmptyState onManage={() => setShowManage(true)} />
         ) : (
           <>
             {/* ── Grille des tapis ── */}
@@ -84,37 +136,17 @@ export default function MatManager() {
               alignItems: 'start',
             }}>
               {Object.values(byMat).map(({ mat, matches }: any) => {
-                const current  = matches.find((m: any) => m.status === 'on_mat');
-                const matQueue = matches.filter((m: any) => m.status === 'ready')
-                  .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
+                const current  = matches.find((m: any) => m.status === 'on_mat') ?? matches[0] ?? null;
+                const matQueue = matches.filter((m: any) => m !== current);
                 const hasActivity = !!current;
 
                 return (
-                  <div
-                    key={mat.id}
-                    style={{
-                      background: '#0e0e0e',
-                      border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`,
-                      borderRadius: 16,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    {/* ── Header du tapis ── */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '12px 14px',
-                      borderBottom: `1px solid ${hasActivity ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.05)'}`,
-                      background: hasActivity ? 'rgba(251,191,36,0.04)' : 'transparent',
-                    }}>
+                  <div key={mat.id} style={{ background: '#0e0e0e', border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`, borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+                    {/* Header */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${hasActivity ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.05)'}`, background: hasActivity ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{
-                          width: 34, height: 34, borderRadius: 9,
-                          background: hasActivity ? 'rgba(251,191,36,0.14)' : 'rgba(255,255,255,0.05)',
-                          border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 9, background: hasActivity ? 'rgba(251,191,36,0.14)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Activity size={15} color={hasActivity ? '#fbbf24' : '#4b5563'} />
                         </div>
                         <div>
@@ -125,66 +157,25 @@ export default function MatManager() {
                           }
                         </div>
                       </div>
-                      <Link
-                        to={`/mat/${mat.id}`}
-                        target="_blank"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.18)', borderRadius: 8, padding: '5px 11px', textDecoration: 'none' }}
-                      >
+                      <Link to={`/mat/${mat.id}`} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.18)', borderRadius: 8, padding: '5px 11px', textDecoration: 'none' }}>
                         <Tv size={11} /> Live
                       </Link>
                     </div>
 
-                    <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-                      {/* ── Combat en cours ── */}
+                      {/* Combat en cours */}
                       {current ? (
-                        <div style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.18)', borderRadius: 12, overflow: 'hidden' }}>
-                          <div style={{ padding: '6px 12px', background: 'rgba(251,191,36,0.08)', borderBottom: '1px solid rgba(251,191,36,0.12)' }}>
-                            <span style={{ fontSize: 9, fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                              ● Combat en cours
-                            </span>
-                          </div>
-                          <div style={{ padding: '12px' }}>
-                            {/* Noms */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-                                <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {current.red_name || '?'}
-                                </span>
-                              </div>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>vs</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                                <span style={{ fontSize: 13, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                                  {current.blue_name || '?'}
-                                </span>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
-                              </div>
-                            </div>
-                            {/* Catégorie */}
-                            <div style={{ fontSize: 10, color: '#4b5563', marginBottom: current.match_id ? 10 : 0, textAlign: 'center' }}>
-                              {current.age_category} · {current.weight_category}kg · {STYLE_SHORT[current.style] ?? current.style}
-                            </div>
-                            {current.match_id && (
-                              <Link
-                                to={`/ref/${current.match_id}`}
-                                target="_blank"
-                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#fff', background: '#dc2626', borderRadius: 8, padding: '8px 0', textDecoration: 'none' }}
-                              >
-                                Vue arbitre <ChevronRight size={13} />
-                              </Link>
-                            )}
-                          </div>
-                        </div>
+                        <CurrentMatchCard match={current} isMobile={isMobile} />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', color: '#2d2d2d', fontSize: 12 }}>
                           Tapis libre
                         </div>
                       )}
 
-                      {/* ── Queue spécifique à ce tapis (rare mais possible) ── */}
+                      {/* File du tapis */}
                       {matQueue.length > 0 && (
-                        <QueueSection items={matQueue} label="File de ce tapis" />
+                        <MatQueueSection items={matQueue} onUnassign={id => unassign.mutate(id)} isPending={unassign.isPending} />
                       )}
                     </div>
                   </div>
@@ -192,76 +183,42 @@ export default function MatManager() {
               })}
             </div>
 
-            {/* ── File d'attente globale — combats non affectés ── */}
+            {/* ── File globale non affectée ── */}
             {unassigned.length > 0 && (
               <div style={{ background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
-                {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '12px 14px' : '13px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(248,113,113,0.03)' }}>
                   <AlertCircle size={13} color="#f87171" />
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Combats en attente</span>
-                  <span style={{ background: 'rgba(248,113,113,0.14)', color: '#f87171', borderRadius: 6, padding: '1px 9px', fontSize: 11, fontWeight: 700 }}>
-                    {unassigned.length}
-                  </span>
-                  <span style={{ marginLeft: 'auto', fontSize: 10, color: '#374151' }}>
-                    Affecter à un tapis →
-                  </span>
+                  <span style={{ background: 'rgba(248,113,113,0.14)', color: '#f87171', borderRadius: 6, padding: '1px 9px', fontSize: 11, fontWeight: 700 }}>{unassigned.length}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 10, color: '#374151' }}>Affecter à un tapis →</span>
                 </div>
 
-                {/* Liste condensée */}
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   {unassigned.map((q: any, idx: number) => (
-                    <div
-                      key={q.id}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: isMobile ? '10px 14px' : '9px 18px',
-                        borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                        background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
-                      }}
-                    >
-                      {/* Position */}
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#374151', width: 18, textAlign: 'center', flexShrink: 0 }}>
-                        {q.position ?? idx + 1}
-                      </span>
+                    <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: isMobile ? '10px 14px' : '9px 18px', borderTop: idx > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#374151', width: 18, textAlign: 'center', flexShrink: 0 }}>{q.position ?? idx + 1}</span>
 
-                      {/* Rouge */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, minWidth: 0 }}>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-                        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {q.red_name || '?'}
-                        </span>
+                        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
                       </div>
 
                       <span style={{ fontSize: 10, fontWeight: 700, color: '#2d2d2d', flexShrink: 0 }}>vs</span>
 
-                      {/* Bleu */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, minWidth: 0, justifyContent: 'flex-end' }}>
-                        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                          {q.blue_name || '?'}
-                        </span>
+                        <span style={{ fontSize: isMobile ? 13 : 12, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{q.blue_name || '?'}</span>
                         <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                       </div>
 
-                      {/* Catégorie */}
-                      <span style={{ fontSize: 10, color: '#4b5563', whiteSpace: 'nowrap', flexShrink: 0, display: isMobile ? 'none' : 'block' }}>
-                        {q.age_category} · {q.weight_category}kg
-                      </span>
+                      <span style={{ fontSize: 10, color: '#4b5563', whiteSpace: 'nowrap', flexShrink: 0, display: isMobile ? 'none' : 'block' }}>{q.age_category} · {q.weight_category}kg</span>
 
-                      {/* Boutons d'affectation */}
                       <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
                         {mats.map((mat: any) => (
                           <button
                             key={mat.id}
                             onClick={() => assign.mutate({ queueId: q.id, matId: mat.id })}
                             title={`Affecter à ${mat.name}`}
-                            style={{
-                              fontSize: 10, fontWeight: 700,
-                              padding: '4px 9px', borderRadius: 6,
-                              background: 'rgba(255,255,255,0.06)',
-                              border: '1px solid rgba(255,255,255,0.1)',
-                              color: '#9ca3af', cursor: 'pointer',
-                              whiteSpace: 'nowrap',
-                            }}
+                            style={{ fontSize: 10, fontWeight: 700, padding: '4px 9px', borderRadius: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', cursor: 'pointer', whiteSpace: 'nowrap' }}
                           >
                             {mat.name.replace('Tapis ', '')}
                           </button>
@@ -282,47 +239,229 @@ export default function MatManager() {
           </>
         )}
       </div>
+
+      {/* ── Modal gestion des tapis ── */}
+      {showManage && (
+        <ManageMatsModal
+          mats={mats}
+          tournamentId={id!}
+          newMatName={newMatName}
+          setNewMatName={setNewMatName}
+          editingId={editingId}
+          editingName={editingName}
+          setEditingId={setEditingId}
+          setEditingName={setEditingName}
+          confirmDeleteId={confirmDeleteId}
+          setConfirmDeleteId={setConfirmDeleteId}
+          onAdd={() => { if (newMatName.trim()) addMat.mutate(newMatName.trim()); }}
+          onRename={() => { if (editingId && editingName.trim()) renameMat.mutate({ matId: editingId, name: editingName.trim() }); }}
+          onDelete={() => { if (confirmDeleteId) deleteMat.mutate(confirmDeleteId); }}
+          onClose={() => { setShowManage(false); setEditingId(null); setConfirmDeleteId(null); }}
+          addPending={addMat.isPending}
+          renamePending={renameMat.isPending}
+          deletePending={deleteMat.isPending}
+        />
+      )}
     </Layout>
   );
 }
 
-function QueueSection({ items, label }: { items: any[]; label: string }) {
+/* ─────────────────────────────────────────────
+   Sub-composants
+───────────────────────────────────────────── */
+
+function EmptyState({ onManage }: { onManage: () => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16 }}>
+      <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+        <Activity size={28} color="#374151" strokeWidth={1.5} />
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Aucun tapis configuré</div>
+      <div style={{ fontSize: 13, color: '#4b5563', marginBottom: 16 }}>Ajoutez des tapis pour gérer les combats</div>
+      <button onClick={onManage} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
+        <Plus size={14} /> Ajouter un tapis
+      </button>
+    </div>
+  );
+}
+
+function CurrentMatchCard({ match, isMobile }: { match: any; isMobile: boolean }) {
+  const isOnMat = match.status === 'on_mat';
+  return (
+    <div style={{ background: isOnMat ? 'rgba(251,191,36,0.06)' : 'rgba(96,165,250,0.05)', border: `1px solid ${isOnMat ? 'rgba(251,191,36,0.18)' : 'rgba(96,165,250,0.15)'}`, borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ padding: '6px 12px', background: isOnMat ? 'rgba(251,191,36,0.08)' : 'rgba(96,165,250,0.07)', borderBottom: `1px solid ${isOnMat ? 'rgba(251,191,36,0.12)' : 'rgba(96,165,250,0.1)'}` }}>
+        <span style={{ fontSize: 9, fontWeight: 800, color: isOnMat ? '#fbbf24' : '#60a5fa', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          {isOnMat ? '● Combat en cours' : '▶ Prochain combat'}
+        </span>
+      </div>
+      <div style={{ padding: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.red_name || '?'}</span>
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>vs</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{match.blue_name || '?'}</span>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+          </div>
+        </div>
+        <div style={{ fontSize: 10, color: '#4b5563', marginBottom: match.match_id && isOnMat ? 10 : 0, textAlign: 'center' }}>
+          {match.age_category} · {match.weight_category}kg · {STYLE_SHORT[match.style] ?? match.style}
+        </div>
+        {match.match_id && isOnMat && (
+          <Link to={`/ref/${match.match_id}`} target="_blank" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#fff', background: '#dc2626', borderRadius: 8, padding: '8px 0', textDecoration: 'none' }}>
+            Vue arbitre →
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MatQueueSection({ items, onUnassign, isPending }: { items: any[]; onUnassign: (id: string) => void; isPending: boolean }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
         <Clock size={10} color="#4b5563" />
         <span style={{ fontSize: 10, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-          {label} ({items.length})
+          File de ce tapis ({items.length})
         </span>
       </div>
       <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, overflow: 'hidden' }}>
         {items.map((q: any, i: number) => (
-          <div
-            key={q.id}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 10px',
-              borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-              background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
-            }}
-          >
-            <span style={{ fontSize: 9, fontWeight: 700, color: '#374151', width: 14, textAlign: 'center', flexShrink: 0 }}>
-              {q.position ?? i + 1}
-            </span>
+          <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: '#374151', width: 14, textAlign: 'center', flexShrink: 0 }}>{q.position ?? i + 1}</span>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-            <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {q.red_name || '?'}
-            </span>
+            <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
             <span style={{ fontSize: 9, color: '#2d2d2d', fontWeight: 700 }}>vs</span>
-            <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>
-              {q.blue_name || '?'}
-            </span>
+            <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'right' }}>{q.blue_name || '?'}</span>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
-            <span style={{ fontSize: 9, color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {q.age_category} · {q.weight_category}kg
-            </span>
+            <span style={{ fontSize: 9, color: '#374151', whiteSpace: 'nowrap', flexShrink: 0 }}>{q.age_category} · {q.weight_category}kg</span>
+            {/* Bouton désaffecter */}
+            {q.status === 'ready' && (
+              <button
+                onClick={() => onUnassign(q.id)}
+                disabled={isPending}
+                title="Désaffecter — remettre en attente"
+                style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 6, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', cursor: 'pointer', padding: 0 }}
+              >
+                <CornerDownLeft size={11} />
+              </button>
+            )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function ManageMatsModal({
+  mats, tournamentId,
+  newMatName, setNewMatName,
+  editingId, editingName, setEditingId, setEditingName,
+  confirmDeleteId, setConfirmDeleteId,
+  onAdd, onRename, onDelete, onClose,
+  addPending, renamePending, deletePending,
+}: any) {
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 24 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: 24, maxWidth: 440, width: '100%', boxShadow: '0 24px 48px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Settings2 size={16} color="#9ca3af" />
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Gérer les tapis</span>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', padding: 4 }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Liste des tapis */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 340, overflowY: 'auto' }}>
+          {mats.length === 0 && (
+            <div style={{ fontSize: 12, color: '#4b5563', textAlign: 'center', padding: '16px 0' }}>Aucun tapis</div>
+          )}
+          {mats.map((mat: any) => (
+            <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 10, padding: '10px 12px' }}>
+              {editingId === mat.id ? (
+                /* Mode édition */
+                <>
+                  <input
+                    autoFocus
+                    value={editingName}
+                    onChange={e => setEditingName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') onRename(); if (e.key === 'Escape') setEditingId(null); }}
+                    style={{ flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '5px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                  />
+                  <button onClick={onRename} disabled={renamePending} title="Valider" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', cursor: 'pointer', padding: 0 }}>
+                    <Check size={13} />
+                  </button>
+                  <button onClick={() => setEditingId(null)} title="Annuler" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', cursor: 'pointer', padding: 0 }}>
+                    <X size={13} />
+                  </button>
+                </>
+              ) : confirmDeleteId === mat.id ? (
+                /* Confirmation suppression */
+                <>
+                  <span style={{ flex: 1, fontSize: 12, color: '#f87171', fontWeight: 600 }}>Supprimer «&nbsp;{mat.name}&nbsp;» ?</span>
+                  <button onClick={onDelete} disabled={deletePending} style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 7, background: '#dc2626', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                    {deletePending ? '…' : 'Supprimer'}
+                  </button>
+                  <button onClick={() => setConfirmDeleteId(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', cursor: 'pointer', padding: 0 }}>
+                    <X size={13} />
+                  </button>
+                </>
+              ) : (
+                /* Mode normal */
+                <>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#374151', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#d1d5db' }}>{mat.name}</span>
+                  <button
+                    onClick={() => { setEditingId(mat.id); setEditingName(mat.name); setConfirmDeleteId(null); }}
+                    title="Renommer"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', cursor: 'pointer', padding: 0 }}
+                  >
+                    <Pencil size={12} />
+                  </button>
+                  <button
+                    onClick={() => { setConfirmDeleteId(mat.id); setEditingId(null); }}
+                    title="Supprimer"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.18)', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Ajouter un tapis */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ajouter un tapis</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={newMatName}
+              onChange={e => setNewMatName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && newMatName.trim()) onAdd(); }}
+              placeholder="Ex : Tapis E"
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 9, padding: '8px 12px', fontSize: 13, color: '#fff', outline: 'none' }}
+            />
+            <button
+              onClick={onAdd}
+              disabled={!newMatName.trim() || addPending}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: newMatName.trim() ? '#dc2626' : 'rgba(255,255,255,0.05)', color: newMatName.trim() ? '#fff' : '#4b5563', padding: '8px 14px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: newMatName.trim() ? 'pointer' : 'default', whiteSpace: 'nowrap' }}
+            >
+              <Plus size={13} /> {addPending ? '…' : 'Ajouter'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
