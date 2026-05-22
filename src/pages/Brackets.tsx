@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Zap, Trophy, RefreshCw, Medal, ChevronRight } from 'lucide-react';
+import { Zap, Trophy, RefreshCw, Medal, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
+import { useAuth } from '../store/auth';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
@@ -18,6 +19,12 @@ const FORMAT_LABEL: Record<string, string> = {
   nordic:            'Nordique',
   pools_finals:      'Poules + Finales',
   bracket_repechage: 'Tableau + Repêchage',
+};
+
+const STYLE_LABELS: Record<string, string> = {
+  libre:    'Lutte libre',
+  greco:    'Gréco-romaine',
+  feminine: 'Lutte féminine',
 };
 
 function MatchCard({ match }: { match: any }) {
@@ -200,7 +207,20 @@ const RANK_STYLE = (i: number) => i === 0
 export default function Brackets() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [selectedComp, setSelectedComp] = useState<string | null>(null);
+  const [deleteModal, setDeleteModal] = useState<'single' | 'bulk' | null>(null);
+
+  // Vérification des droits admin
+  const isGlobalAdmin = (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
+
+  const { data: tournamentUsers = [] } = useQuery({
+    queryKey: ['tournament-users', id],
+    queryFn: () => api.get(`/api/tournaments/${id}/users`).then(r => r.data).catch(() => []),
+    enabled: !isGlobalAdmin, // inutile si déjà super_admin
+  });
+
+  const isTournamentAdmin = isGlobalAdmin || tournamentUsers.some((u: any) => u.user_id === user?.id && u.role === 'tournament_admin');
 
   const { data: competitions = [] } = useQuery({
     queryKey: ['competitions', id],
@@ -212,6 +232,11 @@ export default function Brackets() {
     : competitions[0] || null;
 
   const compId = comp?.id || null;
+
+  // Compétitions ayant la même catégorie d'âge que la compétition sélectionnée
+  const sameAgeComps: any[] = comp
+    ? competitions.filter((c: any) => c.age_category === comp.age_category)
+    : [];
 
   const { data: bracketData, isLoading } = useQuery({
     queryKey: ['bracket', compId],
@@ -231,20 +256,70 @@ export default function Brackets() {
     onError: () => toast.error('Erreur lors de la génération du tableau'),
   });
 
+  const deleteSingle = useMutation({
+    mutationFn: (cid: string) => api.delete(`/api/competitions/${cid}/bracket`),
+    onSuccess: () => {
+      setDeleteModal(null);
+      qc.invalidateQueries({ queryKey: ['bracket', compId] });
+      toast.success('Tableau supprimé');
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || 'Erreur lors de la suppression';
+      toast.error(msg, { duration: 6000 });
+    },
+  });
+
+  const deleteBulk = useMutation({
+    mutationFn: (ageCategory: string) =>
+      api.delete(`/api/tournaments/${id}/brackets`, { params: { age_category: ageCategory } }),
+    onSuccess: (r) => {
+      setDeleteModal(null);
+      qc.invalidateQueries({ queryKey: ['bracket'] });
+      toast.success(`${r.data.deleted} tableau${r.data.deleted !== 1 ? 'x' : ''} supprimé${r.data.deleted !== 1 ? 's' : ''}`);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || 'Erreur lors de la suppression';
+      toast.error(msg, { duration: 6000 });
+    },
+  });
+
+  const isPendingDelete = deleteSingle.isPending || deleteBulk.isPending;
+
+  const handleConfirmDelete = () => {
+    if (!comp) return;
+    if (deleteModal === 'single') {
+      deleteSingle.mutate(comp.id);
+    } else if (deleteModal === 'bulk') {
+      deleteBulk.mutate(comp.age_category);
+    }
+  };
+
   return (
     <Layout tournamentId={id}>
       <PageHeader
         title="Tableaux"
         subtitle="Visualisation et gestion des tableaux de compétition"
         actions={compId ? (
-          <button
-            onClick={() => generateBracket.mutate(compId)}
-            disabled={generateBracket.isPending}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}
-          >
-            <RefreshCw size={14} style={{ animation: generateBracket.isPending ? 'spin 1s linear infinite' : 'none' }} />
-            {generateBracket.isPending ? 'Génération…' : 'Générer le tableau'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isTournamentAdmin && (
+              <button
+                onClick={() => setDeleteModal('single')}
+                title="Supprimer le tableau"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(239,68,68,0.1)', color: '#f87171', padding: '8px 14px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: '1px solid rgba(239,68,68,0.25)', cursor: 'pointer' }}
+              >
+                <Trash2 size={14} />
+                Supprimer
+              </button>
+            )}
+            <button
+              onClick={() => generateBracket.mutate(compId)}
+              disabled={generateBracket.isPending}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', padding: '8px 16px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: generateBracket.isPending ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.3)', opacity: generateBracket.isPending ? 0.7 : 1 }}
+            >
+              <RefreshCw size={14} style={{ animation: generateBracket.isPending ? 'spin 1s linear infinite' : 'none' }} />
+              {generateBracket.isPending ? 'Génération…' : 'Générer le tableau'}
+            </button>
+          </div>
         ) : undefined}
       />
 
@@ -283,7 +358,7 @@ export default function Brackets() {
                   <span>·</span>
                   <span>{comp.athlete_count ?? 0} athlètes</span>
                   <span>·</span>
-                  <span style={{ textTransform: 'capitalize' }}>{comp.style}</span>
+                  <span style={{ textTransform: 'capitalize' }}>{STYLE_LABELS[comp.style] ?? comp.style}</span>
                 </div>
 
                 {isLoading ? (
@@ -334,6 +409,88 @@ export default function Brackets() {
           </>
         )}
       </div>
+
+      {/* ── Modal suppression ── */}
+      {deleteModal && comp && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 24 }}
+          onClick={(e) => { if (e.target === e.currentTarget) setDeleteModal(null); }}
+        >
+          <div style={{ background: '#141414', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 16, padding: 28, maxWidth: 460, width: '100%', boxShadow: '0 24px 48px rgba(0,0,0,0.6)' }}>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(239,68,68,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <AlertTriangle size={18} color="#f87171" />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Supprimer le tableau</div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Cette action est irréversible</div>
+              </div>
+            </div>
+
+            {/* Options */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 22 }}>
+              {/* Option 1 : ce tableau uniquement */}
+              <button
+                onClick={() => setDeleteModal('single')}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: deleteModal === 'single' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)', border: deleteModal === 'single' ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+              >
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${deleteModal === 'single' ? '#f87171' : '#374151'}`, background: deleteModal === 'single' ? '#f87171' : 'transparent', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: deleteModal === 'single' ? '#fff' : '#9ca3af' }}>
+                    Ce tableau uniquement
+                  </div>
+                  <div style={{ fontSize: 11, color: '#4b5563', marginTop: 3 }}>
+                    {comp.weight_category}kg {comp.gender === 'M' ? '♂' : '♀'} · {comp.age_category} · {STYLE_LABELS[comp.style] ?? comp.style}
+                  </div>
+                </div>
+              </button>
+
+              {/* Option 2 : tous les tableaux de la catégorie d'âge */}
+              {sameAgeComps.length > 1 && (
+                <button
+                  onClick={() => setDeleteModal('bulk')}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: deleteModal === 'bulk' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)', border: deleteModal === 'bulk' ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                >
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${deleteModal === 'bulk' ? '#f87171' : '#374151'}`, background: deleteModal === 'bulk' ? '#f87171' : 'transparent', flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: deleteModal === 'bulk' ? '#fff' : '#9ca3af' }}>
+                      Tous les tableaux {comp.age_category}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 3 }}>
+                      {sameAgeComps.length} compétition{sameAgeComps.length !== 1 ? 's' : ''} — toutes catégories de poids
+                    </div>
+                  </div>
+                </button>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setDeleteModal(null)}
+                disabled={isPendingDelete}
+                style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isPendingDelete}
+                style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: 'none', background: '#dc2626', color: '#fff', fontSize: 13, fontWeight: 700, cursor: isPendingDelete ? 'not-allowed' : 'pointer', opacity: isPendingDelete ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                {isPendingDelete ? (
+                  <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> Suppression…</>
+                ) : (
+                  <><Trash2 size={13} /> Confirmer la suppression</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </Layout>
   );
