@@ -327,11 +327,6 @@ function RepechageView({ matches }: { matches: any[] }) {
             const nextN  = !isLast
               ? ((repRounds[colIdx + 1]?.[1] ?? []) as any[]).length
               : 0;
-            // Previous column count — used to detect merge→cross transitions.
-            // When prevN > curN the current column is a merge round, meaning the
-            // NEXT column (same count) is a mirror-cross → lines must cross.
-            const prevN  = ((repRounds[colIdx - 1]?.[1] ?? []) as any[]).length;
-            const isMirrorCross = nextN === curN && prevN > curN;
 
             return (
               <svg key={`rs-${rk}`} style={{
@@ -355,20 +350,7 @@ function RepechageView({ matches }: { matches: any[] }) {
                     );
                   }
 
-                  // Mirror-cross: merge→cross transition — lines cross diagonally
-                  // (e.g. C2 bottom winner feeds Dernier Tour top slot via mirror)
-                  if (isMirrorCross) {
-                    const mirrorIdx = curN - 1 - idx;
-                    const ny = slotCy(nextN, mirrorIdx);
-                    return (
-                      <line key={m.id}
-                        x1={0} y1={cy} x2={BK.lineW} y2={ny}
-                        stroke={connClr} strokeWidth={1.5} />
-                    );
-                  }
-
-                  // Same count non-mirror → straight horizontal (unused in current
-                  // UWW structure but kept as fallback)
+                  // Same count → straight horizontal
                   if (nextN === curN) {
                     return (
                       <line key={m.id}
