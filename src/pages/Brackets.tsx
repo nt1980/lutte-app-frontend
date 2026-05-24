@@ -127,7 +127,7 @@ function MatchCard({ match }: { match: any }) {
           <Link
             to={`/ref/${match.id}`}
             target="_blank"
-            style={{ display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, background: 'rgba(220,38,38,0.15)', color: '#f87171', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 600 }}
+            style={{ display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, background: 'rgba(251,191,36,0.13)', color: '#fbbf24', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 600, border: '1px solid rgba(251,191,36,0.3)' }}
           >
             Arbitrer →
           </Link>
