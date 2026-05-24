@@ -117,9 +117,9 @@ function MatchCard({ match }: { match: any }) {
           <div style={{
             display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, fontWeight: 700,
             borderRadius: 6, padding: '3px 6px',
-            background: winnerIsRed ? 'rgba(220,38,38,0.18)' : 'rgba(59,130,246,0.18)',
-            color: winnerIsRed ? '#f87171' : '#60a5fa',
-            border: `1px solid ${winnerIsRed ? 'rgba(248,113,113,0.3)' : 'rgba(96,165,250,0.3)'}`,
+            background: winnerIsRed ? '#ef4444' : '#3b82f6',
+            color: '#000',
+            border: 'none',
           }}>
             Vainqueur {winnerIsRed ? 'ROUGE' : 'BLEU'}
           </div>
@@ -127,7 +127,7 @@ function MatchCard({ match }: { match: any }) {
           <Link
             to={`/ref/${match.id}`}
             target="_blank"
-            style={{ display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, background: 'rgba(251,191,36,0.13)', color: '#fbbf24', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 600, border: '1px solid rgba(251,191,36,0.3)' }}
+            style={{ display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, background: '#fbbf24', color: '#000', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 700, border: 'none' }}
           >
             Arbitrer →
           </Link>
