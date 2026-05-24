@@ -30,7 +30,7 @@ const STYLE_LABELS: Record<string, string> = {
 // ─── Bracket tree layout constants ──────────────────────────────────────────
 const BK = {
   cardH:  112,   // estimated card height with name + club + button
-  cardW:  192,   // card width
+  cardW:  250,   // card width (192 × 1.3)
   unitH:  132,   // vertical slot height per match in round 0 (cardH + 20px gap)
   lineW:  50,    // width of SVG connector zone between columns
   labelH: 30,    // column label height
@@ -111,15 +111,27 @@ function MatchCard({ match }: { match: any }) {
           ✓ Avance automatiquement
         </div>
       )}
-      {/* Arbitrer */}
+      {/* Arbitrer / Vainqueur */}
       {match.id && !isBye && (
-        <Link
-          to={`/ref/${match.id}`}
-          target="_blank"
-          style={{ display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, background: 'rgba(220,38,38,0.15)', color: '#f87171', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 600 }}
-        >
-          Arbitrer →
-        </Link>
+        isFinished ? (
+          <div style={{
+            display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, fontWeight: 700,
+            borderRadius: 6, padding: '3px 6px',
+            background: winnerIsRed ? 'rgba(220,38,38,0.18)' : 'rgba(59,130,246,0.18)',
+            color: winnerIsRed ? '#f87171' : '#60a5fa',
+            border: `1px solid ${winnerIsRed ? 'rgba(248,113,113,0.3)' : 'rgba(96,165,250,0.3)'}`,
+          }}>
+            Vainqueur {winnerIsRed ? 'ROUGE' : 'BLEU'}
+          </div>
+        ) : (
+          <Link
+            to={`/ref/${match.id}`}
+            target="_blank"
+            style={{ display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, background: 'rgba(220,38,38,0.15)', color: '#f87171', borderRadius: 6, padding: '3px 6px', textDecoration: 'none', fontWeight: 600 }}
+          >
+            Arbitrer →
+          </Link>
+        )
       )}
     </div>
   );
