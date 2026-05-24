@@ -162,15 +162,245 @@ function NordicView({ matches, pools }: { matches: any[]; pools: any[] }) {
   );
 }
 
+// ─── Repechage bracket view ─────────────────────────────────────────────────
+// Renders repechage rounds with the same SVG-connector visual as the main bracket.
+//
+// Round structure (UWW rules):
+//   RA  : first-round losers paired   → P(2k-1) vs P(2k)
+//   C1+ : losing finalist crossed     → Loser A(k) vs Winner RA(M-k+1)
+//   Last column → 2 winners ≡ 3rd place ex-aequo, no small final
+//
+// Connector logic per column transition:
+//   nextN === curN  →  1:1 straight lines (crossing rounds)
+//   nextN  <  curN  →  elbow connectors   (binary merge rounds)
+//   isLast          →  horizontal stub to bronze box
+function RepechageView({ matches }: { matches: any[] }) {
+  const repRounds = (() => {
+    const map: Record<number, any[]> = {};
+    for (const m of matches) {
+      if (m.bracket !== 'repechage' && m.bracket !== 'bronze') continue;
+      const r = m.round ?? 0;
+      if (!map[r]) map[r] = [];
+      map[r].push(m);
+    }
+    for (const r of Object.values(map)) {
+      r.sort((a: any, b: any) => (a.index_in_round ?? 0) - (b.index_in_round ?? 0));
+    }
+    return Object.entries(map)
+      .sort(([a], [b]) => Number(a) - Number(b)) as [string, any[]][];
+  })();
+
+  if (repRounds.length === 0) {
+    return (
+      <div style={{ color: 'var(--fg3)', fontSize: 13 }}>
+        Tableau de repêchage non encore généré
+      </div>
+    );
+  }
+
+  const maxCount = Math.max(...repRounds.map(([, r]) => (r as any[]).length));
+  const totalH   = maxCount * BK.unitH;
+  const numCols  = repRounds.length;
+  const colW     = BK.cardW + BK.lineW;
+  const totalW   = numCols * colW + 144; // extra room for bronze boxes
+  const connClr  = 'var(--b4)';
+  const midX     = BK.lineW / 2;
+
+  // Uniform slot distribution across totalH
+  const slotCy  = (n: number, i: number) => { const h = totalH / n; return i * h + h / 2; };
+  const slotTop = (n: number, i: number) => slotCy(n, i) - BK.cardH / 2;
+
+  const lastMatches = (repRounds[numCols - 1]?.[1] ?? []) as any[];
+
+  // Column label per index
+  const repLabel = (colIdx: number) => {
+    if (colIdx === 0)           return 'Repêchage RA';
+    if (colIdx === numCols - 1) return 'Dernier tour';
+    return `Tour C${colIdx}`;
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* ── Info banner ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '9px 14px',
+        background: 'rgba(249,115,22,0.07)',
+        border: '1px solid rgba(249,115,22,0.2)',
+        borderRadius: 9, fontSize: 12, color: 'var(--fg3)',
+      }}>
+        <Medal size={12} color="#f97316" />
+        <span>
+          Les <strong style={{ color: 'var(--fg2)' }}>2 vainqueurs finaux</strong> obtiennent la&nbsp;
+          <strong style={{ color: '#f97316' }}>3e place ex-aequo</strong> — sans petite finale.
+        </span>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ position: 'relative', width: totalW, height: BK.labelH + totalH + 20 }}>
+
+          {/* ── Column labels ── */}
+          {repRounds.map(([rk], colIdx) => (
+            <div key={`rl-${rk}`} style={{
+              position: 'absolute', top: 0,
+              left: colIdx * colW, width: BK.cardW, height: BK.labelH,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, fontWeight: 700,
+              color: colIdx === numCols - 1 ? '#f97316' : 'var(--fg3)',
+              textTransform: 'uppercase', letterSpacing: '0.1em',
+            }}>
+              {repLabel(colIdx)}
+            </div>
+          ))}
+
+          {/* ── "3e place" header above bronze boxes ── */}
+          <div style={{
+            position: 'absolute', top: 0, left: numCols * colW, width: 128, height: BK.labelH,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, fontWeight: 700, color: '#f97316',
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+          }}>
+            3e place
+          </div>
+
+          {/* ── Match cards ── */}
+          {repRounds.map(([, rMatches], colIdx) =>
+            (rMatches as any[]).map((m, idx) => (
+              <div key={m.id} style={{
+                position: 'absolute',
+                top: BK.labelH + slotTop((rMatches as any[]).length, idx),
+                left: colIdx * colW,
+                width: BK.cardW,
+              }}>
+                <MatchCard match={m} />
+              </div>
+            ))
+          )}
+
+          {/* ── SVG connector lines ── */}
+          {repRounds.map(([rk, rMatches], colIdx) => {
+            const isLast = colIdx === numCols - 1;
+            const curN   = (rMatches as any[]).length;
+            const nextN  = !isLast
+              ? ((repRounds[colIdx + 1]?.[1] ?? []) as any[]).length
+              : 0;
+
+            return (
+              <svg key={`rs-${rk}`} style={{
+                position: 'absolute',
+                top: BK.labelH,
+                left: colIdx * colW + BK.cardW,
+                width: BK.lineW,
+                height: totalH,
+                overflow: 'visible',
+                pointerEvents: 'none',
+              }}>
+                {(rMatches as any[]).map((m, idx) => {
+                  const cy = slotCy(curN, idx);
+
+                  // Last column → stub toward bronze box
+                  if (isLast) {
+                    return (
+                      <line key={m.id}
+                        x1={0} y1={cy} x2={BK.lineW} y2={cy}
+                        stroke={connClr} strokeWidth={1.5} />
+                    );
+                  }
+
+                  // 1:1 crossing round → straight horizontal
+                  if (nextN === curN) {
+                    return (
+                      <line key={m.id}
+                        x1={0} y1={cy} x2={BK.lineW} y2={cy}
+                        stroke={connClr} strokeWidth={1.5} />
+                    );
+                  }
+
+                  // Binary merge: pairs (0,1)→0, (2,3)→1, …
+                  if (nextN < curN) {
+                    if (idx % 2 === 0) {
+                      // Even: draw full elbow for this pair
+                      const sibY = idx + 1 < curN ? slotCy(curN, idx + 1) : cy;
+                      const ny   = slotCy(nextN, Math.floor(idx / 2));
+                      return (
+                        <path key={m.id}
+                          d={`M0,${cy} H${midX} V${sibY} M${midX},${ny} H${BK.lineW}`}
+                          fill="none" stroke={connClr} strokeWidth={1.5} />
+                      );
+                    }
+                    // Odd: just the stub (vertical drawn by its even sibling)
+                    return (
+                      <line key={m.id}
+                        x1={0} y1={cy} x2={midX} y2={cy}
+                        stroke={connClr} strokeWidth={1.5} />
+                    );
+                  }
+
+                  return null;
+                })}
+              </svg>
+            );
+          })}
+
+          {/* ── Bronze boxes (one per final-round winner) ── */}
+          {lastMatches.map((m: any, idx: number) => {
+            const cy = BK.labelH + slotCy(lastMatches.length, idx);
+            const winner = m.status === 'finished'
+              ? (m.winner_id === m.red_athlete_id ? m.red_name : m.blue_name)
+              : null;
+            return (
+              <div key={`bx-${m.id}`} style={{
+                position: 'absolute',
+                top: cy - 36,
+                left: numCols * colW,
+                width: 120, height: 72,
+                border: '2px solid rgba(249,115,22,0.4)',
+                borderRadius: 12,
+                background: 'rgba(249,115,22,0.06)',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                gap: 4,
+              }}>
+                <Medal size={16} color="#f97316" />
+                {winner && (
+                  <div style={{
+                    fontSize: 10, fontWeight: 700, color: '#f97316',
+                    textAlign: 'center', padding: '0 6px',
+                    overflow: 'hidden', textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap', maxWidth: '100%',
+                  }}>
+                    {winner}
+                  </div>
+                )}
+                <div style={{
+                  fontSize: 9, color: 'var(--fg3)', fontWeight: 700,
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                }}>
+                  3e place
+                </div>
+              </div>
+            );
+          })}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main bracket view with optional repechage tab ───────────────────────────
 function BracketView({ matches }: { matches: any[] }) {
+  const [tab, setTab] = useState<'main' | 'repechage'>('main');
+
   // 'final' = last main-bracket match; include it
   const mainMatches = matches.filter((m: any) =>
     m.bracket === 'main' || m.bracket === 'final' || !m.bracket
   );
-  // Include both repechage rounds and bronze finals
-  const repMatches = matches.filter((m: any) =>
+  const repMatches  = matches.filter((m: any) =>
     m.bracket === 'repechage' || m.bracket === 'bronze'
   );
+  const hasRepechage = repMatches.length > 0;
 
   const toRounds = (arr: any[]): Record<number, any[]> => {
     const map: Record<number, any[]> = {};
@@ -179,7 +409,6 @@ function BracketView({ matches }: { matches: any[] }) {
       if (!map[r]) map[r] = [];
       map[r].push(m);
     }
-    // Sort matches within each round by their position
     for (const r of Object.values(map)) {
       r.sort((a, b) => (a.index_in_round ?? 0) - (b.index_in_round ?? 0));
     }
@@ -188,8 +417,6 @@ function BracketView({ matches }: { matches: any[] }) {
 
   const mainRounds = Object.entries(toRounds(mainMatches))
     .sort(([a], [b]) => Number(a) - Number(b)) as [string, any[]][];
-  const repRounds = Object.entries(toRounds(repMatches))
-    .sort(([a], [b]) => Number(a) - Number(b)) as [string, any[]][];
 
   const ROUND_LABEL: Record<number, string> = {
     1: 'Finale', 2: '1/2 Finale', 4: '1/4 de Finale',
@@ -197,47 +424,69 @@ function BracketView({ matches }: { matches: any[] }) {
   };
 
   const firstCount = mainRounds[0]?.[1]?.length ?? 0;
-  // Total height of the bracket area (below labels)
-  const bracketH = firstCount > 0 ? (firstCount - 1) * BK.unitH + BK.cardH : BK.cardH;
-  const numCols  = mainRounds.length;
-  const colW     = BK.cardW + BK.lineW;
-  const totalW   = numCols * colW + 128; // 128 = winner box width + margin
-  const connClr  = 'var(--b4)';
-  const midX     = BK.lineW / 2;
+  const bracketH   = firstCount > 0 ? (firstCount - 1) * BK.unitH + BK.cardH : BK.cardH;
+  const numCols    = mainRounds.length;
+  const colW       = BK.cardW + BK.lineW;
+  const totalW     = numCols * colW + 128;
+  const connClr    = 'var(--b4)';
+  const midX       = BK.lineW / 2;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* ── Tableau principal (bracket tree) ── */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <Trophy size={14} color="#fbbf24" />
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg2)' }}>Tableau principal</span>
+      {/* ── Tab toggle (only when repechage exists) ── */}
+      {hasRepechage && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          {(['main', 'repechage'] as const).map(t => {
+            const active = tab === t;
+            const accent = t === 'main' ? '#ca8a04' : '#f97316';
+            const accentBg = t === 'main' ? 'rgba(202,138,4,0.12)' : 'rgba(249,115,22,0.12)';
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '7px 16px', borderRadius: 9,
+                  fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer', transition: 'all 0.15s',
+                  background: active ? accentBg : 'var(--inp)',
+                  color: active ? accent : 'var(--fg3)',
+                  border: active ? `1px solid ${accent}40` : '1px solid var(--b2)',
+                  boxShadow: active ? `0 0 0 1px ${accent}20` : 'none',
+                }}
+              >
+                {t === 'main'
+                  ? <><Trophy size={13} color={active ? accent : 'var(--fg3)'} /> Tableau principal</>
+                  : <><Medal  size={13} color={active ? accent : 'var(--fg3)'} /> Repêchage — 3e place</>}
+              </button>
+            );
+          })}
         </div>
+      )}
 
-        {mainRounds.length === 0 ? (
+      {/* ── Main bracket tree ── */}
+      {tab === 'main' && (
+        mainRounds.length === 0 ? (
           <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Tableau non encore généré</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <div style={{ position: 'relative', width: totalW, height: BK.labelH + bracketH + 20 }}>
 
-              {/* ── Column labels ── */}
+              {/* Column labels */}
               {mainRounds.map(([rk, rMatches], colIdx) => (
-                <div
-                  key={`lbl-${rk}`}
-                  style={{
-                    position: 'absolute', top: 0, left: colIdx * colW, width: BK.cardW,
-                    height: BK.labelH,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, color: 'var(--fg3)',
-                    textTransform: 'uppercase', letterSpacing: '0.1em',
-                  }}
-                >
+                <div key={`lbl-${rk}`} style={{
+                  position: 'absolute', top: 0, left: colIdx * colW, width: BK.cardW,
+                  height: BK.labelH,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 700, color: 'var(--fg3)',
+                  textTransform: 'uppercase', letterSpacing: '0.1em',
+                }}>
                   {ROUND_LABEL[rMatches.length] ?? 'Tour'}
                 </div>
               ))}
 
-              {/* ── "VAINQUEUR" label above winner box ── */}
+              {/* "VAINQUEUR" label */}
               <div style={{
                 position: 'absolute', top: 0, left: numCols * colW, width: 120,
                 height: BK.labelH,
@@ -248,68 +497,51 @@ function BracketView({ matches }: { matches: any[] }) {
                 Vainqueur
               </div>
 
-              {/* ── Match cards ── */}
+              {/* Match cards */}
               {mainRounds.map(([, rMatches], colIdx) =>
                 (rMatches as any[]).map((m, idx) => (
-                  <div
-                    key={m.id}
-                    style={{
-                      position: 'absolute',
-                      top: BK.labelH + bMatchTop(colIdx, idx),
-                      left: colIdx * colW,
-                      width: BK.cardW,
-                    }}
-                  >
+                  <div key={m.id} style={{
+                    position: 'absolute',
+                    top: BK.labelH + bMatchTop(colIdx, idx),
+                    left: colIdx * colW,
+                    width: BK.cardW,
+                  }}>
                     <MatchCard match={m} />
                   </div>
                 ))
               )}
 
-              {/* ── SVG connector lines ── */}
+              {/* SVG connector lines */}
               {mainRounds.map(([rk, rMatches], colIdx) => {
                 const isLastCol = colIdx === numCols - 1;
                 return (
-                  <svg
-                    key={`svg-${rk}`}
-                    style={{
-                      position: 'absolute',
-                      top: BK.labelH,
-                      left: colIdx * colW + BK.cardW,
-                      width: BK.lineW,
-                      height: bracketH,
-                      overflow: 'visible',
-                      pointerEvents: 'none',
-                    }}
-                  >
+                  <svg key={`svg-${rk}`} style={{
+                    position: 'absolute',
+                    top: BK.labelH,
+                    left: colIdx * colW + BK.cardW,
+                    width: BK.lineW, height: bracketH,
+                    overflow: 'visible', pointerEvents: 'none',
+                  }}>
                     {(rMatches as any[]).map((m, idx) => {
                       const cy = bMatchTop(colIdx, idx) + BK.cardH / 2;
-
                       if (isLastCol) {
-                        // Finale → winner box: simple horizontal stub
                         return (
                           <line key={m.id}
                             x1={0} y1={cy} x2={BK.lineW} y2={cy}
                             stroke={connClr} strokeWidth={1.5} />
                         );
                       }
-
                       if (idx % 2 === 0) {
-                        // Even match: draw full elbow connector for this pair
                         const sibLen = (rMatches as any[]).length;
                         const sibY   = idx + 1 < sibLen
-                          ? bMatchTop(colIdx, idx + 1) + BK.cardH / 2
-                          : cy;
+                          ? bMatchTop(colIdx, idx + 1) + BK.cardH / 2 : cy;
                         const nextY  = bMatchTop(colIdx + 1, Math.floor(idx / 2)) + BK.cardH / 2;
-                        // Path: stub right → vertical → jump to midpoint → stub right to next col
                         return (
                           <path key={m.id}
                             d={`M0,${cy} H${midX} V${sibY} M${midX},${nextY} H${BK.lineW}`}
-                            fill="none" stroke={connClr} strokeWidth={1.5}
-                          />
+                            fill="none" stroke={connClr} strokeWidth={1.5} />
                         );
                       }
-
-                      // Odd match: just the horizontal stub (vertical drawn by even sibling)
                       return (
                         <line key={m.id}
                           x1={0} y1={cy} x2={midX} y2={cy}
@@ -320,29 +552,21 @@ function BracketView({ matches }: { matches: any[] }) {
                 );
               })}
 
-              {/* ── Winner box ── */}
+              {/* Winner box */}
               {numCols > 0 && (() => {
                 const finaleMatches = mainRounds[numCols - 1]?.[1] as any[] ?? [];
-                // Box is vertically centered on the finale match
                 const boxCenterY = BK.labelH + bMatchTop(numCols - 1, 0) + BK.cardH / 2;
                 return (
                   <div style={{
                     position: 'absolute',
-                    top: boxCenterY - 40,
-                    left: numCols * colW,
-                    width: 112,
-                    height: 80,
+                    top: boxCenterY - 40, left: numCols * colW,
+                    width: 112, height: 80,
                     border: '2px solid rgba(202,138,4,0.55)',
-                    borderRadius: 12,
-                    background: 'rgba(202,138,4,0.07)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
+                    borderRadius: 12, background: 'rgba(202,138,4,0.07)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}>
                     <Trophy size={20} color="#fbbf24" />
-                    {/* Show winner name if finale is finished */}
                     {finaleMatches[0]?.status === 'finished' && (
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', textAlign: 'center', padding: '0 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                         {finaleMatches[0]?.winner_id === finaleMatches[0]?.red_athlete_id
@@ -356,34 +580,14 @@ function BracketView({ matches }: { matches: any[] }) {
 
             </div>
           </div>
-        )}
-      </div>
-
-      {/* ── Repêchage ── */}
-      {repMatches.length > 0 && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <Medal size={14} color="#f97316" />
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg2)' }}>Repêchage (2× Bronze)</span>
-          </div>
-          <div style={{ overflowX: 'auto' }}>
-            <div style={{ display: 'flex', gap: 14, minWidth: 'max-content', paddingBottom: 8, opacity: 0.85 }}>
-              {repRounds.map(([rk, rMatches]: [string, any], idx) => {
-                const label = (rMatches as any[]).length <= 2
-                  ? `Bronze` : `Repêchage T${idx + 1}`;
-                return (
-                  <div key={rk} style={{ display: 'flex', flexDirection: 'column', gap: 8, width: BK.cardW }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', height: BK.labelH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {label}
-                    </div>
-                    {(rMatches as any[]).map((m: any) => <MatchCard key={m.id} match={m} />)}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        )
       )}
+
+      {/* ── Repechage tree ── */}
+      {tab === 'repechage' && hasRepechage && (
+        <RepechageView matches={matches} />
+      )}
+
     </div>
   );
 }
