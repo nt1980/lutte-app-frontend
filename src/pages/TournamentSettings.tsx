@@ -6,9 +6,9 @@ import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 };
-const INPUT: React.CSSProperties = { width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' as const };
-const SELECT: React.CSSProperties = { width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: '#fff', outline: 'none', appearance: 'none' as const, cursor: 'pointer' };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 };
+const INPUT: React.CSSProperties = { width: '100%', background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: 'var(--fg)', outline: 'none', boxSizing: 'border-box' as const };
+const SELECT: React.CSSProperties = { width: '100%', background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: 'var(--fg)', outline: 'none', appearance: 'none' as const, cursor: 'pointer' };
 
 const publicToggles = [
   { key: 'public_page_enabled',         label: 'Page publique',   desc: 'Active la page d\'accueil publique du tournoi',  path: (slug: string) => `/tournoi/${slug}` },
@@ -28,7 +28,7 @@ function CopyButton({ text }: { text: string }) {
   };
   return (
     <button onClick={copy} title="Copier l'URL" style={{
-      background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#4ade80' : '#4b5563',
+      background: 'none', border: 'none', cursor: 'pointer', color: copied ? '#4ade80' : 'var(--fg3)',
       display: 'flex', alignItems: 'center', padding: '2px 4px', borderRadius: 4, transition: 'color 0.15s',
     }}>
       {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -127,10 +127,10 @@ export default function TournamentSettings() {
       <div style={{ padding: '20px 24px', maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* ── Informations générales ── */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <Settings2 size={14} color="#4b5563" />
-            <span style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Informations générales</span>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid var(--b2)' }}>
+            <Settings2 size={14} color="var(--fg3)" />
+            <span style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 14 }}>Informations générales</span>
           </div>
           <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
@@ -175,10 +175,10 @@ export default function TournamentSettings() {
         </div>
 
         {/* ── Visibilité publique ── */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <Globe size={14} color="#4b5563" />
-            <span style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Visibilité publique</span>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid var(--b2)' }}>
+            <Globe size={14} color="var(--fg3)" />
+            <span style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 14 }}>Visibilité publique</span>
           </div>
 
           {publicToggles.map(({ key, label, desc, path }) => {
@@ -187,14 +187,14 @@ export default function TournamentSettings() {
             const fullUrl     = pagePath ? `${origin}${pagePath}` : null;
 
             return (
-              <div key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div key={key} style={{ borderBottom: '1px solid var(--b1)' }}>
                 {/* Ligne toggle */}
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 20px', cursor: 'pointer' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#e5e7eb' }}>{label}</div>
-                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 1 }}>{desc}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg2)' }}>{label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 1 }}>{desc}</div>
                   </div>
-                  <div style={{ position: 'relative', width: 40, height: 22, borderRadius: 11, background: isEnabled ? '#dc2626' : 'rgba(255,255,255,0.1)', transition: 'background 0.2s ease', flexShrink: 0, marginLeft: 16 }}>
+                  <div style={{ position: 'relative', width: 40, height: 22, borderRadius: 11, background: isEnabled ? '#dc2626' : 'var(--b4)', transition: 'background 0.2s ease', flexShrink: 0, marginLeft: 16 }}>
                     <input type="checkbox" style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }} {...toggle(key)} />
                     <div style={{ position: 'absolute', top: 2, left: isEnabled ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', transition: 'left 0.2s ease' }} />
                   </div>
@@ -205,11 +205,11 @@ export default function TournamentSettings() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 20px 10px', marginTop: -4 }}>
                     <div style={{
                       flex: 1, display: 'flex', alignItems: 'center', gap: 6,
-                      background: isEnabled ? 'rgba(96,165,250,0.06)' : 'rgba(255,255,255,0.03)',
-                      border: `1px solid ${isEnabled ? 'rgba(96,165,250,0.2)' : 'rgba(255,255,255,0.06)'}`,
+                      background: isEnabled ? 'rgba(96,165,250,0.06)' : 'var(--inp)',
+                      border: `1px solid ${isEnabled ? 'rgba(96,165,250,0.2)' : 'var(--b2)'}`,
                       borderRadius: 7, padding: '5px 10px',
                     }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: isEnabled ? '#60a5fa' : '#4b5563', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: isEnabled ? '#60a5fa' : 'var(--fg3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {pagePath}
                       </span>
                       <CopyButton text={fullUrl} />
@@ -220,14 +220,14 @@ export default function TournamentSettings() {
                       )}
                     </div>
                     {!isEnabled && (
-                      <span style={{ fontSize: 10, color: '#374151', whiteSpace: 'nowrap' }}>désactivée</span>
+                      <span style={{ fontSize: 10, color: 'var(--dim)', whiteSpace: 'nowrap' }}>désactivée</span>
                     )}
                   </div>
                 )}
 
                 {/* Pas d'URL (combats live, classements) — message d'info */}
                 {!pagePath && isEnabled && (
-                  <div style={{ padding: '4px 20px 10px', fontSize: 11, color: '#4b5563' }}>
+                  <div style={{ padding: '4px 20px 10px', fontSize: 11, color: 'var(--fg3)' }}>
                     Les liens vers les tapis apparaîtront dans la page publique du tournoi.
                   </div>
                 )}
@@ -237,24 +237,24 @@ export default function TournamentSettings() {
         </div>
 
         {/* ── Gestion des tapis ── */}
-        <div style={{ background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--card2)', border: '1px solid var(--b3)', borderRadius: 16, overflow: 'hidden' }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Activity size={13} color="#6b7280" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', borderBottom: '1px solid var(--b2)', background: 'var(--inp)' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--b3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Activity size={13} color="var(--fg3)" />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Gestion des tapis</div>
-              <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1 }}>Ajouter, renommer, activer ou supprimer — disponible même en cours de compétition</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>Gestion des tapis</div>
+              <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>Ajouter, renommer, activer ou supprimer — disponible même en cours de compétition</div>
             </div>
-            <span style={{ marginLeft: 'auto', fontSize: 10, color: '#374151', background: 'rgba(255,255,255,0.04)', padding: '2px 8px', borderRadius: 5, fontWeight: 600 }}>
+            <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--dim)', background: 'var(--inp)', padding: '2px 8px', borderRadius: 5, fontWeight: 600 }}>
               {allMats.length} tapis
             </span>
           </div>
 
           <div style={{ padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {allMats.length === 0 && (
-              <div style={{ fontSize: 12, color: '#374151', textAlign: 'center', padding: '12px 0' }}>Aucun tapis — ajoutez-en ci-dessous</div>
+              <div style={{ fontSize: 12, color: 'var(--dim)', textAlign: 'center', padding: '12px 0' }}>Aucun tapis — ajoutez-en ci-dessous</div>
             )}
 
             {allMats.map((mat: any) => {
@@ -262,7 +262,7 @@ export default function TournamentSettings() {
 
               if (editingId === mat.id) {
                 return (
-                  <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '10px 12px' }}>
+                  <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--inp)', border: '1px solid var(--b4)', borderRadius: 10, padding: '10px 12px' }}>
                     <input
                       autoFocus
                       value={editingName}
@@ -271,14 +271,14 @@ export default function TournamentSettings() {
                         if (e.key === 'Enter' && editingName.trim()) updateMat.mutate({ matId: mat.id, name: editingName.trim() });
                         if (e.key === 'Escape') setEditingId(null);
                       }}
-                      style={{ flex: 1, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 7, padding: '6px 10px', fontSize: 13, color: '#fff', outline: 'none' }}
+                      style={{ flex: 1, background: 'var(--b3)', border: '1px solid var(--b4)', borderRadius: 7, padding: '6px 10px', fontSize: 13, color: 'var(--fg)', outline: 'none' }}
                     />
                     <button onClick={() => editingName.trim() && updateMat.mutate({ matId: mat.id, name: editingName.trim() })} disabled={updateMat.isPending}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', cursor: 'pointer', padding: 0 }}>
                       <Check size={14} />
                     </button>
                     <button onClick={() => setEditingId(null)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', cursor: 'pointer', padding: 0 }}>
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg3)', cursor: 'pointer', padding: 0 }}>
                       <X size={14} />
                     </button>
                   </div>
@@ -294,7 +294,7 @@ export default function TournamentSettings() {
                       {deleteMat.isPending ? '…' : 'Supprimer'}
                     </button>
                     <button onClick={() => setConfirmDeleteId(null)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#6b7280', cursor: 'pointer', padding: 0 }}>
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 7, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg3)', cursor: 'pointer', padding: 0 }}>
                       <X size={13} />
                     </button>
                   </div>
@@ -302,17 +302,17 @@ export default function TournamentSettings() {
               }
 
               return (
-                <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.02)', border: `1px solid ${isActive ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)'}`, borderRadius: 10, padding: '10px 14px', opacity: isActive ? 1 : 0.5 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#22c55e' : '#374151', flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: isActive ? '#e5e7eb' : '#6b7280' }}>{mat.name}</span>
+                <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--inp)', border: `1px solid ${isActive ? 'var(--b2)' : 'var(--b1)'}`, borderRadius: 10, padding: '10px 14px', opacity: isActive ? 1 : 0.5 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#22c55e' : 'var(--dim)', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: isActive ? 'var(--fg2)' : 'var(--fg3)' }}>{mat.name}</span>
                   {!isActive && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#6b7280', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 5, padding: '1px 7px' }}>Inactif</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg3)', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 5, padding: '1px 7px' }}>Inactif</span>
                   )}
                   <button
                     onClick={() => updateMat.mutate({ matId: mat.id, is_active: !isActive })}
                     disabled={updateMat.isPending}
                     title={isActive ? 'Désactiver ce tapis' : 'Réactiver ce tapis'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 7, background: isActive ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)', border: `1px solid ${isActive ? 'rgba(34,197,94,0.25)' : 'rgba(255,255,255,0.07)'}`, color: isActive ? '#4ade80' : '#6b7280', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 7, background: isActive ? 'rgba(34,197,94,0.1)' : 'var(--inp)', border: `1px solid ${isActive ? 'rgba(34,197,94,0.25)' : 'var(--b2)'}`, color: isActive ? '#4ade80' : 'var(--fg3)', cursor: 'pointer' }}
                   >
                     {isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                     {isActive ? 'Actif' : 'Inactif'}
@@ -320,7 +320,7 @@ export default function TournamentSettings() {
                   <button
                     onClick={() => { setEditingId(mat.id); setEditingName(mat.name); setConfirmDeleteId(null); }}
                     title="Renommer"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#6b7280', cursor: 'pointer', padding: 0 }}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b2)', color: 'var(--fg3)', cursor: 'pointer', padding: 0 }}
                   >
                     <Pencil size={13} />
                   </button>
@@ -342,12 +342,12 @@ export default function TournamentSettings() {
                 onChange={e => setNewMatName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && newMatName.trim()) addMat.mutate(newMatName.trim()); }}
                 placeholder="Nom du nouveau tapis (ex : Tapis E)"
-                style={{ flex: 1, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 10, padding: '9px 14px', fontSize: 13, color: '#fff', outline: 'none' }}
+                style={{ flex: 1, background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: '9px 14px', fontSize: 13, color: 'var(--fg)', outline: 'none' }}
               />
               <button
                 onClick={() => { if (newMatName.trim()) addMat.mutate(newMatName.trim()); }}
                 disabled={!newMatName.trim() || addMat.isPending}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: newMatName.trim() ? '#dc2626' : 'rgba(255,255,255,0.04)', color: newMatName.trim() ? '#fff' : '#374151', padding: '9px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: newMatName.trim() ? 'pointer' : 'default', whiteSpace: 'nowrap', transition: 'background 0.15s' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: newMatName.trim() ? '#dc2626' : 'var(--inp)', color: newMatName.trim() ? '#fff' : 'var(--dim)', padding: '9px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, border: 'none', cursor: newMatName.trim() ? 'pointer' : 'default', whiteSpace: 'nowrap', transition: 'background 0.15s' }}
               >
                 <Plus size={14} />
                 {addMat.isPending ? 'Ajout…' : 'Ajouter'}
@@ -357,10 +357,10 @@ export default function TournamentSettings() {
         </div>
 
         {/* ── Gestion des combats ── */}
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <Activity size={14} color="#4b5563" />
-            <span style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Gestion des combats</span>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid var(--b2)' }}>
+            <Activity size={14} color="var(--fg3)" />
+            <span style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 14 }}>Gestion des combats</span>
           </div>
           <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
@@ -372,7 +372,7 @@ export default function TournamentSettings() {
                   value={form.min_rest_minutes ?? 5}
                   onChange={e => setForm((p: any) => ({ ...p, min_rest_minutes: parseInt(e.target.value) || 0 }))}
                 />
-                <span style={{ fontSize: 12, color: '#4b5563' }}>
+                <span style={{ fontSize: 12, color: 'var(--fg3)' }}>
                   Si un combattant n'a pas respecté ce délai, la ligne est bloquée en jaune dans la file des combats.
                 </span>
               </div>

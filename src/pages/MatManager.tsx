@@ -208,12 +208,12 @@ export default function MatManager() {
 
         {/* ── Grille des tapis actifs ── */}
         {mats.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16 }}>
-            <Activity size={28} color="#374151" strokeWidth={1.5} style={{ marginBottom: 12 }} />
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', textAlign: 'center', background: 'var(--card2)', border: '1px solid var(--b2)', borderRadius: 16 }}>
+            <Activity size={28} color="var(--dim)" strokeWidth={1.5} style={{ marginBottom: 12 }} />
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', marginBottom: 4 }}>
               {isReferee ? 'Aucun tapis affecté' : 'Aucun tapis actif'}
             </div>
-            <div style={{ fontSize: 12, color: '#4b5563' }}>
+            <div style={{ fontSize: 12, color: 'var(--fg3)' }}>
               {isReferee ? 'Contactez le responsable du tournoi pour être affecté à un tapis' : 'Ajoutez des tapis dans les Paramètres du tournoi'}
             </div>
           </div>
@@ -229,21 +229,21 @@ export default function MatManager() {
                   flex: isMobile ? '1 1 100%' : (hasActivity ? '2 1 420px' : '1 1 260px'),
                   minWidth: isMobile ? undefined : (hasActivity ? 380 : 240),
                   transition: 'flex 0.35s ease, min-width 0.35s ease',
-                  background: '#0e0e0e',
-                  border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.07)'}`,
+                  background: 'var(--card2)',
+                  border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'var(--b2)'}`,
                   borderRadius: 16, overflow: 'hidden',
                 }}>
                   {/* Header tapis */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${hasActivity ? 'rgba(251,191,36,0.12)' : 'rgba(255,255,255,0.05)'}`, background: hasActivity ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: `1px solid ${hasActivity ? 'rgba(251,191,36,0.12)' : 'var(--b1)'}`, background: hasActivity ? 'rgba(251,191,36,0.04)' : 'transparent' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 9, background: hasActivity ? 'rgba(251,191,36,0.14)' : 'rgba(255,255,255,0.05)', border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Activity size={15} color={hasActivity ? '#fbbf24' : '#4b5563'} />
+                      <div style={{ width: 34, height: 34, borderRadius: 9, background: hasActivity ? 'rgba(251,191,36,0.14)' : 'var(--inp)', border: `1px solid ${hasActivity ? 'rgba(251,191,36,0.3)' : 'var(--b3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Activity size={15} color={hasActivity ? '#fbbf24' : 'var(--fg3)'} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{mat.name}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2 }}>{mat.name}</div>
                         {hasActivity
                           ? <div style={{ fontSize: 10, fontWeight: 700, color: '#fbbf24', letterSpacing: '0.04em' }}>● EN COURS</div>
-                          : <div style={{ fontSize: 10, color: '#374151' }}>Libre</div>
+                          : <div style={{ fontSize: 10, color: 'var(--dim)' }}>Libre</div>
                         }
                       </div>
                     </div>
@@ -254,18 +254,18 @@ export default function MatManager() {
 
                   {/* ── Sélecteur d'arbitre (admins uniquement) ── */}
                   {isAdmin && (
-                    <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.01)' }}>
+                    <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--b1)', background: 'var(--inp)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <UserCheck size={11} color="#4b5563" style={{ flexShrink: 0 }} />
+                        <UserCheck size={11} color="var(--fg3)" style={{ flexShrink: 0 }} />
                         <select
                           value={mat.referee_id ?? ''}
                           disabled={hasActivity || assignReferee.isPending}
                           onChange={e => assignReferee.mutate({ matId: mat.id, refereeId: e.target.value || null })}
                           title={hasActivity ? 'Impossible de changer l\'arbitre pendant un combat' : 'Sélectionner un arbitre'}
                           style={{
-                            flex: 1, fontSize: 11, background: hasActivity ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)',
-                            border: `1px solid ${mat.referee_id ? 'rgba(96,165,250,0.25)' : 'rgba(255,255,255,0.08)'}`,
-                            borderRadius: 7, color: mat.referee_id ? '#93c5fd' : '#4b5563',
+                            flex: 1, fontSize: 11, background: 'var(--inp)',
+                            border: `1px solid ${mat.referee_id ? 'rgba(96,165,250,0.25)' : 'var(--b3)'}`,
+                            borderRadius: 7, color: mat.referee_id ? '#93c5fd' : 'var(--fg3)',
                             padding: '4px 8px', outline: 'none', cursor: hasActivity ? 'not-allowed' : 'pointer',
                             opacity: hasActivity ? 0.5 : 1,
                           }}
@@ -279,7 +279,7 @@ export default function MatManager() {
                           ))}
                         </select>
                         {hasActivity && (
-                          <span style={{ fontSize: 9, color: '#4b5563', flexShrink: 0 }}>Combat en cours</span>
+                          <span style={{ fontSize: 9, color: 'var(--fg3)', flexShrink: 0 }}>Combat en cours</span>
                         )}
                       </div>
                     </div>
@@ -287,7 +287,7 @@ export default function MatManager() {
 
                   {/* ── Arbitre affiché (vue arbitre) ── */}
                   {isReferee && mat.referee_name && (
-                    <div style={{ padding: '6px 12px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ padding: '6px 12px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <UserCheck size={10} color="#60a5fa" />
                       <span style={{ fontSize: 11, color: '#60a5fa', fontWeight: 600 }}>{mat.referee_name}</span>
                     </div>
@@ -304,7 +304,7 @@ export default function MatManager() {
                         isReferee={isReferee}
                       />
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', color: '#2d2d2d', fontSize: 12 }}>Tapis libre</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0', color: 'var(--b4)', fontSize: 12 }}>Tapis libre</div>
                     )}
                     {matQueue.length > 0 && !isReferee && (
                       <MatQueueSection
@@ -329,26 +329,26 @@ export default function MatManager() {
 
         {/* ── File globale non affectée ── */}
         {unassigned.length > 0 && (
-          <div style={{ background: '#0e0e0e', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ background: 'var(--card2)', border: '1px solid var(--b2)', borderRadius: 16, overflow: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '10px 14px' : '11px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: isMobile ? '10px 14px' : '11px 18px', borderBottom: '1px solid var(--b2)' }}>
               <AlertCircle size={13} color="#f87171" />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Combats en attente</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>Combats en attente</span>
               <span style={{ background: 'rgba(248,113,113,0.14)', color: '#f87171', borderRadius: 6, padding: '1px 9px', fontSize: 11, fontWeight: 700 }}>{unassigned.length}</span>
               <button
                 onClick={() => { qc.invalidateQueries({ queryKey: ['queue', id] }); setNow(Date.now()); }}
                 title="Actualiser les temps de repos"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#6b7280', borderRadius: 7, padding: '3px 9px', fontSize: 11, cursor: 'pointer' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg3)', borderRadius: 7, padding: '3px 9px', fontSize: 11, cursor: 'pointer' }}
               >
                 <RefreshCw size={11} /> Actualiser
               </button>
-              <span style={{ marginLeft: 'auto', fontSize: 10, color: '#374151' }}>Affecter à un tapis →</span>
+              <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--dim)' }}>Affecter à un tapis →</span>
             </div>
 
             {/* Colonnes header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 32px 1fr 60px 44px 36px 28px 56px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 32px 1fr 60px 44px 36px 28px 56px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid var(--b1)', background: 'var(--inp)' }}>
               {['#','Rouge','','Bleu','Tour','Âge','Poids','S','Repos',''].map((h, i) => (
-                <div key={i} style={{ fontSize: 9, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: i >= 4 ? 'center' : (i === 3 ? 'right' : 'left') }}>{h}</div>
+                <div key={i} style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: i >= 4 ? 'center' : (i === 3 ? 'right' : 'left') }}>{h}</div>
               ))}
             </div>
 
@@ -362,7 +362,7 @@ export default function MatManager() {
                   : tooSoon
                   ? 'rgba(251,191,36,0.06)'
                   : (idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)');
-                const borderColor = tooSoon ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.04)';
+                const borderColor = tooSoon ? 'rgba(251,191,36,0.2)' : 'var(--b1)';
 
                 return (
                   <div
@@ -388,8 +388,8 @@ export default function MatManager() {
                   >
                     {/* # position */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <GripVertical size={10} color={tooSoon ? '#92400e' : '#2d2d2d'} />
-                      <span style={{ fontSize: 10, fontWeight: 700, color: tooSoon ? '#92400e' : '#374151' }}>{q.position ?? idx + 1}</span>
+                      <GripVertical size={10} color={tooSoon ? '#92400e' : 'var(--b4)'} />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: tooSoon ? '#92400e' : 'var(--dim)' }}>{q.position ?? idx + 1}</span>
                     </div>
 
                     {/* Rouge */}
@@ -398,11 +398,11 @@ export default function MatManager() {
                         <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
                       </div>
-                      {q.red_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
+                      {q.red_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
                     </div>
 
                     {/* vs */}
-                    <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: '#2d2d2d' }}>vs</div>
+                    <div style={{ textAlign: 'center', fontSize: 9, fontWeight: 700, color: 'var(--b4)' }}>vs</div>
 
                     {/* Bleu */}
                     <div style={{ minWidth: 0, textAlign: 'right' }}>
@@ -410,7 +410,7 @@ export default function MatManager() {
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_name || '?'}</span>
                         <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                       </div>
-                      {q.blue_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
+                      {q.blue_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
                     </div>
 
                     {/* Tour */}
@@ -423,10 +423,10 @@ export default function MatManager() {
                     </div>
 
                     {/* Âge */}
-                    <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#6b7280' }}>{q.age_category || '—'}</div>
+                    <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--fg3)' }}>{q.age_category || '—'}</div>
 
                     {/* Poids */}
-                    <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#6b7280' }}>{q.weight_category ? `${q.weight_category}kg` : '—'}</div>
+                    <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: 'var(--fg3)' }}>{q.weight_category ? `${q.weight_category}kg` : '—'}</div>
 
                     {/* Sexe */}
                     <div style={{ textAlign: 'center' }}><GBadgeSm g={q.gender} /></div>
@@ -434,7 +434,7 @@ export default function MatManager() {
                     {/* Repos */}
                     <div style={{ textAlign: 'center' }}>
                       {elapsedMs === null ? (
-                        <span style={{ fontSize: 10, color: '#374151' }}>—</span>
+                        <span style={{ fontSize: 10, color: 'var(--dim)' }}>—</span>
                       ) : (
                         <span style={{
                           fontSize: 10, fontWeight: 800,
@@ -458,9 +458,9 @@ export default function MatManager() {
                           title={tooSoon ? `Repos insuffisant (min ${tournament?.min_rest_minutes ?? 5} min)` : `Affecter à ${mat.name}`}
                           style={{
                             fontSize: 10, fontWeight: 800, padding: '4px 8px', borderRadius: 6,
-                            background: tooSoon ? 'rgba(251,191,36,0.08)' : 'rgba(255,255,255,0.06)',
-                            border: `1px solid ${tooSoon ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.1)'}`,
-                            color: tooSoon ? '#92400e' : '#9ca3af',
+                            background: tooSoon ? 'rgba(251,191,36,0.08)' : 'var(--b3)',
+                            border: `1px solid ${tooSoon ? 'rgba(251,191,36,0.2)' : 'var(--b4)'}`,
+                            color: tooSoon ? '#92400e' : 'var(--fg2)',
                             cursor: tooSoon ? 'not-allowed' : 'pointer',
                             whiteSpace: 'nowrap' as const,
                             opacity: tooSoon ? 0.6 : 1,
@@ -526,18 +526,18 @@ function CurrentMatchCard({
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
               <span style={{ fontSize: 13, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.red_name || '?'}</span>
             </div>
-            {match.red_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 2, paddingLeft: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.red_club}</div>}
+            {match.red_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 2, paddingLeft: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.red_club}</div>}
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#374151', marginTop: 2 }}>vs</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--dim)', marginTop: 2 }}>vs</span>
           <div style={{ textAlign: 'right' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.blue_name || '?'}</span>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
             </div>
-            {match.blue_club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 2, paddingRight: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.blue_club}</div>}
+            {match.blue_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 2, paddingRight: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.blue_club}</div>}
           </div>
         </div>
-        <div style={{ fontSize: 10, color: '#4b5563', textAlign: 'center', marginBottom: 10 }}>
+        <div style={{ fontSize: 10, color: 'var(--fg3)', textAlign: 'center', marginBottom: 10 }}>
           {match.age_category} · {match.weight_category}kg · {STYLE_SHORT[match.style] ?? match.style}
         </div>
 
@@ -577,12 +577,12 @@ function MatQueueSection({
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 6 }}>
-        <Clock size={10} color="#4b5563" />
-        <span style={{ fontSize: 10, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <Clock size={10} color="var(--fg3)" />
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           File de ce tapis ({items.length})
         </span>
       </div>
-      <div style={{ border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--b2)', borderRadius: 10, overflow: 'hidden' }}>
         {items.map((q: any, i: number) => {
           const isConfirmed = q.confirmed === true;
           return (
@@ -597,36 +597,36 @@ function MatQueueSection({
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '7px 10px',
-                borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                background: dragOverId === q.id ? 'rgba(96,165,250,0.08)' : (i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent'),
+                borderTop: i > 0 ? '1px solid var(--b1)' : 'none',
+                background: dragOverId === q.id ? 'rgba(96,165,250,0.08)' : (i % 2 === 0 ? 'var(--inp)' : 'transparent'),
                 opacity: draggedId === q.id ? 0.4 : 1,
                 cursor: 'grab',
                 transition: 'background 0.1s',
               }}
             >
-              <GripVertical size={11} color="#2d2d2d" style={{ flexShrink: 0 }} />
-              <span style={{ fontSize: 9, fontWeight: 700, color: '#374151', width: 14, textAlign: 'center', flexShrink: 0 }}>{q.position ?? i + 1}</span>
+              <GripVertical size={11} color="var(--b4)" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', width: 14, textAlign: 'center', flexShrink: 0 }}>{q.position ?? i + 1}</span>
               {/* Rouge */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
                 </div>
-                {q.red_club && <div style={{ fontSize: 9, color: '#374151', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
+                {q.red_club && <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
               </div>
-              <span style={{ fontSize: 9, color: '#2d2d2d', fontWeight: 700, flexShrink: 0 }}>vs</span>
+              <span style={{ fontSize: 9, color: 'var(--b4)', fontWeight: 700, flexShrink: 0 }}>vs</span>
               {/* Bleu */}
               <div style={{ flex: 1, minWidth: 0, textAlign: 'right' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
                   <span style={{ fontSize: 11, fontWeight: 600, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_name || '?'}</span>
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                 </div>
-                {q.blue_club && <div style={{ fontSize: 9, color: '#374151', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
+                {q.blue_club && <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
               </div>
               {/* Infos cat + tour */}
               <div style={{ flexShrink: 0, textAlign: 'right' }}>
                 {roundLabel(q) && <div style={{ fontSize: 9, fontWeight: 700, color: '#92400e', background: 'rgba(251,191,36,0.1)', borderRadius: 3, padding: '1px 5px', marginBottom: 2 }}>{roundLabel(q)}</div>}
-                <div style={{ fontSize: 9, color: '#374151', whiteSpace: 'nowrap' }}>{q.age_category} · {q.weight_category}kg</div>
+                <div style={{ fontSize: 9, color: 'var(--dim)', whiteSpace: 'nowrap' }}>{q.age_category} · {q.weight_category}kg</div>
               </div>
 
               {/* Confirmer / infirmer */}
@@ -637,9 +637,9 @@ function MatQueueSection({
                 style={{
                   flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3,
                   fontSize: 9, fontWeight: 700, padding: '3px 7px', borderRadius: 5,
-                  background: isConfirmed ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${isConfirmed ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.1)'}`,
-                  color: isConfirmed ? '#4ade80' : '#4b5563',
+                  background: isConfirmed ? 'rgba(34,197,94,0.12)' : 'var(--inp)',
+                  border: `1px solid ${isConfirmed ? 'rgba(34,197,94,0.3)' : 'var(--b3)'}`,
+                  color: isConfirmed ? '#4ade80' : 'var(--fg3)',
                   cursor: 'pointer',
                 }}
               >

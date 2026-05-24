@@ -6,13 +6,13 @@ import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 };
-const INPUT: React.CSSProperties = { width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '9px 12px 9px 38px', fontSize: 13, color: '#fff', outline: 'none' };
-
 import React from 'react';
 
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 };
+const INPUT: React.CSSProperties = { width: '100%', background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: '9px 12px 9px 38px', fontSize: 13, color: 'var(--fg)', outline: 'none' };
+
 function FieldIcon({ icon: Icon }: { icon: any }) {
-  return <Icon size={14} color="#374151" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />;
+  return <Icon size={14} color="var(--faint)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />;
 }
 
 export default function TournamentNew() {
@@ -43,30 +43,28 @@ export default function TournamentNew() {
         title="Nouveau tournoi"
         subtitle="Créer un tournoi FFLDA / UWW"
         actions={
-          <button onClick={() => navigate('/dashboard')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-            <ArrowLeft size={14} color="#6b7280" /> Retour
+          <button onClick={() => navigate('/dashboard')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg2)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <ArrowLeft size={14} color="var(--faint)" /> Retour
           </button>
         }
       />
 
       <div style={{ padding: '28px 24px' }}>
         <div style={{ maxWidth: 520 }}>
-          <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, overflow: 'hidden' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 18, overflow: 'hidden' }}>
 
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '20px 24px', borderBottom: '1px solid var(--b2)' }}>
               <div style={{ width: 40, height: 40, borderRadius: 11, background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Trophy size={18} color="#dc2626" strokeWidth={1.8} />
               </div>
               <div>
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: 15 }}>Informations du tournoi</div>
-                <div style={{ fontSize: 12, color: '#4b5563', marginTop: 2 }}>Les champs marqués * sont obligatoires</div>
+                <div style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 15 }}>Informations du tournoi</div>
+                <div style={{ fontSize: 12, color: 'var(--fg3)', marginTop: 2 }}>Les champs marqués * sont obligatoires</div>
               </div>
             </div>
 
             <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-              {/* Name */}
               <div>
                 <label style={LABEL}>Nom du tournoi *</label>
                 <div style={{ position: 'relative' }}>
@@ -75,7 +73,6 @@ export default function TournamentNew() {
                 </div>
               </div>
 
-              {/* Date + City */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={LABEL}>Date *</label>
@@ -93,7 +90,6 @@ export default function TournamentNew() {
                 </div>
               </div>
 
-              {/* Club */}
               <div>
                 <label style={LABEL}>Club organisateur</label>
                 <div style={{ position: 'relative' }}>
@@ -105,21 +101,19 @@ export default function TournamentNew() {
                 </div>
               </div>
 
-              {/* Mats */}
               <div>
                 <label style={LABEL}>Nombre de tapis</label>
                 <div style={{ position: 'relative' }}>
                   <FieldIcon icon={Layers} />
                   <input type="number" style={INPUT} min={1} max={16} {...f('number_of_mats')} />
                 </div>
-                <p style={{ fontSize: 11, color: '#374151', marginTop: 6 }}>Les tapis seront nommés automatiquement (A, B, C…)</p>
+                <p style={{ fontSize: 11, color: 'var(--dim)', marginTop: 6 }}>Les tapis seront nommés automatiquement (A, B, C…)</p>
               </div>
 
-              {/* Mat preview */}
               {form.number_of_mats > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {Array.from({ length: Math.min(form.number_of_mats, 16) }, (_, i) => (
-                    <span key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 600, color: '#6b7280' }}>
+                    <span key={i} style={{ background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 600, color: 'var(--fg3)' }}>
                       Tapis {String.fromCharCode(65 + i)}
                     </span>
                   ))}
@@ -127,9 +121,8 @@ export default function TournamentNew() {
               )}
             </div>
 
-            {/* Actions */}
             <div style={{ display: 'flex', gap: 10, padding: '0 24px 24px' }}>
-              <button onClick={() => navigate('/dashboard')} style={{ padding: '9px 18px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+              <button onClick={() => navigate('/dashboard')} style={{ padding: '9px 18px', borderRadius: 9, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg2)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Annuler
               </button>
               <button
@@ -137,9 +130,7 @@ export default function TournamentNew() {
                 disabled={!canSubmit}
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '9px 18px', borderRadius: 9, background: canSubmit ? '#dc2626' : '#7f1d1d', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: canSubmit ? 'pointer' : 'not-allowed', boxShadow: canSubmit ? '0 4px 16px rgba(220,38,38,0.3)' : 'none' }}
               >
-                {create.isPending
-                  ? 'Création en cours…'
-                  : <><Trophy size={14} /> Créer le tournoi</>}
+                {create.isPending ? 'Création en cours…' : <><Trophy size={14} /> Créer le tournoi</>}
               </button>
             </div>
           </div>

@@ -5,11 +5,11 @@ import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 
 const statusMap: Record<string, { label: string; color: string; bg: string; dot: string }> = {
-  draft:               { label: 'Brouillon',    color: '#6b7280', bg: 'rgba(107,114,128,0.12)', dot: '#6b7280'   },
-  registrations_open:  { label: 'Inscriptions', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  dot: '#3b82f6'   },
-  weigh_in:            { label: 'Pesée',        color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  dot: '#f59e0b'   },
-  running:             { label: 'En cours',     color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  dot: '#22c55e'   },
-  finished:            { label: 'Terminé',      color: '#4b5563', bg: 'rgba(75,85,99,0.1)',     dot: '#374151'   },
+  draft:               { label: 'Brouillon',    color: '#6b7280', bg: 'rgba(107,114,128,0.12)', dot: '#6b7280' },
+  registrations_open:  { label: 'Inscriptions', color: '#60a5fa', bg: 'rgba(96,165,250,0.12)',  dot: '#3b82f6' },
+  weigh_in:            { label: 'Pesée',        color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  dot: '#f59e0b' },
+  running:             { label: 'En cours',     color: '#4ade80', bg: 'rgba(74,222,128,0.12)',  dot: '#22c55e' },
+  finished:            { label: 'Terminé',      color: '#6b7280', bg: 'rgba(107,114,128,0.1)',  dot: '#374151' },
 };
 
 export default function Dashboard() {
@@ -23,10 +23,10 @@ export default function Dashboard() {
   const past     = tournaments.filter((t: any) => t.status === 'finished');
 
   const stats = [
-    { label: 'Total tournois',   value: tournaments.length, icon: Trophy,   color: '#dc2626', bg: 'rgba(220,38,38,0.1)'  },
-    { label: 'En cours',         value: running.length,     icon: Activity, color: '#22c55e', bg: 'rgba(34,197,94,0.1)'  },
-    { label: 'À venir',          value: upcoming.length,    icon: Calendar, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-    { label: 'Terminés',         value: past.length,        icon: Swords,   color: '#6b7280', bg: 'rgba(107,114,128,0.1)'},
+    { label: 'Total tournois', value: tournaments.length, icon: Trophy,   color: '#dc2626', bg: 'rgba(220,38,38,0.1)'  },
+    { label: 'En cours',       value: running.length,     icon: Activity, color: '#22c55e', bg: 'rgba(34,197,94,0.1)'  },
+    { label: 'À venir',        value: upcoming.length,    icon: Calendar, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+    { label: 'Terminés',       value: past.length,        icon: Swords,   color: '#6b7280', bg: 'rgba(107,114,128,0.1)'},
   ];
 
   return (
@@ -54,7 +54,7 @@ export default function Dashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
             {stats.map(({ label, value, icon: Icon, color, bg }) => (
               <div key={label} style={{
-                background: '#111', border: '1px solid rgba(255,255,255,0.06)',
+                background: 'var(--card)', border: '1px solid var(--b2)',
                 borderRadius: 16, padding: '18px 20px',
                 display: 'flex', flexDirection: 'column', gap: 12,
               }}>
@@ -62,8 +62,8 @@ export default function Dashboard() {
                   <Icon size={17} color={color} strokeWidth={1.8} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
-                  <div style={{ fontSize: 11, color: '#4b5563', marginTop: 5, fontWeight: 500 }}>{label}</div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--fg)', letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 5, fontWeight: 500 }}>{label}</div>
                 </div>
               </div>
             ))}
@@ -76,8 +76,8 @@ export default function Dashboard() {
             <div style={{ width: 72, height: 72, borderRadius: 20, background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
               <Swords size={32} color="#dc2626" strokeWidth={1.6} />
             </div>
-            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#fff', marginBottom: 8 }}>Aucun tournoi</h3>
-            <p style={{ fontSize: 14, color: '#4b5563', marginBottom: 24, maxWidth: 280, lineHeight: 1.6 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--fg)', marginBottom: 8 }}>Aucun tournoi</h3>
+            <p style={{ fontSize: 14, color: 'var(--fg3)', marginBottom: 24, maxWidth: 280, lineHeight: 1.6 }}>
               Créez votre premier tournoi pour commencer à gérer vos compétitions.
             </p>
             <Link to="/tournaments/new" style={{
@@ -100,9 +100,7 @@ export default function Dashboard() {
               En cours · {running.length}
             </SectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-              {running.map((t: any, i: number) => (
-                <TournamentCard key={t.id} t={t} highlight i={i} />
-              ))}
+              {running.map((t: any, i: number) => <TournamentCard key={t.id} t={t} highlight i={i} />)}
             </div>
           </section>
         )}
@@ -112,9 +110,7 @@ export default function Dashboard() {
           <section>
             <SectionTitle>À venir · {upcoming.length}</SectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-              {upcoming.map((t: any, i: number) => (
-                <TournamentCard key={t.id} t={t} i={i} />
-              ))}
+              {upcoming.map((t: any, i: number) => <TournamentCard key={t.id} t={t} i={i} />)}
             </div>
           </section>
         )}
@@ -124,9 +120,7 @@ export default function Dashboard() {
           <section style={{ opacity: 0.65 }}>
             <SectionTitle>Terminés · {past.length}</SectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-              {past.map((t: any, i: number) => (
-                <TournamentCard key={t.id} t={t} i={i} />
-              ))}
+              {past.map((t: any, i: number) => <TournamentCard key={t.id} t={t} i={i} />)}
             </div>
           </section>
         )}
@@ -138,7 +132,7 @@ export default function Dashboard() {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, fontWeight: 700, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
       {children}
     </div>
   );
@@ -155,7 +149,7 @@ function TournamentCard({ t, highlight, i }: { t: any; highlight?: boolean; i: n
       to={`/t/${t.id}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 16,
-        background: '#111', border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--card)', border: '1px solid var(--b2)',
         borderRadius: 14, padding: '14px 16px',
         textDecoration: 'none',
         transition: 'border-color 0.15s ease, background 0.15s ease',
@@ -163,14 +157,13 @@ function TournamentCard({ t, highlight, i }: { t: any; highlight?: boolean; i: n
       }}
       onMouseEnter={e => {
         (e.currentTarget as HTMLElement).style.borderColor = 'rgba(220,38,38,0.28)';
-        (e.currentTarget as HTMLElement).style.background = '#161616';
+        (e.currentTarget as HTMLElement).style.background = 'var(--hover)';
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
-        (e.currentTarget as HTMLElement).style.background = '#111';
+        (e.currentTarget as HTMLElement).style.borderColor = 'var(--b2)';
+        (e.currentTarget as HTMLElement).style.background = 'var(--card)';
       }}
     >
-      {/* Icon */}
       <div style={{
         width: 44, height: 44, borderRadius: 12, flexShrink: 0,
         background: highlight ? 'rgba(34,197,94,0.1)' : 'rgba(220,38,38,0.08)',
@@ -180,10 +173,9 @@ function TournamentCard({ t, highlight, i }: { t: any; highlight?: boolean; i: n
         <Trophy size={19} color={highlight ? '#4ade80' : '#dc2626'} strokeWidth={1.8} />
       </div>
 
-      {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: 5,
             background: s.bg, borderRadius: 6, padding: '2px 8px',
@@ -194,22 +186,21 @@ function TournamentCard({ t, highlight, i }: { t: any; highlight?: boolean; i: n
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 5 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#4b5563' }}>
-            <Calendar size={11} color="#374151" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--fg3)' }}>
+            <Calendar size={11} color="var(--faint)" />
             {dateStr}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#4b5563' }}>
-            <MapPin size={11} color="#374151" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--fg3)' }}>
+            <MapPin size={11} color="var(--faint)" />
             {t.city}
           </span>
           {t.organizer_club_short && (
-            <span style={{ fontSize: 12, color: '#374151' }}>{t.organizer_club_short}</span>
+            <span style={{ fontSize: 12, color: 'var(--faint)' }}>{t.organizer_club_short}</span>
           )}
         </div>
       </div>
 
-      {/* Arrow */}
-      <ChevronRight size={16} color="#374151" style={{ flexShrink: 0 }} />
+      <ChevronRight size={16} color="var(--dim)" style={{ flexShrink: 0 }} />
     </Link>
   );
 }

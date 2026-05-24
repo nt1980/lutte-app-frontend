@@ -19,21 +19,21 @@ export default function PublicTournament() {
   });
 
   if (isLoading) return (
-    <div style={{ minHeight: '100vh', background: '#080808', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ display: 'flex', gap: 6 }}>
         {[0,1,2].map(i => (
-          <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#374151', animation: 'bounce 1s infinite', animationDelay: `${i * 150}ms` }} />
+          <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--dim)', animation: 'bounce 1s infinite', animationDelay: `${i * 150}ms` }} />
         ))}
       </div>
     </div>
   );
 
   if (!tournament || !tournament.public_page_enabled) return (
-    <div style={{ minHeight: '100vh', background: '#080808', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
       <div>
-        <Trophy size={40} color="#374151" style={{ margin: '0 auto 1rem' }} />
-        <div style={{ color: 'white', fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.5rem' }}>Tournoi non disponible</div>
-        <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Cette page n'est pas accessible pour le moment.</p>
+        <Trophy size={40} color="var(--dim)" style={{ margin: '0 auto 1rem' }} />
+        <div style={{ color: 'var(--fg)', fontWeight: 700, fontSize: '1.25rem', marginBottom: '0.5rem' }}>Tournoi non disponible</div>
+        <p style={{ color: 'var(--fg3)', fontSize: '0.875rem' }}>Cette page n'est pas accessible pour le moment.</p>
       </div>
     </div>
   );
@@ -43,17 +43,17 @@ export default function PublicTournament() {
   const showResults   = tournament.public_results_enabled;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080808', color: 'white', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
       {/* Topbar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderBottom: '1px solid var(--b2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 32, height: 32, borderRadius: 10, background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Trophy size={16} color="white" />
           </div>
           <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{tournament.organizer_club_name || 'Tournoi de Lutte'}</span>
         </div>
-        <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '0.45rem 1rem', color: '#d1d5db', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>
+        <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: '0.45rem 1rem', color: 'var(--fg2)', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600 }}>
           <LogIn size={14} /> Se connecter
         </Link>
       </div>
@@ -92,18 +92,18 @@ export default function PublicTournament() {
           {showProgramme && (
             <Link to={`/tournoi/${slug}/programme`} style={{ textDecoration: 'none' }}>
               <div style={{
-                background: '#141414', border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--card)', border: '1px solid var(--b3)',
                 borderRadius: 20, padding: '2rem 1.5rem', cursor: 'pointer',
                 transition: 'all 0.2s', textAlign: 'center',
               }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(99,102,241,0.4)'; (e.currentTarget as HTMLDivElement).style.background = '#1a1a1f'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLDivElement).style.background = '#141414'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(99,102,241,0.4)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = ''; }}
               >
                 <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                   <ClipboardList size={24} color="#818cf8" />
                 </div>
-                <div style={{ color: 'white', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>Programme</div>
-                <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>Poules & tableaux des compétitions</div>
+                <div style={{ color: 'var(--fg)', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>Programme</div>
+                <div style={{ color: 'var(--fg3)', fontSize: '0.8rem' }}>Poules & tableaux des compétitions</div>
               </div>
             </Link>
           )}
@@ -111,17 +111,17 @@ export default function PublicTournament() {
           {showResults && (
             <Link to={`/tournoi/${slug}/resultats`} style={{ textDecoration: 'none' }}>
               <div style={{
-                background: '#141414', border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--card)', border: '1px solid var(--b3)',
                 borderRadius: 20, padding: '2rem 1.5rem', cursor: 'pointer', textAlign: 'center',
               }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(220,38,38,0.4)'; (e.currentTarget as HTMLDivElement).style.background = '#1a1414'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.08)'; (e.currentTarget as HTMLDivElement).style.background = '#141414'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(220,38,38,0.4)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = ''; }}
               >
                 <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                   <BarChart3 size={24} color="#f87171" />
                 </div>
-                <div style={{ color: 'white', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>Résultats</div>
-                <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>Palmarès et scores des combats</div>
+                <div style={{ color: 'var(--fg)', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>Résultats</div>
+                <div style={{ color: 'var(--fg3)', fontSize: '0.8rem' }}>Palmarès et scores des combats</div>
               </div>
             </Link>
           )}
@@ -129,7 +129,7 @@ export default function PublicTournament() {
           {activeMats.map((mat: any) => (
             <Link key={mat.id} to={`/mat/${mat.id}`} target="_blank" style={{ textDecoration: 'none' }}>
               <div style={{
-                background: '#141414', border: '1px solid rgba(16,185,129,0.2)',
+                background: 'var(--card)', border: '1px solid rgba(16,185,129,0.2)',
                 borderRadius: 20, padding: '2rem 1.5rem', cursor: 'pointer', textAlign: 'center',
               }}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(16,185,129,0.4)'; }}
@@ -138,8 +138,8 @@ export default function PublicTournament() {
                 <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                   <Tv size={24} color="#34d399" />
                 </div>
-                <div style={{ color: 'white', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>{mat.name} — Live</div>
-                <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>Suivre ce tapis en direct</div>
+                <div style={{ color: 'var(--fg)', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>{mat.name} — Live</div>
+                <div style={{ color: 'var(--fg3)', fontSize: '0.8rem' }}>Suivre ce tapis en direct</div>
               </div>
             </Link>
           ))}
@@ -147,7 +147,7 @@ export default function PublicTournament() {
       </div>
 
       {/* Footer */}
-      <div style={{ textAlign: 'center', padding: '2rem', color: '#374151', fontSize: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--dim)', fontSize: '0.75rem', borderTop: '1px solid var(--b1)' }}>
         © {new Date(tournament.event_date).getFullYear()} {tournament.organizer_club_name || tournament.name}
       </div>
     </div>

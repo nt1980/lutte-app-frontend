@@ -26,9 +26,9 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
       style={{
         padding: '5px 13px',
         borderRadius: 20,
-        border: active ? '1px solid rgba(220,38,38,0.6)' : '1px solid rgba(255,255,255,0.1)',
-        background: active ? 'rgba(220,38,38,0.15)' : 'rgba(255,255,255,0.04)',
-        color: active ? '#f87171' : '#6b7280',
+        border: active ? '1px solid rgba(220,38,38,0.6)' : '1px solid var(--b3)',
+        background: active ? 'rgba(220,38,38,0.15)' : 'var(--inp)',
+        color: active ? '#f87171' : 'var(--fg3)',
         fontSize: 12,
         fontWeight: active ? 700 : 500,
         cursor: 'pointer',
@@ -132,16 +132,16 @@ export default function Competitions() {
 
         {/* ── Filtres ── */}
         {(styles.length > 0 || ageCategories.length > 0) && (
-          <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Filter size={12} color="#4b5563" />
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              <Filter size={12} color="var(--fg3)" />
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Filtrer par
               </span>
               {hasFilters && (
                 <button
                   onClick={() => { setFilterStyle(null); setFilterAge(null); setFilterGender(null); }}
-                  style={{ marginLeft: 'auto', fontSize: 11, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                  style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
                 >
                   Effacer
                 </button>
@@ -151,7 +151,7 @@ export default function Competitions() {
             {/* Styles */}
             {styles.length > 0 && (
               <div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Style</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Style</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   <Chip label="Tous" active={filterStyle === null} onClick={() => setFilterStyle(null)} />
                   {styles.map(s => (
@@ -169,7 +169,7 @@ export default function Competitions() {
             {/* Catégories d'âge */}
             {ageCategories.length > 0 && (
               <div>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Catégorie d'âge</div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Catégorie d'âge</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   <Chip label="Toutes" active={filterAge === null} onClick={() => setFilterAge(null)} />
                   {ageCategories.map(cat => (
@@ -186,7 +186,7 @@ export default function Competitions() {
 
             {/* Genre */}
             <div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Genre</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 7 }}>Genre</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 <Chip label="Tous" active={filterGender === null} onClick={() => setFilterGender(null)} />
                 {[
@@ -201,7 +201,7 @@ export default function Competitions() {
 
             {/* Info résultat */}
             {hasFilters && (
-              <div style={{ fontSize: 11, color: '#4b5563', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 10, marginTop: 2 }}>
+              <div style={{ fontSize: 11, color: 'var(--fg3)', borderTop: '1px solid var(--b1)', paddingTop: 10, marginTop: 2 }}>
                 {visible.length} compétition{visible.length !== 1 ? 's' : ''} affichée{visible.length !== 1 ? 's' : ''} · La génération ne créera que celles correspondant aux filtres
               </div>
             )}
@@ -210,42 +210,42 @@ export default function Competitions() {
 
         {/* ── Liste des compétitions ── */}
         {competitions.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16 }}>
-            <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <Grid3X3 size={28} color="#374151" strokeWidth={1.5} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16 }}>
+            <div style={{ width: 60, height: 60, borderRadius: 16, background: 'var(--inp)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Grid3X3 size={28} color="var(--dim)" strokeWidth={1.5} />
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Aucune compétition</div>
-            <div style={{ fontSize: 13, color: '#4b5563', marginBottom: 20 }}>Terminez la pesée puis générez les compétitions</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>Aucune compétition</div>
+            <div style={{ fontSize: 13, color: 'var(--fg3)', marginBottom: 20 }}>Terminez la pesée puis générez les compétitions</div>
             <button onClick={() => generate.mutate()} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#dc2626', color: '#fff', padding: '9px 18px', borderRadius: 9, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
               <Zap size={14} /> Générer maintenant
             </button>
           </div>
         ) : visible.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px', textAlign: 'center', background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16 }}>
-            <div style={{ fontSize: 13, color: '#4b5563' }}>Aucune compétition pour ce filtre</div>
-            <div style={{ fontSize: 11, color: '#374151', marginTop: 4 }}>Modifiez les filtres ou cliquez sur Générer pour créer des compétitions dans cette sélection</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 24px', textAlign: 'center', background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--fg3)' }}>Aucune compétition pour ce filtre</div>
+            <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 4 }}>Modifiez les filtres ou cliquez sur Générer pour créer des compétitions dans cette sélection</div>
           </div>
         ) : (
           sortGroupEntries(Object.entries(grouped)).map(([cat, comps]) => (
             <section key={cat}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{cat}</span>
-                <span style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 5, padding: '1px 7px', fontSize: 11, fontWeight: 600, color: '#6b7280' }}>{comps.length}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>{cat}</span>
+                <span style={{ background: 'var(--b3)', borderRadius: 5, padding: '1px 7px', fontSize: 11, fontWeight: 600, color: 'var(--fg3)' }}>{comps.length}</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
                 {comps.map((c: any) => {
                   const fmt = FORMAT[c.format_type] || { label: c.format_type, color: '#6b7280', bg: 'rgba(107,114,128,0.1)' };
                   return (
-                    <div key={c.id} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div key={c.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 12, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700, color: '#fff' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 700, color: 'var(--fg)' }}>
                             {c.weight_category} kg
                             {c.gender === 'M'  && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: 'rgba(59,130,246,0.12)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.25)' }}>M</span>}
                             {c.gender === 'F'  && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: 'rgba(236,72,153,0.12)', color: '#f472b6', border: '1px solid rgba(236,72,153,0.25)' }}>F</span>}
                             {c.gender === 'MX' && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', height: 17, borderRadius: 4, fontSize: 10, fontWeight: 800, background: 'rgba(167,139,250,0.12)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.25)' }}>MX</span>}
                           </div>
-                          <div style={{ fontSize: 12, color: '#4b5563', marginTop: 3, textTransform: 'capitalize' }}>
+                          <div style={{ fontSize: 12, color: 'var(--fg3)', marginTop: 3, textTransform: 'capitalize' }}>
                             {STYLE_LABELS[c.style] ?? c.style}
                           </div>
                         </div>

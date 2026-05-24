@@ -58,42 +58,42 @@ function MatchCard({ match }: { match: any }) {
     <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10, padding: '9px 11px', fontSize: 12 }}>
       {/* Red row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: redIsBye ? '#374151' : '#ef4444', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: redIsBye ? 'var(--dim)' : '#ef4444', flexShrink: 0, marginTop: 4 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3,
-            color: redIsBye ? '#374151' : (isFinished && winnerIsRed ? '#fff' : '#f87171'),
+            color: redIsBye ? 'var(--dim)' : (isFinished && winnerIsRed ? 'var(--fg)' : '#f87171'),
             fontWeight: isFinished && winnerIsRed ? 700 : 500 }}>
             {redName}
           </div>
           {!redIsBye && match.red_club && (
-            <div style={{ fontSize: 10, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+            <div style={{ fontSize: 10, color: 'var(--fg3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
               {match.red_club}
             </div>
           )}
         </div>
         {isFinished && !isBye && (
-          <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 700, flexShrink: 0, fontSize: 12 }}>
+          <span style={{ fontFamily: 'monospace', color: 'var(--fg)', fontWeight: 700, flexShrink: 0, fontSize: 12 }}>
             {match.score_red ?? ''}
           </span>
         )}
       </div>
       {/* Blue row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: blueIsBye ? '#374151' : '#3b82f6', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: blueIsBye ? 'var(--dim)' : '#3b82f6', flexShrink: 0, marginTop: 4 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3,
-            color: blueIsBye ? '#374151' : (isFinished && !winnerIsRed ? '#fff' : '#60a5fa'),
+            color: blueIsBye ? 'var(--dim)' : (isFinished && !winnerIsRed ? 'var(--fg)' : '#60a5fa'),
             fontWeight: isFinished && !winnerIsRed ? 700 : 500 }}>
             {blueName}
           </div>
           {!blueIsBye && match.blue_club && (
-            <div style={{ fontSize: 10, color: '#4b5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
+            <div style={{ fontSize: 10, color: 'var(--fg3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
               {match.blue_club}
             </div>
           )}
         </div>
         {isFinished && !isBye && (
-          <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 700, flexShrink: 0, fontSize: 12 }}>
+          <span style={{ fontFamily: 'monospace', color: 'var(--fg)', fontWeight: 700, flexShrink: 0, fontSize: 12 }}>
             {match.score_blue ?? ''}
           </span>
         )}
@@ -103,7 +103,7 @@ function MatchCard({ match }: { match: any }) {
         <div style={{ marginTop: 6, fontSize: 10, color: '#fbbf24', fontWeight: 600 }}>● En cours</div>
       )}
       {isFinished && !isBye && match.win_type && (
-        <div style={{ marginTop: 3, fontSize: 10, color: '#4b5563', textTransform: 'capitalize' }}>{match.win_type}</div>
+        <div style={{ marginTop: 3, fontSize: 10, color: 'var(--fg3)', textTransform: 'capitalize' }}>{match.win_type}</div>
       )}
       {/* BYE badge */}
       {isBye && (
@@ -126,33 +126,33 @@ function MatchCard({ match }: { match: any }) {
 }
 
 function NordicView({ matches, pools }: { matches: any[]; pools: any[] }) {
-  if (pools.length === 0) return <div style={{ color: '#4b5563', fontSize: 13 }}>Aucune poule générée</div>;
+  if (pools.length === 0) return <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucune poule générée</div>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {pools.map((pool: any) => {
         const poolMatches = matches.filter((m: any) => m.pool_id === pool.id);
         return (
-          <div key={pool.id} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 12, fontWeight: 700, color: '#9ca3af' }}>{pool.name}</div>
+          <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b2)', fontSize: 12, fontWeight: 700, color: 'var(--fg2)' }}>{pool.name}</div>
             <div style={{ padding: '8px 0' }}>
               {poolMatches.map((m: any, i: number) => (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#f87171' }}>{m.red_name || '?'}</span>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 900, color: m.status === 'finished' ? '#fff' : '#374151', fontSize: 14 }}>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 900, color: m.status === 'finished' ? 'var(--fg)' : 'var(--dim)', fontSize: 14 }}>
                     {m.status === 'finished' ? `${m.score_red} – ${m.score_blue}` : 'vs'}
                   </span>
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#60a5fa', textAlign: 'right' }}>{m.blue_name || '?'}</span>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                   {m.id && (
-                    <Link to={`/ref/${m.id}`} target="_blank" style={{ color: '#4b5563', display: 'flex', textDecoration: 'none' }}>
+                    <Link to={`/ref/${m.id}`} target="_blank" style={{ color: 'var(--fg3)', display: 'flex', textDecoration: 'none' }}>
                       <ChevronRight size={14} />
                     </Link>
                   )}
                 </div>
               ))}
               {poolMatches.length === 0 && (
-                <div style={{ padding: '12px 16px', fontSize: 12, color: '#374151' }}>Tableau non généré</div>
+                <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
               )}
             </div>
           </div>
@@ -212,11 +212,11 @@ function BracketView({ matches }: { matches: any[] }) {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           <Trophy size={14} color="#fbbf24" />
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#d1d5db' }}>Tableau principal</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg2)' }}>Tableau principal</span>
         </div>
 
         {mainRounds.length === 0 ? (
-          <div style={{ color: '#4b5563', fontSize: 13 }}>Tableau non encore généré</div>
+          <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Tableau non encore généré</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <div style={{ position: 'relative', width: totalW, height: BK.labelH + bracketH + 20 }}>
@@ -229,7 +229,7 @@ function BracketView({ matches }: { matches: any[] }) {
                     position: 'absolute', top: 0, left: colIdx * colW, width: BK.cardW,
                     height: BK.labelH,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10, fontWeight: 700, color: '#4b5563',
+                    fontSize: 10, fontWeight: 700, color: 'var(--fg3)',
                     textTransform: 'uppercase', letterSpacing: '0.1em',
                   }}
                 >
@@ -243,7 +243,7 @@ function BracketView({ matches }: { matches: any[] }) {
                 height: BK.labelH,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 10, fontWeight: 700, color: '#ca8a04',
-                textTransform: 'uppercase', letterSpacing: '0.1em',
+                textTransform: 'uppercase' as const, letterSpacing: '0.1em',
               }}>
                 Vainqueur
               </div>
@@ -364,7 +364,7 @@ function BracketView({ matches }: { matches: any[] }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <Medal size={14} color="#f97316" />
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#d1d5db' }}>Repêchage (2× Bronze)</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg2)' }}>Repêchage (2× Bronze)</span>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <div style={{ display: 'flex', gap: 14, minWidth: 'max-content', paddingBottom: 8, opacity: 0.85 }}>
@@ -373,7 +373,7 @@ function BracketView({ matches }: { matches: any[] }) {
                   ? `Bronze` : `Repêchage T${idx + 1}`;
                 return (
                   <div key={rk} style={{ display: 'flex', flexDirection: 'column', gap: 8, width: BK.cardW }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', height: BK.labelH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'center', height: BK.labelH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {label}
                     </div>
                     {(rMatches as any[]).map((m: any) => <MatchCard key={m.id} match={m} />)}
@@ -456,7 +456,7 @@ function computePoolRankings(
 function RoundColumn({ matches, label }: { matches: any[]; label: string }) {
   return (
     <div style={{ minWidth: 220, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{label}</div>
       {matches.map((m: any) => <MatchCard key={m.id} match={m} />)}
     </div>
   );
@@ -467,7 +467,7 @@ function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
   const finalMatches = matches.filter((m: any) => ['semifinal', 'final', 'bronze'].includes(m.match_type));
 
   if (pools.length === 0) {
-    return <div style={{ color: '#4b5563', fontSize: 13 }}>Aucune poule générée</div>;
+    return <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucune poule générée</div>;
   }
 
   const poolRankings = pools.map(pool => ({
@@ -488,8 +488,8 @@ function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
         {pools.map(pool => {
           const pMatches = poolMatches.filter((m: any) => m.pool_id === pool.id);
           return (
-            <div key={pool.id} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '9px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: 11, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '9px 16px', borderBottom: '1px solid var(--b2)', fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 Poule {pool.name}
               </div>
               <div>
@@ -498,36 +498,36 @@ function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
                   const redWon  = isFinished && m.winner_id === m.red_athlete_id;
                   const blueWon = isFinished && m.winner_id === m.blue_athlete_id;
                   return (
-                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
                       {/* Rouge */}
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: redWon ? 700 : 500, color: redWon ? '#fff' : '#f87171', lineHeight: 1.2 }}>{m.red_name || '?'}</div>
-                          {m.red_club && <div style={{ fontSize: 11, color: '#4b5563', marginTop: 1 }}>{m.red_club}</div>}
+                          <div style={{ fontSize: 13, fontWeight: redWon ? 700 : 500, color: redWon ? 'var(--fg)' : '#f87171', lineHeight: 1.2 }}>{m.red_name || '?'}</div>
+                          {m.red_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 1 }}>{m.red_club}</div>}
                         </div>
                       </div>
                       {/* Score / VS */}
-                      <div style={{ fontFamily: 'monospace', fontWeight: 900, color: isFinished ? '#fff' : '#374151', fontSize: 14, flexShrink: 0, minWidth: 52, textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'monospace', fontWeight: 900, color: isFinished ? 'var(--fg)' : 'var(--dim)', fontSize: 14, flexShrink: 0, minWidth: 52, textAlign: 'center' }}>
                         {isFinished ? `${m.score_red} – ${m.score_blue}` : 'vs'}
                       </div>
                       {/* Bleu */}
                       <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 13, fontWeight: blueWon ? 700 : 500, color: blueWon ? '#fff' : '#60a5fa', lineHeight: 1.2 }}>{m.blue_name || '?'}</div>
-                          {m.blue_club && <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>{m.blue_club}</div>}
+                          <div style={{ fontSize: 13, fontWeight: blueWon ? 700 : 500, color: blueWon ? 'var(--fg)' : '#60a5fa', lineHeight: 1.2 }}>{m.blue_name || '?'}</div>
+                          {m.blue_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>{m.blue_club}</div>}
                         </div>
                         <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                       </div>
                       {/* Arbitrer */}
-                      <Link to={`/ref/${m.id}`} target="_blank" style={{ color: '#374151', display: 'flex', textDecoration: 'none', marginLeft: 2, flexShrink: 0 }}>
+                      <Link to={`/ref/${m.id}`} target="_blank" style={{ color: 'var(--dim)', display: 'flex', textDecoration: 'none', marginLeft: 2, flexShrink: 0 }}>
                         <ChevronRight size={14} />
                       </Link>
                     </div>
                   );
                 })}
                 {pMatches.length === 0 && (
-                  <div style={{ padding: '12px 16px', fontSize: 12, color: '#374151' }}>Tableau non généré</div>
+                  <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
                 )}
               </div>
             </div>
@@ -537,7 +537,7 @@ function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
         {/* Phase finale */}
         {finalMatches.length > 0 && (
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#d1d5db', marginBottom: 12 }}>Phase finale</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg2)', marginBottom: 12 }}>Phase finale</div>
             <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
               {(['semifinal', 'final', 'bronze'] as const).map(type => {
                 const t = finalMatches.filter((m: any) => m.match_type === type);
@@ -553,38 +553,38 @@ function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
       {/* ── Droite : classements par poule ── */}
       <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {poolRankings.map(({ pool, ranking }) => (
-          <div key={pool.id} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
+          <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
             {/* Titre */}
-            <div style={{ padding: '9px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 7 }}>
+            <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 7 }}>
               <Trophy size={12} color="#fbbf24" />
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Classement Poule {pool.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>Classement Poule {pool.name}</span>
             </div>
             {/* En-têtes colonnes */}
-            <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '6px 12px 5px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>#</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Athlète</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts class.</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts tech.</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '6px 12px 5px', borderBottom: '1px solid var(--b1)' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)' }}>#</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Athlète</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts class.</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts tech.</div>
             </div>
             {/* Lignes */}
             {ranking.map((r, i) => {
               const rs = RANK_STYLE(i);
               return (
-                <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '9px 12px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none', alignItems: 'center' }}>
+                <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '9px 12px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none', alignItems: 'center' }}>
                   <div style={{ width: 22, height: 22, borderRadius: 6, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
                     {i + 1}
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-                    {r.club && <div style={{ fontSize: 10, color: '#4b5563', marginTop: 1 }}>{r.club}</div>}
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                    {r.club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>{r.club}</div>}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#d1d5db', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.pts}</div>
-                  <div style={{ fontSize: 13, color: '#6b7280', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.tech}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg2)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.pts}</div>
+                  <div style={{ fontSize: 13, color: 'var(--fg3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.tech}</div>
                 </div>
               );
             })}
             {ranking.length === 0 && (
-              <div style={{ padding: '12px 14px', fontSize: 11, color: '#374151' }}>Aucun athlète</div>
+              <div style={{ padding: '12px 14px', fontSize: 11, color: 'var(--dim)' }}>Aucun athlète</div>
             )}
           </div>
         ))}
@@ -600,7 +600,7 @@ const RANK_STYLE = (i: number) => i === 0
   ? { bg: '#9ca3af', color: '#000' }
   : i === 2
   ? { bg: '#c2410c', color: '#fff' }
-  : { bg: 'rgba(255,255,255,0.06)', color: '#6b7280' };
+  : { bg: 'var(--inp)', color: 'var(--fg3)' };
 
 export default function Brackets() {
   const { id } = useParams<{ id: string }>();
@@ -727,12 +727,12 @@ export default function Brackets() {
 
       <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {competitions.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16 }}>
-            <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-              <Zap size={28} color="#374151" strokeWidth={1.5} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center', background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16 }}>
+            <div style={{ width: 60, height: 60, borderRadius: 16, background: 'var(--inp)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Zap size={28} color="var(--dim)" strokeWidth={1.5} />
             </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', marginBottom: 6 }}>Aucune compétition</div>
-            <div style={{ fontSize: 13, color: '#4b5563' }}>Générez les compétitions depuis l'onglet Compétitions</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>Aucune compétition</div>
+            <div style={{ fontSize: 13, color: 'var(--fg3)' }}>Générez les compétitions depuis l'onglet Compétitions</div>
           </div>
         ) : (
           <>
@@ -744,7 +744,7 @@ export default function Brackets() {
                   <button
                     key={c.id}
                     onClick={() => setSelectedComp(c.id)}
-                    style={{ padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#dc2626' : 'rgba(255,255,255,0.06)', color: isActive ? '#fff' : '#6b7280', transition: 'all 0.15s' }}
+                    style={{ padding: '6px 14px', borderRadius: 99, fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', background: isActive ? '#dc2626' : 'var(--b3)', color: isActive ? '#fff' : 'var(--fg3)', transition: 'all 0.15s' }}
                   >
                     {c.age_category} · {c.weight_category}kg {c.gender}
                   </button>
@@ -755,8 +755,8 @@ export default function Brackets() {
             {comp && (
               <>
                 {/* Competition info bar */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: '#4b5563', padding: '10px 16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10 }}>
-                  <span style={{ color: '#9ca3af', fontWeight: 500 }}>{FORMAT_LABEL[comp.format_type] || comp.format_type}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: 'var(--fg3)', padding: '10px 16px', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 10 }}>
+                  <span style={{ color: 'var(--fg2)', fontWeight: 500 }}>{FORMAT_LABEL[comp.format_type] || comp.format_type}</span>
                   <span>·</span>
                   <span>{comp.athlete_count ?? 0} athlètes</span>
                   <span>·</span>
@@ -764,7 +764,7 @@ export default function Brackets() {
                 </div>
 
                 {isLoading ? (
-                  <div style={{ color: '#4b5563', fontSize: 13, padding: '20px 0' }}>Chargement…</div>
+                  <div style={{ color: 'var(--fg3)', fontSize: 13, padding: '20px 0' }}>Chargement…</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     {/* Bracket view */}
@@ -780,23 +780,23 @@ export default function Brackets() {
 
                     {/* Rankings */}
                     {rankings.length > 0 && (
-                      <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, overflow: 'hidden' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', borderBottom: '1px solid var(--b2)' }}>
                           <Trophy size={14} color="#fbbf24" />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Classement</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>Classement</span>
                         </div>
                         <div style={{ padding: '8px 0' }}>
                           {rankings.map((r: any, i: number) => {
                             const rs = RANK_STYLE(i);
                             return (
-                              <div key={r.athlete_id || i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 18px', borderTop: i > 0 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                              <div key={r.athlete_id || i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 18px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
                                 <div style={{ width: 26, height: 26, borderRadius: 8, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
                                   {r.rank ?? i + 1}
                                 </div>
-                                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#fff' }}>{r.athlete_name || r.name}</span>
-                                <span style={{ fontSize: 11, color: '#4b5563' }}>{r.club_name || r.club}</span>
+                                <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{r.athlete_name || r.name}</span>
+                                <span style={{ fontSize: 11, color: 'var(--fg3)' }}>{r.club_name || r.club}</span>
                                 {r.points !== undefined && (
-                                  <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#6b7280' }}>{r.points} pts</span>
+                                  <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--fg3)' }}>{r.points} pts</span>
                                 )}
                               </div>
                             );
@@ -815,10 +815,10 @@ export default function Brackets() {
       {/* ── Modal suppression ── */}
       {deleteModal && comp && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 24 }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--ovl)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 24 }}
           onClick={(e) => { if (e.target === e.currentTarget) setDeleteModal(null); }}
         >
-          <div style={{ background: '#141414', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 16, padding: 28, maxWidth: 460, width: '100%', boxShadow: '0 24px 48px rgba(0,0,0,0.6)' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 16, padding: 28, maxWidth: 460, width: '100%', boxShadow: '0 24px 48px rgba(0,0,0,0.6)' }}>
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
@@ -826,8 +826,8 @@ export default function Brackets() {
                 <AlertTriangle size={18} color="#f87171" />
               </div>
               <div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Supprimer le tableau</div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>Cette action est irréversible</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)' }}>Supprimer le tableau</div>
+                <div style={{ fontSize: 12, color: 'var(--fg3)', marginTop: 2 }}>Cette action est irréversible</div>
               </div>
             </div>
 
@@ -836,14 +836,14 @@ export default function Brackets() {
               {/* Option 1 : ce tableau uniquement */}
               <button
                 onClick={() => setDeleteModal('single')}
-                style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: deleteModal === 'single' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)', border: deleteModal === 'single' ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: deleteModal === 'single' ? 'rgba(239,68,68,0.1)' : 'var(--inp)', border: deleteModal === 'single' ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--b3)', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
               >
-                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${deleteModal === 'single' ? '#f87171' : '#374151'}`, background: deleteModal === 'single' ? '#f87171' : 'transparent', flexShrink: 0, marginTop: 2 }} />
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${deleteModal === 'single' ? '#f87171' : 'var(--dim)'}`, background: deleteModal === 'single' ? '#f87171' : 'transparent', flexShrink: 0, marginTop: 2 }} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: deleteModal === 'single' ? '#fff' : '#9ca3af' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: deleteModal === 'single' ? 'var(--fg)' : 'var(--fg2)' }}>
                     Ce tableau uniquement
                   </div>
-                  <div style={{ fontSize: 11, color: '#4b5563', marginTop: 3 }}>
+                  <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 3 }}>
                     {comp.weight_category}kg {comp.gender} · {comp.age_category} · {STYLE_LABELS[comp.style] ?? comp.style}
                   </div>
                 </div>
@@ -853,14 +853,14 @@ export default function Brackets() {
               {sameAgeComps.length > 1 && (
                 <button
                   onClick={() => setDeleteModal('bulk')}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: deleteModal === 'bulk' ? 'rgba(239,68,68,0.1)' : 'rgba(255,255,255,0.03)', border: deleteModal === 'bulk' ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: deleteModal === 'bulk' ? 'rgba(239,68,68,0.1)' : 'var(--inp)', border: deleteModal === 'bulk' ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--b3)', borderRadius: 10, padding: '12px 16px', cursor: 'pointer', textAlign: 'left', width: '100%' }}
                 >
-                  <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${deleteModal === 'bulk' ? '#f87171' : '#374151'}`, background: deleteModal === 'bulk' ? '#f87171' : 'transparent', flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${deleteModal === 'bulk' ? '#f87171' : 'var(--dim)'}`, background: deleteModal === 'bulk' ? '#f87171' : 'transparent', flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: deleteModal === 'bulk' ? '#fff' : '#9ca3af' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: deleteModal === 'bulk' ? 'var(--fg)' : 'var(--fg2)' }}>
                       Tous les tableaux {comp.age_category}
                     </div>
-                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 3 }}>
+                    <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 3 }}>
                       {sameAgeComps.length} compétition{sameAgeComps.length !== 1 ? 's' : ''} — toutes catégories de poids
                     </div>
                   </div>
@@ -871,7 +871,7 @@ export default function Brackets() {
             {/* Option force — super admin uniquement */}
             {isGlobalAdmin && (
               <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 9, border: `1px solid ${forceDelete ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.07)'}`, background: forceDelete ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.02)' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', padding: '10px 12px', borderRadius: 9, border: `1px solid ${forceDelete ? 'rgba(239,68,68,0.4)' : 'var(--b2)'}`, background: forceDelete ? 'rgba(239,68,68,0.08)' : 'var(--inp)' }}>
                   <input
                     type="checkbox"
                     checked={forceDelete}
@@ -879,10 +879,10 @@ export default function Brackets() {
                     style={{ marginTop: 2, accentColor: '#ef4444', width: 15, height: 15, flexShrink: 0, cursor: 'pointer' }}
                   />
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: forceDelete ? '#f87171' : '#6b7280' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: forceDelete ? '#f87171' : 'var(--fg3)' }}>
                       ⚡ Forcer la suppression (super admin)
                     </div>
-                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>
                       Supprime même les combats en cours ou déjà validés — les résultats seront perdus
                     </div>
                   </div>
@@ -895,7 +895,7 @@ export default function Brackets() {
               <button
                 onClick={() => { setDeleteModal(null); setForceDelete(false); }}
                 disabled={isPendingDelete}
-                style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                style={{ flex: 1, padding: '9px 0', borderRadius: 9, border: '1px solid var(--b3)', background: 'var(--inp)', color: 'var(--fg2)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
               >
                 Annuler
               </button>

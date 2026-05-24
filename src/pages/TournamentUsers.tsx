@@ -16,8 +16,8 @@ const ROLES = [
   { value: 'viewer',            label: 'Lecture seule',      color: '#6b7280', bg: 'rgba(107,114,128,0.1)'  },
 ];
 
-const LABEL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 };
-const INPUT: React.CSSProperties = { width: '100%', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: '#fff', outline: 'none', boxSizing: 'border-box' as const };
+const LABEL: React.CSSProperties = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 };
+const INPUT: React.CSSProperties = { width: '100%', background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: '9px 12px', fontSize: 13, color: 'var(--fg)', outline: 'none', boxSizing: 'border-box' as const };
 
 const EMPTY_FORM = { email: '', password: '', name: '', role: 'referee' };
 
@@ -85,34 +85,34 @@ export default function TournamentUsers() {
       />
 
       <div style={{ padding: '20px 24px' }}>
-        <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16, overflow: 'hidden' }}>
           {users.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 24px', textAlign: 'center' }}>
-              <Users size={28} color="#374151" style={{ marginBottom: 10 }} />
-              <div style={{ color: '#4b5563', fontSize: 13 }}>Aucun utilisateur pour ce tournoi</div>
-              <div style={{ color: '#374151', fontSize: 11, marginTop: 6 }}>Cliquez sur "Ajouter" pour inviter des collaborateurs</div>
+              <Users size={28} color="var(--dim)" style={{ marginBottom: 10 }} />
+              <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucun utilisateur pour ce tournoi</div>
+              <div style={{ color: 'var(--dim)', fontSize: 11, marginTop: 6 }}>Cliquez sur "Ajouter" pour inviter des collaborateurs</div>
             </div>
           ) : (
             users.map((u: any, i: number) => {
               const role = ROLES.find(r => r.value === u.role) || { label: u.role, color: '#6b7280', bg: 'rgba(107,114,128,0.1)' };
               const initials = (u.user_name || u.name)?.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2) || '?';
               return (
-                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                  <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#9ca3af', flexShrink: 0 }}>
+                <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 20px', borderBottom: i < users.length - 1 ? '1px solid var(--b1)' : 'none' }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--inp)', border: '1px solid var(--b3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'var(--fg3)', flexShrink: 0 }}>
                     {initials}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{u.user_name || u.name}</div>
-                    <div style={{ fontSize: 11, color: '#4b5563', marginTop: 2 }}>{u.user_email || u.email}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{u.user_name || u.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>{u.user_email || u.email}</div>
                   </div>
                   <span style={{ background: role.bg, color: role.color, borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
                     {role.label}
                   </span>
                   <button
                     onClick={() => remove.mutate(u.user_id)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563', display: 'flex', padding: 4, flexShrink: 0, borderRadius: 6 }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg3)', display: 'flex', padding: 4, flexShrink: 0, borderRadius: 6 }}
                   >
-                    <Trash2 size={14} color="#6b7280" />
+                    <Trash2 size={14} color="var(--fg3)" />
                   </button>
                 </div>
               );
@@ -124,14 +124,14 @@ export default function TournamentUsers() {
       {/* Modal */}
       {modal && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}
+          style={{ position: 'fixed', inset: 0, background: 'var(--ovl)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}
           onClick={e => { if (e.target === e.currentTarget) { setModal(false); setForm(EMPTY_FORM); } }}
         >
-          <div style={{ background: '#121212', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 460, boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--b3)', borderRadius: 20, width: '100%', maxWidth: 460, boxShadow: '0 40px 120px rgba(0,0,0,0.8)' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: 16 }}>Ajouter un utilisateur</div>
-              <button onClick={() => { setModal(false); setForm(EMPTY_FORM); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--b2)' }}>
+              <div style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 16 }}>Ajouter un utilisateur</div>
+              <button onClick={() => { setModal(false); setForm(EMPTY_FORM); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg3)', display: 'flex' }}>
                 <X size={18} />
               </button>
             </div>
@@ -168,7 +168,7 @@ export default function TournamentUsers() {
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', paddingTop: 4 }}>
                 <button
                   onClick={() => { setModal(false); setForm(EMPTY_FORM); }}
-                  style={{ padding: '8px 16px', borderRadius: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#d1d5db', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: 9, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg2)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
                 >
                   Annuler
                 </button>

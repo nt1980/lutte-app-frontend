@@ -19,7 +19,6 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email, password);
-      // Vérifier si l'utilisateur est arbitre affecté à un tapis
       try {
         const { data } = await api.get('/api/users/me/referee-mat');
         if (data?.tournament_id) {
@@ -36,7 +35,7 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080808', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
       <div style={{ width: '100%', maxWidth: '360px' }}>
 
         {/* Logo */}
@@ -48,27 +47,27 @@ export default function Login() {
           }}>
             <Trophy size={26} color="white" />
           </div>
-          <h1 style={{ color: 'white', fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Lutte App</h1>
-          <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.3rem' }}>Gestion de tournois FFLDA / UWW</p>
+          <h1 style={{ color: 'var(--fg)', fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Lutte App</h1>
+          <p style={{ color: 'var(--fg3)', fontSize: '0.8rem', marginTop: '0.3rem' }}>Gestion de tournois FFLDA / UWW</p>
         </div>
 
         {/* Card */}
         <div style={{
-          background: '#141414', border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: 20, padding: '2rem', boxShadow: '0 24px 64px rgba(0,0,0,0.6)'
+          background: 'var(--card)', border: '1px solid var(--b3)',
+          borderRadius: 20, padding: '2rem', boxShadow: '0 24px 64px rgba(0,0,0,0.15)'
         }}>
-          <h2 style={{ color: 'white', fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', marginTop: 0 }}>
+          <h2 style={{ color: 'var(--fg)', fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', marginTop: 0 }}>
             Connexion
           </h2>
 
           <form onSubmit={handleSubmit}>
             {/* Email */}
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', color: '#6b7280', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
+              <label style={{ display: 'block', color: 'var(--fg3)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
                 Email
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                <Mail size={14} color="var(--faint)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                 <input
                   type="email"
                   value={email}
@@ -78,9 +77,9 @@ export default function Login() {
                   autoComplete="email"
                   style={{
                     width: '100%', boxSizing: 'border-box',
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'var(--inp)', border: '1px solid var(--b3)',
                     borderRadius: 12, padding: '0.65rem 1rem 0.65rem 2.5rem',
-                    color: 'white', fontSize: '0.875rem', outline: 'none',
+                    color: 'var(--fg)', fontSize: '0.875rem', outline: 'none',
                   }}
                 />
               </div>
@@ -88,11 +87,11 @@ export default function Login() {
 
             {/* Password */}
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={{ display: 'block', color: '#6b7280', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
+              <label style={{ display: 'block', color: 'var(--fg3)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
                 Mot de passe
               </label>
               <div style={{ position: 'relative' }}>
-                <Lock size={14} color="#4b5563" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                <Lock size={14} color="var(--faint)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                 <input
                   type={showPw ? 'text' : 'password'}
                   value={password}
@@ -102,15 +101,15 @@ export default function Login() {
                   autoComplete="current-password"
                   style={{
                     width: '100%', boxSizing: 'border-box',
-                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'var(--inp)', border: '1px solid var(--b3)',
                     borderRadius: 12, padding: '0.65rem 2.5rem 0.65rem 2.5rem',
-                    color: 'white', fontSize: '0.875rem', outline: 'none',
+                    color: 'var(--fg)', fontSize: '0.875rem', outline: 'none',
                   }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(p => !p)}
-                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#4b5563' }}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--faint)' }}
                 >
                   {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
@@ -146,7 +145,7 @@ export default function Login() {
           </form>
         </div>
 
-        <p style={{ textAlign: 'center', color: '#374151', fontSize: '0.75rem', marginTop: '1rem' }}>
+        <p style={{ textAlign: 'center', color: 'var(--dim)', fontSize: '0.75rem', marginTop: '1rem' }}>
           Accès réservé aux gestionnaires de tournois
         </p>
       </div>
