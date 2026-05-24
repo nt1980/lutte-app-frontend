@@ -346,7 +346,7 @@ export default function MatManager() {
             </div>
 
             {/* Colonnes header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,140px) 28px minmax(0,140px) 70px 50px 40px 28px 60px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid var(--b1)', background: 'var(--inp)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,224px) 28px minmax(0,224px) 70px 50px 40px 28px 60px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid var(--b1)', background: 'var(--inp)' }}>
               {['#','Rouge','','Bleu','Tour','Âge','Poids','S','Repos','Tapis'].map((h, i) => (
                 <div key={i} style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: i === 2 || i >= 4 ? 'center' : i === 3 ? 'right' : 'left' }}>{h}</div>
               ))}
@@ -375,7 +375,7 @@ export default function MatManager() {
                     onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '28px minmax(0,140px) 28px minmax(0,140px) 70px 50px 40px 28px 60px auto',
+                      gridTemplateColumns: '28px minmax(0,224px) 28px minmax(0,224px) 70px 50px 40px 28px 60px auto',
                       alignItems: 'center',
                       gap: 0,
                       padding: '7px 14px',
