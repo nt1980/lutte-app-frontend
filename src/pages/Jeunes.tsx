@@ -118,7 +118,7 @@ function PoolCard({
           {pool.pool_name}
         </div>
         <div style={{ fontSize: 10, color: 'var(--faint)' }}>
-          {pool.weight_min.toFixed(1)}–{pool.weight_max.toFixed(1)} kg
+          {Number(pool.weight_min).toFixed(1)}–{Number(pool.weight_max).toFixed(1)} kg
         </div>
         <div style={{ fontSize: 10, color, fontWeight: 600 }}>
           {GENDER_LABEL[pool.gender] ?? pool.gender}
@@ -641,7 +641,7 @@ function MatRow({
           </span>
         </div>
         <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 2 }}>
-          {pool.weight_min.toFixed(1)}–{pool.weight_max.toFixed(1)} kg · {pool.athletes?.length ?? 0} athlètes
+          {Number(pool.weight_min).toFixed(1)}–{Number(pool.weight_max).toFixed(1)} kg · {pool.athletes?.length ?? 0} athlètes
         </div>
       </div>
 
