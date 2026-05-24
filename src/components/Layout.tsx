@@ -6,7 +6,7 @@ import { PrivateThemeApplier } from '../contexts/ThemeContext';
 import api from '../lib/api';
 import {
   Trophy, LayoutDashboard, Users, Building2, ListChecks, Scale, Zap,
-  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft, Menu, X, Monitor,
+  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft, Menu, X, Monitor, Baby,
 } from 'lucide-react';
 
 const globalNav = [
@@ -19,6 +19,7 @@ const tournamentNav = (id: string) => [
   { to: `/t/${id}`,               label: 'Vue générale',  icon: LayoutDashboard },
   { to: `/t/${id}/registrations`, label: 'Inscriptions',  icon: ListChecks      },
   { to: `/t/${id}/weigh-in`,      label: 'Pesée',         icon: Scale           },
+  { to: `/t/${id}/jeunes`,        label: 'Jeunes',        icon: Baby            },
   { to: `/t/${id}/competitions`,  label: 'Compétitions',  icon: Grid3X3         },
   { to: `/t/${id}/brackets`,      label: 'Tableaux',      icon: Zap             },
   { to: `/t/${id}/mats`,          label: 'Tapis',         icon: Activity        },

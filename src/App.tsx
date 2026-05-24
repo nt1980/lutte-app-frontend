@@ -21,6 +21,7 @@ import RefView from './pages/RefView';
 import TournamentUsers from './pages/TournamentUsers';
 import AuditLogs from './pages/AuditLogs';
 import UserSettings from './pages/UserSettings';
+import Jeunes from './pages/Jeunes';
 import PublicTournament from './pages/public/PublicTournament';
 import PublicProgramme from './pages/public/PublicProgramme';
 import PublicResultats from './pages/public/PublicResultats';
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/t/:id" element={<PrivateRoute><TournamentDetail /></PrivateRoute>} />
           <Route path="/t/:id/registrations" element={<PrivateRoute><Registrations /></PrivateRoute>} />
           <Route path="/t/:id/weigh-in" element={<PrivateRoute><WeighIn /></PrivateRoute>} />
+          <Route path="/t/:id/jeunes" element={<PrivateRoute><Jeunes /></PrivateRoute>} />
           <Route path="/t/:id/competitions" element={<PrivateRoute><Competitions /></PrivateRoute>} />
           <Route path="/t/:id/brackets" element={<PrivateRoute><Brackets /></PrivateRoute>} />
           <Route path="/t/:id/mats" element={<PrivateRoute><MatManager /></PrivateRoute>} />

@@ -1,0 +1,935 @@
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Baby, RefreshCw, Trash2, Play, AlertTriangle, Check,
+  ChevronDown, User, Monitor, Award, Clock,
+} from 'lucide-react';
+import Layout, { PageHeader } from '../components/Layout';
+import api from '../lib/api';
+import toast from 'react-hot-toast';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface PoolAthlete {
+  athlete_id: string;
+  name: string;
+  gender: string;
+  weight: string | number;
+  club: string;
+  seed_order: number;
+}
+
+interface JeunesPool {
+  id: string;
+  age_category: string;
+  weight_min: number;
+  weight_max: number;
+  gender_strategy: string;
+  gender: string;
+  pool_name: string;
+  pool_status: string;
+  mat_id: string | null;
+  mat_name: string | null;
+  referee_id: string | null;
+  referee_name: string | null;
+  match_count: number;
+  matches_done: number;
+  athletes: PoolAthlete[];
+  display_order: number;
+}
+
+interface Unassigned {
+  id: string;
+  athlete_id: string;
+  name: string;
+  gender: string;
+  club: string;
+  age_category: string;
+  weigh_in_weight: string | number;
+  reason: string;
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const GENDER_LABEL: Record<string, string> = { M: 'Garçons', F: 'Filles', MX: 'Mixte' };
+const GENDER_COLOR: Record<string, string> = { M: '#60a5fa', F: '#f472b6', MX: '#a78bfa' };
+
+const AGE_TABS = ['Tout', 'U9', 'U11'];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function checkConstraints(athletes: PoolAthlete[]): string[] {
+  const v: string[] = [];
+  if (athletes.length > 4) v.push(`Trop d'athlètes (${athletes.length}/4 max)`);
+  if (athletes.length < 2) v.push('Moins de 2 athlètes');
+  const ws = athletes.map(a => Number(a.weight)).filter(Boolean);
+  if (ws.length > 1) {
+    const spread = Math.max(...ws) / Math.min(...ws);
+    if (spread > 1.10) v.push(`Écart de poids > 10 % (${((spread - 1) * 100).toFixed(1)} %)`);
+  }
+  return v;
+}
+
+function fmtElapsed(secs: number) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  if (m >= 60) return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`;
+  return `${m}min ${String(s).padStart(2, '0')}s`;
+}
+
+// ─── Pool Card ───────────────────────────────────────────────────────────────
+
+function PoolCard({
+  pool,
+  onRemoveAthlete,
+  compact = false,
+}: {
+  pool: JeunesPool;
+  onRemoveAthlete?: (poolId: string, athleteId: string) => void;
+  compact?: boolean;
+}) {
+  const violations = checkConstraints(pool.athletes ?? []);
+  const color = GENDER_COLOR[pool.gender] ?? '#94a3b8';
+
+  return (
+    <div style={{
+      background: 'var(--card)',
+      border: `1px solid ${violations.length ? 'rgba(239,68,68,0.4)' : 'var(--b2)'}`,
+      borderRadius: 12,
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '10px 12px',
+        background: violations.length ? 'rgba(239,68,68,0.07)' : 'var(--bg2)',
+        borderBottom: '1px solid var(--b2)',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <div style={{
+          fontSize: 11, fontWeight: 800, color, letterSpacing: '0.05em',
+          background: `${color}20`, borderRadius: 6, padding: '2px 7px',
+        }}>
+          {pool.age_category}
+        </div>
+        <div style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>
+          {pool.pool_name}
+        </div>
+        <div style={{ fontSize: 10, color: 'var(--faint)' }}>
+          {pool.weight_min.toFixed(1)}–{pool.weight_max.toFixed(1)} kg
+        </div>
+        <div style={{ fontSize: 10, color, fontWeight: 600 }}>
+          {GENDER_LABEL[pool.gender] ?? pool.gender}
+        </div>
+        {violations.length > 0 && <AlertTriangle size={13} color="#ef4444" />}
+      </div>
+
+      {/* Violations */}
+      {violations.length > 0 && (
+        <div style={{ padding: '6px 12px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.2)' }}>
+          {violations.map(v => (
+            <div key={v} style={{ fontSize: 11, color: '#f87171', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <AlertTriangle size={10} /> {v}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Athletes */}
+      <div style={{ flex: 1 }}>
+        {(pool.athletes ?? []).map((a, i) => (
+          <div key={a.athlete_id} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '6px 12px',
+            borderBottom: i < (pool.athletes.length - 1) ? '1px solid var(--b1)' : 'none',
+          }}>
+            <div style={{
+              width: 20, height: 20, borderRadius: 6,
+              background: 'var(--bg2)', border: '1px solid var(--b2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, fontWeight: 700, color: 'var(--dim)', flexShrink: 0,
+            }}>{i + 1}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
+              <div style={{ fontSize: 10, color: 'var(--faint)' }}>{a.club} · {Number(a.weight).toFixed(1)} kg</div>
+            </div>
+            {!compact && onRemoveAthlete && (
+              <button
+                onClick={() => onRemoveAthlete(pool.id, a.athlete_id)}
+                title="Retirer de la poule"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 3,
+                  color: 'var(--faint)', display: 'flex', borderRadius: 4,
+                  opacity: 0.6,
+                }}
+              >
+                <Trash2 size={11} />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Match progress */}
+      {Number(pool.match_count) > 0 && (
+        <div style={{
+          padding: '6px 12px', background: 'var(--bg2)', borderTop: '1px solid var(--b2)',
+          display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: 'var(--faint)',
+        }}>
+          <Play size={9} />
+          {pool.matches_done}/{pool.match_count} combats
+          {Number(pool.matches_done) === Number(pool.match_count) && Number(pool.match_count) > 0 && (
+            <span style={{ color: '#22c55e', fontWeight: 700 }}>· Terminé ✓</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
+export default function Jeunes() {
+  const { id } = useParams<{ id: string }>();
+  const qc = useQueryClient();
+
+  const [tab, setTab] = useState<'pools' | 'mats' | 'rankings'>('pools');
+  const [ageFilter, setAgeFilter] = useState<string>('Tout');
+  const [showGenModal, setShowGenModal] = useState(false);
+  const [genOpts, setGenOpts] = useState({ reset: false, U9: true, U11: true });
+
+  // ── Data ─────────────────────────────────────────────────────────────────
+
+  const ageCatParam = ageFilter !== 'Tout' ? ageFilter : undefined;
+
+  const { data: jeunesData, isLoading } = useQuery({
+    queryKey: ['jeunes', id, ageCatParam],
+    queryFn: () => api.get(`/api/tournaments/${id}/jeunes${ageCatParam ? `?age_category=${ageCatParam}` : ''}`).then(r => r.data),
+    refetchInterval: 15000,
+  });
+
+  const { data: mats = [] } = useQuery({
+    queryKey: ['mats', id],
+    queryFn: () => api.get(`/api/tournaments/${id}/mats`).then(r => r.data),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['tournament-users', id],
+    queryFn: () => api.get(`/api/tournaments/${id}/users`).then(r => r.data),
+  });
+
+  const { data: rankings = [], isLoading: rankLoading } = useQuery({
+    queryKey: ['jeunes-rankings', id, ageCatParam],
+    queryFn: () => api.get(`/api/tournaments/${id}/jeunes/rankings${ageCatParam ? `?age_category=${ageCatParam}` : ''}`).then(r => r.data),
+    enabled: tab === 'rankings',
+    refetchInterval: 20000,
+  });
+
+  const { data: restData } = useQuery({
+    queryKey: ['jeunes-rest', id, ageCatParam],
+    queryFn: () => api.get(`/api/tournaments/${id}/jeunes/rest-times${ageCatParam ? `?age_category=${ageCatParam}` : ''}`).then(r => r.data),
+    enabled: tab === 'rankings',
+    refetchInterval: 10000,
+  });
+
+  const pools: JeunesPool[] = jeunesData?.pools ?? [];
+  const unassigned: Unassigned[] = jeunesData?.unassigned ?? [];
+
+  // ── Mutations ────────────────────────────────────────────────────────────
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['jeunes', id] });
+    qc.invalidateQueries({ queryKey: ['jeunes-rankings', id] });
+    qc.invalidateQueries({ queryKey: ['jeunes-rest', id] });
+  };
+
+  const generateMut = useMutation({
+    mutationFn: () => api.post(`/api/tournaments/${id}/jeunes/generate`, {
+      reset: genOpts.reset,
+      age_categories: [...(genOpts.U9 ? ['U9'] : []), ...(genOpts.U11 ? ['U11'] : [])],
+    }),
+    onSuccess: (r) => {
+      toast.success(`${r.data.pools_created} poule(s) créée(s)`);
+      setShowGenModal(false);
+      invalidate();
+    },
+    onError: () => toast.error('Erreur lors de la génération'),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => api.delete(`/api/tournaments/${id}/jeunes`),
+    onSuccess: () => { toast.success('Poules supprimées'); invalidate(); },
+    onError: () => toast.error('Erreur lors de la suppression'),
+  });
+
+  const removeAthleteMut = useMutation({
+    mutationFn: ({ poolId, athleteId }: { poolId: string; athleteId: string }) =>
+      api.delete(`/api/tournaments/${id}/jeunes/pools/${poolId}/athletes/${athleteId}`),
+    onSuccess: () => { toast.success('Athlète retiré de la poule'); invalidate(); },
+    onError: () => toast.error('Erreur'),
+  });
+
+  const assignMut = useMutation({
+    mutationFn: ({ poolId, mat_id, referee_id }: { poolId: string; mat_id?: string | null; referee_id?: string | null }) =>
+      api.put(`/api/tournaments/${id}/jeunes/pools/${poolId}`, { mat_id, referee_id }),
+    onSuccess: () => invalidate(),
+    onError: () => toast.error('Erreur d\'assignation'),
+  });
+
+  const genMatchesMut = useMutation({
+    mutationFn: (poolId: string) =>
+      api.post(`/api/tournaments/${id}/jeunes/pools/${poolId}/generate-matches`),
+    onSuccess: (r) => { toast.success(`${r.data.matches_created} combat(s) générés`); invalidate(); },
+    onError: () => toast.error('Erreur génération combats'),
+  });
+
+  const genAllMatchesMut = useMutation({
+    mutationFn: (ageCat: string) =>
+      api.post(`/api/tournaments/${id}/jeunes/${ageCat}/generate-matches`),
+    onSuccess: (r) => { toast.success(`${r.data.matches_created} combat(s) générés (${r.data.pools_processed} poules)`); invalidate(); },
+    onError: () => toast.error('Erreur génération combats'),
+  });
+
+  // ── UI Helpers ───────────────────────────────────────────────────────────
+
+  const btnBase: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+    fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+  };
+
+  // Group pools by age category
+  const poolsByAge: Record<string, JeunesPool[]> = {};
+  for (const p of pools) {
+    if (!poolsByAge[p.age_category]) poolsByAge[p.age_category] = [];
+    poolsByAge[p.age_category].push(p);
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
+  return (
+    <Layout tournamentId={id}>
+      <PageHeader
+        title="Jeunes — U9 / U11"
+        subtitle="Gestion des poules, tapis, arbitres et classements"
+        actions={
+          <>
+            {/* Age filter */}
+            <div style={{ display: 'flex', gap: 4 }}>
+              {AGE_TABS.map(at => (
+                <button key={at} onClick={() => setAgeFilter(at)} style={{
+                  ...btnBase,
+                  padding: '5px 11px',
+                  background: ageFilter === at ? 'rgba(220,38,38,0.15)' : 'var(--inp)',
+                  color: ageFilter === at ? '#f87171' : 'var(--fg3)',
+                  border: ageFilter === at ? '1px solid rgba(220,38,38,0.4)' : '1px solid var(--b3)',
+                }}>
+                  {at}
+                </button>
+              ))}
+            </div>
+
+            {/* Generate */}
+            <button onClick={() => setShowGenModal(true)} style={{
+              ...btnBase, background: '#ef4444', color: '#fff',
+            }}>
+              <Baby size={13} /> Générer les poules
+            </button>
+
+            {/* Delete */}
+            {pools.length > 0 && (
+              <button onClick={() => {
+                if (confirm('Supprimer toutes les poules jeunes ?')) deleteMut.mutate();
+              }} style={{ ...btnBase, background: 'var(--inp)', color: 'var(--fg3)', border: '1px solid var(--b3)' }}>
+                <Trash2 size={12} /> Réinitialiser
+              </button>
+            )}
+          </>
+        }
+      />
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--b2)', padding: '0 16px' }}>
+        {([
+          { key: 'pools',    label: 'Poules',              icon: Baby    },
+          { key: 'mats',     label: 'Tapis & Arbitres',    icon: Monitor },
+          { key: 'rankings', label: 'Classements & Repos', icon: Award   },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 14px',
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 13, fontWeight: tab === key ? 700 : 500,
+              color: tab === key ? '#ef4444' : 'var(--fg3)',
+              borderBottom: tab === key ? '2px solid #ef4444' : '2px solid transparent',
+              marginBottom: -1, transition: 'all 0.15s',
+            }}
+          >
+            <Icon size={13} /> {label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: 16, maxWidth: 1400 }}>
+
+        {/* ── Loading ── */}
+        {isLoading && (
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--faint)' }}>
+            <RefreshCw size={24} style={{ animation: 'spin 1s linear infinite' }} />
+          </div>
+        )}
+
+        {/* ══════════════════════════ TAB: POOLS ══════════════════════════ */}
+        {tab === 'pools' && !isLoading && (
+          <>
+            {pools.length === 0 ? (
+              <EmptyState
+                onGenerate={() => setShowGenModal(true)}
+                hasFilter={ageFilter !== 'Tout'}
+              />
+            ) : (
+              <>
+                {Object.entries(poolsByAge).map(([ageCat, agePools]) => (
+                  <div key={ageCat} style={{ marginBottom: 28 }}>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12,
+                    }}>
+                      <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>
+                        Catégorie {ageCat}
+                      </h2>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, color: 'var(--faint)',
+                        background: 'var(--bg2)', borderRadius: 6, padding: '2px 8px',
+                        border: '1px solid var(--b2)',
+                      }}>
+                        {agePools.length} poule{agePools.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                      gap: 12,
+                    }}>
+                      {agePools.map(p => (
+                        <PoolCard
+                          key={p.id}
+                          pool={p}
+                          onRemoveAthlete={(poolId, athleteId) => removeAthleteMut.mutate({ poolId, athleteId })}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Unassigned */}
+                {unassigned.length > 0 && (
+                  <UnassignedSection athletes={unassigned} />
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* ══════════════════════════ TAB: MATS ══════════════════════════ */}
+        {tab === 'mats' && !isLoading && (
+          <>
+            {pools.length === 0 ? (
+              <EmptyState onGenerate={() => setShowGenModal(true)} hasFilter={ageFilter !== 'Tout'} />
+            ) : (
+              Object.entries(poolsByAge).map(([ageCat, agePools]) => (
+                <div key={ageCat} style={{ marginBottom: 28 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>
+                      Catégorie {ageCat}
+                    </h2>
+                    <button
+                      onClick={() => genAllMatchesMut.mutate(ageCat)}
+                      disabled={genAllMatchesMut.isPending}
+                      style={{ ...btnBase, background: '#22c55e', color: '#fff', fontSize: 11 }}
+                    >
+                      <Play size={11} /> Générer tous les combats {ageCat}
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {agePools.map(p => (
+                      <MatRow
+                        key={p.id}
+                        pool={p}
+                        mats={mats}
+                        users={users}
+                        onAssign={(mat_id, referee_id) => assignMut.mutate({ poolId: p.id, mat_id, referee_id })}
+                        onGenerateMatches={() => genMatchesMut.mutate(p.id)}
+                        generating={genMatchesMut.isPending}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
+          </>
+        )}
+
+        {/* ══════════════════════════ TAB: RANKINGS ══════════════════════════ */}
+        {tab === 'rankings' && (
+          <>
+            {rankLoading ? (
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--faint)' }}>Chargement...</div>
+            ) : rankings.length === 0 ? (
+              <EmptyState onGenerate={() => setShowGenModal(true)} hasFilter={ageFilter !== 'Tout'} />
+            ) : (
+              <>
+                {/* Rest times summary */}
+                {restData && restData.athletes && restData.athletes.length > 0 && (
+                  <RestTimesBanner restData={restData} />
+                )}
+
+                {/* Rankings per pool */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {(rankings as any[]).map((r: any) => (
+                    <PoolRankingCard key={r.jeunes_pool_id} ranking={r} />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Generate modal */}
+      {showGenModal && (
+        <GenModal
+          opts={genOpts}
+          onChange={setGenOpts}
+          onConfirm={() => generateMut.mutate()}
+          onClose={() => setShowGenModal(false)}
+          loading={generateMut.isPending}
+        />
+      )}
+
+      <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+    </Layout>
+  );
+}
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+function EmptyState({ onGenerate, hasFilter }: { onGenerate: () => void; hasFilter: boolean }) {
+  return (
+    <div style={{
+      textAlign: 'center', padding: '60px 20px',
+      background: 'var(--card)', borderRadius: 16, border: '1px solid var(--b2)', marginTop: 8,
+    }}>
+      <Baby size={40} color="var(--faint)" style={{ margin: '0 auto 12px' }} />
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>
+        {hasFilter ? 'Aucune poule dans cette catégorie' : 'Aucune poule générée'}
+      </div>
+      <div style={{ fontSize: 13, color: 'var(--faint)', marginBottom: 20 }}>
+        {hasFilter
+          ? 'Changez le filtre de catégorie d\'âge ou générez les poules.'
+          : 'Générez les poules après la pesée pour les catégories U9 et U11.'}
+      </div>
+      {!hasFilter && (
+        <button
+          onClick={onGenerate}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '9px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
+            background: '#ef4444', color: '#fff', fontSize: 13, fontWeight: 700,
+          }}
+        >
+          <Baby size={14} /> Générer les poules
+        </button>
+      )}
+    </div>
+  );
+}
+
+function UnassignedSection({ athletes }: { athletes: Unassigned[] }) {
+  const [open, setOpen] = useState(false);
+  const byAge: Record<string, Unassigned[]> = {};
+  for (const a of athletes) {
+    if (!byAge[a.age_category]) byAge[a.age_category] = [];
+    byAge[a.age_category].push(a);
+  }
+
+  return (
+    <div style={{
+      background: 'rgba(251,191,36,0.06)',
+      border: '1px solid rgba(251,191,36,0.3)',
+      borderRadius: 12, marginTop: 20,
+      overflow: 'hidden',
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+          padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8,
+          textAlign: 'left',
+        }}
+      >
+        <AlertTriangle size={14} color="#fbbf24" />
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#fbbf24', flex: 1 }}>
+          {athletes.length} athlète{athletes.length > 1 ? 's' : ''} non assigné{athletes.length > 1 ? 's' : ''}
+        </span>
+        <ChevronDown size={14} color="var(--faint)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {Object.entries(byAge).map(([ageCat, aths]) => (
+            <div key={ageCat}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dim)', marginBottom: 4, marginTop: 4 }}>{ageCat}</div>
+              {aths.map(a => (
+                <div key={a.athlete_id} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '5px 8px', borderRadius: 6, background: 'var(--bg2)', marginBottom: 3,
+                }}>
+                  <User size={11} color="var(--faint)" />
+                  <span style={{ flex: 1, fontSize: 12, color: 'var(--fg)' }}>{a.name}</span>
+                  <span style={{ fontSize: 11, color: 'var(--faint)' }}>{a.club}</span>
+                  <span style={{ fontSize: 11, color: 'var(--faint)' }}>{Number(a.weigh_in_weight).toFixed(1)} kg</span>
+                  <span style={{ fontSize: 10, color: '#fbbf24' }}>
+                    {a.reason === 'manual_removal' ? 'Retiré manuellement' : 'Pas de poule compatible'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MatRow({
+  pool, mats, users, onAssign, onGenerateMatches, generating,
+}: {
+  pool: JeunesPool;
+  mats: any[];
+  users: any[];
+  onAssign: (mat_id: string | null, referee_id: string | null) => void;
+  onGenerateMatches: () => void;
+  generating: boolean;
+}) {
+  const violations = checkConstraints(pool.athletes ?? []);
+  const activeMats = mats.filter((m: any) => m.is_active !== false);
+  const referees = users.filter((u: any) => ['referee', 'tournament_admin'].includes(u.role));
+
+  return (
+    <div style={{
+      background: 'var(--card)',
+      border: violations.length ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--b2)',
+      borderRadius: 10,
+      padding: '10px 14px',
+      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+    }}>
+      {/* Pool info */}
+      <div style={{ minWidth: 160, flex: '0 0 auto' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>
+          {pool.pool_name}
+          <span style={{
+            marginLeft: 6, fontSize: 10, color: GENDER_COLOR[pool.gender],
+            background: `${GENDER_COLOR[pool.gender]}20`, borderRadius: 4, padding: '1px 5px',
+          }}>
+            {pool.age_category} · {GENDER_LABEL[pool.gender] ?? pool.gender}
+          </span>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 2 }}>
+          {pool.weight_min.toFixed(1)}–{pool.weight_max.toFixed(1)} kg · {pool.athletes?.length ?? 0} athlètes
+        </div>
+      </div>
+
+      {/* Mat selector */}
+      <div style={{ flex: 1, minWidth: 140 }}>
+        <label style={{ fontSize: 10, color: 'var(--faint)', display: 'block', marginBottom: 3 }}>Tapis</label>
+        <select
+          value={pool.mat_id ?? ''}
+          onChange={e => onAssign(e.target.value || null, pool.referee_id ?? null)}
+          style={{
+            width: '100%', padding: '5px 8px', borderRadius: 6, fontSize: 12,
+            background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg)',
+          }}
+        >
+          <option value="">— Non assigné —</option>
+          {activeMats.map((m: any) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Referee selector */}
+      <div style={{ flex: 1, minWidth: 160 }}>
+        <label style={{ fontSize: 10, color: 'var(--faint)', display: 'block', marginBottom: 3 }}>Arbitre</label>
+        <select
+          value={pool.referee_id ?? ''}
+          onChange={e => onAssign(pool.mat_id ?? null, e.target.value || null)}
+          style={{
+            width: '100%', padding: '5px 8px', borderRadius: 6, fontSize: 12,
+            background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg)',
+          }}
+        >
+          <option value="">— Non assigné —</option>
+          {referees.map((u: any) => (
+            <option key={u.user_id} value={u.user_id}>{u.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Match info + generate */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {Number(pool.match_count) > 0 ? (
+          <span style={{ fontSize: 11, color: 'var(--faint)' }}>
+            {pool.matches_done}/{pool.match_count} combats
+            {Number(pool.matches_done) === Number(pool.match_count) && (
+              <span style={{ color: '#22c55e', marginLeft: 4 }}>✓</span>
+            )}
+          </span>
+        ) : null}
+        <button
+          onClick={onGenerateMatches}
+          disabled={generating || violations.length > 0}
+          title={violations.length > 0 ? 'Corrigez les violations avant de générer' : 'Générer les combats'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            padding: '5px 10px', borderRadius: 6, border: 'none', cursor: violations.length > 0 ? 'not-allowed' : 'pointer',
+            background: violations.length > 0 ? 'var(--bg2)' : '#3b82f6',
+            color: violations.length > 0 ? 'var(--faint)' : '#fff',
+            fontSize: 11, fontWeight: 600, opacity: generating ? 0.7 : 1,
+          }}
+        >
+          <Play size={10} /> {Number(pool.match_count) > 0 ? 'Regénérer' : 'Générer combats'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PoolRankingCard({ ranking }: { ranking: any }) {
+  const color = GENDER_COLOR[ranking.gender] ?? '#94a3b8';
+
+  return (
+    <div style={{
+      background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 12, overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '10px 14px', background: 'var(--bg2)', borderBottom: '1px solid var(--b2)',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <Award size={13} color={color} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>
+          {ranking.pool_name}
+        </span>
+        <span style={{
+          fontSize: 10, color, background: `${color}20`, borderRadius: 5, padding: '1px 6px', fontWeight: 700,
+        }}>
+          {ranking.age_category}
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--faint)' }}>
+          {ranking.weight_range} kg · {GENDER_LABEL[ranking.gender] ?? ranking.gender}
+        </span>
+      </div>
+
+      {/* Rankings table */}
+      {ranking.rankings && ranking.rankings.length > 0 ? (
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg2)' }}>
+              {['#', 'Athlète', 'Club', 'V', 'D', 'Pts', 'Pour', 'Contre'].map(h => (
+                <th key={h} style={{
+                  padding: '6px 10px', textAlign: h === 'Athlète' || h === 'Club' ? 'left' : 'center',
+                  fontSize: 10, fontWeight: 700, color: 'var(--dim)', borderBottom: '1px solid var(--b2)',
+                  letterSpacing: '0.05em',
+                }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ranking.rankings.map((r: any, i: number) => (
+              <tr key={r.athlete_id ?? i} style={{
+                background: i % 2 === 0 ? 'transparent' : 'var(--bg2)',
+                borderBottom: '1px solid var(--b1)',
+              }}>
+                <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 800, color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7c3d' : 'var(--fg3)', fontSize: 13 }}>
+                  {i + 1}
+                </td>
+                <td style={{ padding: '7px 10px', fontWeight: 600, color: 'var(--fg)' }}>{r.name}</td>
+                <td style={{ padding: '7px 10px', color: 'var(--faint)' }}>{r.club}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{r.wins ?? 0}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: '#ef4444', fontWeight: 600 }}>{r.losses ?? 0}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 700, color: 'var(--fg)' }}>{r.points ?? 0}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: 'var(--fg3)' }}>{r.points_for ?? 0}</td>
+                <td style={{ padding: '7px 10px', textAlign: 'center', color: 'var(--fg3)' }}>{r.points_against ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--faint)', fontSize: 12 }}>
+          Aucun combat disputé — classement indisponible
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RestTimesBanner({ restData }: { restData: any }) {
+  const [open, setOpen] = useState(true);
+  const athletes: any[] = restData.athletes ?? [];
+  const notRested = athletes.filter((a: any) => !a.rested);
+  const rested = athletes.filter((a: any) => a.rested);
+
+  return (
+    <div style={{
+      background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 12,
+      marginBottom: 20, overflow: 'hidden',
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+          padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, textAlign: 'left',
+        }}
+      >
+        <Clock size={13} color="var(--faint)" />
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)', flex: 1 }}>
+          Temps de repos (min. {restData.min_rest_minutes} min)
+        </span>
+        {notRested.length > 0 && (
+          <span style={{
+            fontSize: 11, fontWeight: 700, color: '#ef4444',
+            background: 'rgba(239,68,68,0.12)', borderRadius: 6, padding: '2px 7px',
+          }}>
+            {notRested.length} non reposé{notRested.length > 1 ? 's' : ''}
+          </span>
+        )}
+        <ChevronDown size={13} color="var(--faint)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+
+      {open && athletes.length > 0 && (
+        <div style={{ padding: '0 14px 12px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {[...notRested, ...rested].map((a: any) => (
+            <div key={a.athlete_id} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '5px 10px', borderRadius: 8,
+              background: a.rested ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${a.rested ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+            }}>
+              {a.rested
+                ? <Check size={11} color="#22c55e" />
+                : <Clock size={11} color="#ef4444" />}
+              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg)' }}>{a.name}</span>
+              <span style={{
+                fontSize: 11, color: a.rested ? '#22c55e' : '#ef4444', fontWeight: 700,
+              }}>
+                {fmtElapsed(a.elapsed_seconds)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GenModal({
+  opts, onChange, onConfirm, onClose, loading,
+}: {
+  opts: { reset: boolean; U9: boolean; U11: boolean };
+  onChange: (o: { reset: boolean; U9: boolean; U11: boolean }) => void;
+  onConfirm: () => void;
+  onClose: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: 'var(--card)', borderRadius: 16, padding: 24, width: 360,
+        border: '1px solid var(--b2)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', marginBottom: 4 }}>
+          Générer les poules jeunes
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--faint)', marginBottom: 20 }}>
+          Algorithme : poules mixtes, max 4 athlètes, écart poids ≤ 10 %
+        </div>
+
+        {/* Age categories */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dim)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Catégories
+          </div>
+          {(['U9', 'U11'] as const).map(cat => (
+            <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={opts[cat]}
+                onChange={e => onChange({ ...opts, [cat]: e.target.checked })}
+                style={{ width: 15, height: 15, accentColor: '#ef4444' }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--fg)' }}>{cat}</span>
+            </label>
+          ))}
+        </div>
+
+        {/* Reset option */}
+        <div style={{
+          background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)',
+          borderRadius: 8, padding: '10px 12px', marginBottom: 20,
+        }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={opts.reset}
+              onChange={e => onChange({ ...opts, reset: e.target.checked })}
+              style={{ width: 15, height: 15, accentColor: '#ef4444', marginTop: 1 }}
+            />
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#fbbf24' }}>Supprimer et régénérer</div>
+              <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 2 }}>
+                Efface toutes les poules existantes avant de générer.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '8px 16px', borderRadius: 8, border: '1px solid var(--b3)',
+              background: 'var(--inp)', color: 'var(--fg3)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading || (!opts.U9 && !opts.U11)}
+            style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none',
+              background: loading ? 'var(--bg2)' : '#ef4444',
+              color: '#fff', fontSize: 12, fontWeight: 700, cursor: loading ? 'wait' : 'pointer',
+              opacity: !opts.U9 && !opts.U11 ? 0.5 : 1,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            {loading ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Baby size={12} />}
+            {loading ? 'Génération…' : 'Générer'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
