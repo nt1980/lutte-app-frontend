@@ -6,7 +6,7 @@ import { PrivateThemeApplier } from '../contexts/ThemeContext';
 import api from '../lib/api';
 import {
   Trophy, LayoutDashboard, Users, Building2, ListChecks, Scale, Zap,
-  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft, Menu, X,
+  Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft, Menu, X, Monitor,
 } from 'lucide-react';
 
 const globalNav = [
@@ -189,17 +189,20 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
               </>
             )}
 
-            {/* Lien Affichage en bas de nav globale */}
-            {showGlobalNav && !isReferee && !tournamentId && (
+          </nav>
+
+          {/* Affichage — toujours visible sauf arbitres */}
+          {!isReferee && (
+            <div style={{ padding: '4px 8px', borderTop: '1px solid var(--b1)' }}>
               <NavLink
                 to="/settings"
                 label="Affichage"
-                icon={Settings}
+                icon={Monitor}
                 active={location.pathname === '/settings'}
                 collapsed={collapsed && !isMobile}
               />
-            )}
-          </nav>
+            </div>
+          )}
 
           {/* User footer */}
           <div style={{ borderTop: '1px solid var(--b1)', padding: '10px 8px' }}>
