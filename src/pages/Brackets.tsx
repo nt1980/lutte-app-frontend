@@ -202,7 +202,7 @@ function BracketView({ matches }: { matches: any[] }) {
   const numCols  = mainRounds.length;
   const colW     = BK.cardW + BK.lineW;
   const totalW   = numCols * colW + 128; // 128 = winner box width + margin
-  const connClr  = 'rgba(255,255,255,0.2)';
+  const connClr  = 'var(--b4)';
   const midX     = BK.lineW / 2;
 
   return (
