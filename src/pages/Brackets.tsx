@@ -202,9 +202,16 @@ function RepechageView({ matches }: { matches: any[] }) {
   const totalH   = maxCount * BK.unitH;
   const numCols  = repRounds.length;
   const colW     = BK.cardW + BK.lineW;
-  const totalW   = numCols * colW + 144; // extra room for bronze boxes
-  const connClr  = 'var(--b4)';
-  const midX     = BK.lineW / 2;
+
+  // Extra visual gap between the RA round and the first crossing round (C1).
+  // These two sections are NOT directly connected — winners of RA feed into C1
+  // via a mirror-crossing formula, so we show a deliberate visual break.
+  const RA_EXTRA_GAP = 80;
+  const colLeft = (ci: number) => ci * colW + (ci >= 1 ? RA_EXTRA_GAP : 0);
+
+  const totalW  = numCols * colW + 144 + RA_EXTRA_GAP;
+  const connClr = 'var(--b4)';
+  const midX    = BK.lineW / 2;
 
   // Uniform slot distribution across totalH
   const slotCy  = (n: number, i: number) => { const h = totalH / n; return i * h + h / 2; };
@@ -218,6 +225,9 @@ function RepechageView({ matches }: { matches: any[] }) {
     if (colIdx === numCols - 1) return 'Dernier tour';
     return `Tour C${colIdx}`;
   };
+
+  // x-center of the separator zone (in the gap between RA and C1)
+  const separatorX = BK.cardW + BK.lineW + RA_EXTRA_GAP / 2;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -244,7 +254,7 @@ function RepechageView({ matches }: { matches: any[] }) {
           {repRounds.map(([rk], colIdx) => (
             <div key={`rl-${rk}`} style={{
               position: 'absolute', top: 0,
-              left: colIdx * colW, width: BK.cardW, height: BK.labelH,
+              left: colLeft(colIdx), width: BK.cardW, height: BK.labelH,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 10, fontWeight: 700,
               color: colIdx === numCols - 1 ? '#f97316' : 'var(--fg3)',
@@ -256,7 +266,7 @@ function RepechageView({ matches }: { matches: any[] }) {
 
           {/* ── "3e place" header above bronze boxes ── */}
           <div style={{
-            position: 'absolute', top: 0, left: numCols * colW, width: 128, height: BK.labelH,
+            position: 'absolute', top: 0, left: colLeft(numCols), width: 128, height: BK.labelH,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 10, fontWeight: 700, color: '#f97316',
             textTransform: 'uppercase', letterSpacing: '0.1em',
@@ -270,7 +280,7 @@ function RepechageView({ matches }: { matches: any[] }) {
               <div key={m.id} style={{
                 position: 'absolute',
                 top: BK.labelH + slotTop((rMatches as any[]).length, idx),
-                left: colIdx * colW,
+                left: colLeft(colIdx),
                 width: BK.cardW,
               }}>
                 <MatchCard match={m} />
@@ -278,8 +288,46 @@ function RepechageView({ matches }: { matches: any[] }) {
             ))
           )}
 
+          {/* ── Separator between RA and C1 ── */}
+          {numCols > 1 && (
+            <>
+              {/* Dashed vertical line */}
+              <div style={{
+                position: 'absolute',
+                top: BK.labelH,
+                left: separatorX,
+                width: 0,
+                height: totalH,
+                borderLeft: '2px dashed rgba(156,163,175,0.22)',
+                pointerEvents: 'none',
+              }} />
+              {/* "croisement" badge centered on the line */}
+              <div style={{
+                position: 'absolute',
+                top: BK.labelH + totalH / 2 - 13,
+                left: separatorX - 46,
+                width: 92,
+                textAlign: 'center',
+                background: 'var(--bg)',
+                border: '1px solid var(--b3)',
+                borderRadius: 7,
+                padding: '4px 8px',
+                fontSize: 9, fontWeight: 700, color: 'var(--b4)',
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+                pointerEvents: 'none',
+              }}>
+                ⇄ croisement
+              </div>
+            </>
+          )}
+
           {/* ── SVG connector lines ── */}
           {repRounds.map(([rk, rMatches], colIdx) => {
+            // No connector between RA (col 0) and C1 (col 1):
+            // winners cross via mirror formula — shown by the separator above.
+            if (colIdx === 0) return null;
+
             const isLast = colIdx === numCols - 1;
             const curN   = (rMatches as any[]).length;
             const nextN  = !isLast
@@ -290,7 +338,7 @@ function RepechageView({ matches }: { matches: any[] }) {
               <svg key={`rs-${rk}`} style={{
                 position: 'absolute',
                 top: BK.labelH,
-                left: colIdx * colW + BK.cardW,
+                left: colLeft(colIdx) + BK.cardW,
                 width: BK.lineW,
                 height: totalH,
                 overflow: 'visible',
@@ -320,7 +368,6 @@ function RepechageView({ matches }: { matches: any[] }) {
                   // Binary merge: pairs (0,1)→0, (2,3)→1, …
                   if (nextN < curN) {
                     if (idx % 2 === 0) {
-                      // Even: draw full elbow for this pair
                       const sibY = idx + 1 < curN ? slotCy(curN, idx + 1) : cy;
                       const ny   = slotCy(nextN, Math.floor(idx / 2));
                       return (
@@ -329,7 +376,6 @@ function RepechageView({ matches }: { matches: any[] }) {
                           fill="none" stroke={connClr} strokeWidth={1.5} />
                       );
                     }
-                    // Odd: just the stub (vertical drawn by its even sibling)
                     return (
                       <line key={m.id}
                         x1={0} y1={cy} x2={midX} y2={cy}
@@ -353,7 +399,7 @@ function RepechageView({ matches }: { matches: any[] }) {
               <div key={`bx-${m.id}`} style={{
                 position: 'absolute',
                 top: cy - 36,
-                left: numCols * colW,
+                left: colLeft(numCols),
                 width: 120, height: 72,
                 border: '2px solid rgba(249,115,22,0.4)',
                 borderRadius: 12,
