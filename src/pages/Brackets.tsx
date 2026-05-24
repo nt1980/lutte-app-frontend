@@ -288,16 +288,23 @@ function RepechageView({ matches }: { matches: any[] }) {
 
           {/* ── Match cards ── */}
           {repRounds.map(([, rMatches], colIdx) =>
-            (rMatches as any[]).map((m, idx) => (
-              <div key={m.id} style={{
-                position: 'absolute',
-                top: BK.labelH + slotTop((rMatches as any[]).length, idx),
-                left: colLeft(colIdx),
-                width: BK.cardW,
-              }}>
-                <MatchCard match={m} />
-              </div>
-            ))
+            (rMatches as any[]).map((m, idx) => {
+              // La colonne RA (colIdx=0) est câblée en miroir vers C1 :
+              // RA[k] → C1[K-1-k]. On inverse l'ordre d'affichage pour que
+              // chaque match RA soit visuellement en face de sa cible C1.
+              const n = (rMatches as any[]).length;
+              const displayIdx = colIdx === 0 ? (n - 1 - idx) : idx;
+              return (
+                <div key={m.id} style={{
+                  position: 'absolute',
+                  top: BK.labelH + slotTop(n, displayIdx),
+                  left: colLeft(colIdx),
+                  width: BK.cardW,
+                }}>
+                  <MatchCard match={m} />
+                </div>
+              );
+            })
           )}
 
           {/* ── Separator between RA and C1 ── */}
