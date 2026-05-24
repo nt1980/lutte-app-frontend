@@ -301,24 +301,6 @@ function RepechageView({ matches }: { matches: any[] }) {
                 borderLeft: '2px dashed rgba(156,163,175,0.22)',
                 pointerEvents: 'none',
               }} />
-              {/* "croisement" badge centered on the line */}
-              <div style={{
-                position: 'absolute',
-                top: BK.labelH + totalH / 2 - 13,
-                left: separatorX - 46,
-                width: 92,
-                textAlign: 'center',
-                background: 'var(--bg)',
-                border: '1px solid var(--b3)',
-                borderRadius: 7,
-                padding: '4px 8px',
-                fontSize: 9, fontWeight: 700, color: 'var(--b4)',
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
-                pointerEvents: 'none',
-              }}>
-                ⇄ croisement
-              </div>
             </>
           )}
 
