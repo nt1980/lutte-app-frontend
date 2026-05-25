@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical, UserCheck, RefreshCw } from 'lucide-react';
@@ -9,6 +9,14 @@ import toast from 'react-hot-toast';
 
 const STYLE_SHORT: Record<string, string> = {
   libre: 'Libre', greco: 'Gréco', feminine: 'Fém.',
+};
+
+const AGE_ORDER: Record<string, number> = {
+  U7: 7, U9: 9, U11: 11, U13: 13, U15: 15, U17: 17, U20: 20, U23: 23, Senior: 99, Vétéran: 100,
+};
+
+const ROUND_PRIORITY: Record<string, number> = {
+  'Poule': 0, 'Repêchage': 1, 'Bronze': 2, '1/16': 3, '1/8': 4, '1/4': 5, '1/2': 6, 'Finale': 7,
 };
 
 // Elapsed time since last fight (shortest of the two fighters)
@@ -184,6 +192,39 @@ export default function MatManager() {
 
   const activeCount = queue.filter((q: any) => q.status === 'on_mat').length;
 
+  /* ── Tri de la file globale ── */
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((col: string) => {
+    setSortCol(prev => {
+      if (prev === col) {
+        if (sortDir === 'asc') { setSortDir('desc'); return col; }
+        setSortDir('asc'); return null; // 3e clic = reset
+      }
+      setSortDir('asc');
+      return col;
+    });
+  }, [sortDir]);
+
+  const sortedUnassigned = useMemo(() => {
+    if (!sortCol) return unassigned;
+    return [...unassigned].sort((a, b) => {
+      let va: number | string, vb: number | string;
+      switch (sortCol) {
+        case 'tour':  va = ROUND_PRIORITY[roundLabel(a)] ?? -1; vb = ROUND_PRIORITY[roundLabel(b)] ?? -1; break;
+        case 'age':   va = AGE_ORDER[a.age_category] ?? 999;   vb = AGE_ORDER[b.age_category] ?? 999;   break;
+        case 'poids': va = Number(a.weight_category) || 0;      vb = Number(b.weight_category) || 0;     break;
+        case 'genre': va = a.gender ?? '';                       vb = b.gender ?? '';                      break;
+        case 'repos': va = restElapsedMs(a, now) ?? -1;         vb = restElapsedMs(b, now) ?? -1;        break;
+        default: return 0;
+      }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ?  1 : -1;
+      return 0;
+    });
+  }, [unassigned, sortCol, sortDir, now]);
+
   /* ── Drag helpers ── */
   const handleDrop = useCallback((dragId: string, targetId: string, list: any[]) => {
     if (!dragId || dragId === targetId) return;
@@ -347,17 +388,25 @@ export default function MatManager() {
 
             {/* Colonnes header */}
             <div style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,224px) 28px minmax(0,224px) 70px 50px 40px 28px 60px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid var(--b1)', background: 'var(--inp)' }}>
-              {['#','Rouge','','Bleu','Tour','Âge','Poids','S','Repos','Tapis'].map((h, i) => (
-                <div key={i} style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: i === 2 || i >= 4 ? 'center' : i === 3 ? 'right' : 'left' }}>{h}</div>
-              ))}
+              <ColH>#</ColH>
+              <ColH>Rouge</ColH>
+              <div />
+              <ColH right>Bleu</ColH>
+              <SortColH label="Tour"  col="tour"  sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <SortColH label="Âge"   col="age"   sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <SortColH label="Poids" col="poids" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <SortColH label="S"     col="genre" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <SortColH label="Repos" col="repos" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <ColH right>Tapis</ColH>
             </div>
 
             {/* Rows */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {unassigned.map((q: any, idx: number) => {
-                const elapsedMs = restElapsedMs(q, now);
-                const tooSoon   = elapsedMs !== null && elapsedMs < minRestMs;
-                const rowBg     = dragOverId === q.id
+              {sortedUnassigned.map((q: any, idx: number) => {
+                const elapsedMs  = restElapsedMs(q, now);
+                const tooSoon    = elapsedMs !== null && elapsedMs < minRestMs;
+                const dragActive = !sortCol && !tooSoon;
+                const rowBg      = dragOverId === q.id
                   ? 'rgba(96,165,250,0.06)'
                   : tooSoon
                   ? 'rgba(251,191,36,0.06)'
@@ -367,11 +416,11 @@ export default function MatManager() {
                 return (
                   <div
                     key={q.id}
-                    draggable={!tooSoon}
-                    onDragStart={() => { if (!tooSoon) { setDraggedId(q.id); setDragOverId(null); } }}
-                    onDragOver={e => { e.preventDefault(); if (!tooSoon) setDragOverId(q.id); }}
+                    draggable={dragActive}
+                    onDragStart={() => { if (dragActive) { setDraggedId(q.id); setDragOverId(null); } }}
+                    onDragOver={e => { e.preventDefault(); if (dragActive) setDragOverId(q.id); }}
                     onDragLeave={() => setDragOverId(null)}
-                    onDrop={() => { handleDrop(draggedId!, q.id, unassigned); setDraggedId(null); setDragOverId(null); }}
+                    onDrop={() => { if (dragActive) handleDrop(draggedId!, q.id, unassigned); setDraggedId(null); setDragOverId(null); }}
                     onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
                     style={{
                       display: 'grid',
@@ -382,13 +431,13 @@ export default function MatManager() {
                       borderTop: idx > 0 ? `1px solid ${borderColor}` : 'none',
                       background: rowBg,
                       opacity: draggedId === q.id ? 0.4 : 1,
-                      cursor: tooSoon ? 'not-allowed' : 'grab',
+                      cursor: tooSoon ? 'not-allowed' : sortCol ? 'default' : 'grab',
                       transition: 'background 0.15s',
                     }}
                   >
                     {/* # position */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <GripVertical size={10} color={tooSoon ? '#92400e' : 'var(--b4)'} />
+                      <GripVertical size={10} color={tooSoon ? '#92400e' : dragActive ? 'var(--b4)' : 'var(--b2)'} />
                       <span style={{ fontSize: 10, fontWeight: 700, color: tooSoon ? '#92400e' : 'var(--dim)' }}>{q.position ?? idx + 1}</span>
                     </div>
 
@@ -479,6 +528,46 @@ export default function MatManager() {
 
       </div>
     </Layout>
+  );
+}
+
+/* ─── En-têtes de colonnes ─── */
+
+function ColH({ children, right }: { children?: React.ReactNode; right?: boolean }) {
+  return (
+    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: right ? 'right' : 'left' }}>
+      {children}
+    </div>
+  );
+}
+
+function SortColH({
+  label, col, sortCol, sortDir, onSort,
+}: {
+  label: string; col: string; sortCol: string | null; sortDir: 'asc' | 'desc'; onSort: (c: string) => void;
+}) {
+  const active = sortCol === col;
+  return (
+    <button
+      onClick={() => onSort(col)}
+      title={active ? (sortDir === 'asc' ? 'Tri croissant — cliquer pour décroissant' : 'Tri décroissant — cliquer pour désactiver') : `Trier par ${label}`}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+        background: active ? 'rgba(96,165,250,0.08)' : 'none',
+        border: active ? '1px solid rgba(96,165,250,0.2)' : '1px solid transparent',
+        borderRadius: 4, cursor: 'pointer', padding: '1px 4px', width: '100%',
+        fontSize: 9, fontWeight: 700,
+        color: active ? '#93c5fd' : 'var(--dim)',
+        textTransform: 'uppercase', letterSpacing: '0.06em',
+        transition: 'background 0.15s, color 0.15s',
+      }}
+    >
+      {label}
+      <span style={{ display: 'flex', flexDirection: 'column', lineHeight: '6px', marginTop: 1 }}>
+        <span style={{ fontSize: 6, color: active && sortDir === 'asc' ? '#60a5fa' : 'var(--b4)', lineHeight: '7px' }}>▲</span>
+        <span style={{ fontSize: 6, color: active && sortDir === 'desc' ? '#60a5fa' : 'var(--b4)', lineHeight: '7px' }}>▼</span>
+      </span>
+    </button>
   );
 }
 
