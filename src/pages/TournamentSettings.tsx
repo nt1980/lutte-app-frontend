@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Globe, Settings2, Copy, Check, ExternalLink, Activity, Plus, Trash2, Pencil, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
@@ -39,6 +39,7 @@ function CopyButton({ text }: { text: string }) {
 export default function TournamentSettings() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: t } = useQuery({
     queryKey: ['tournament', id],
@@ -95,11 +96,14 @@ export default function TournamentSettings() {
   const update = useMutation({
     mutationFn: (data: any) => api.put(`/api/tournaments/${id}`, data),
     onSuccess: (resp) => {
-      // Mettre à jour le form avec les données réelles retournées par le serveur
       setForm(resp.data);
-      // Invalider aussi les autres queries qui utilisent ce tournoi
       qc.setQueryData(['tournament', id], resp.data);
       toast.success('Paramètres sauvegardés');
+      // Si le slug a changé, naviguer vers la nouvelle URL
+      const newSlug = resp.data.slug;
+      if (newSlug && newSlug !== id) {
+        navigate(`/t/${newSlug}/settings`, { replace: true });
+      }
     },
     onError: () => toast.error('Erreur lors de la sauvegarde'),
   });
@@ -154,6 +158,23 @@ export default function TournamentSettings() {
                 <input style={INPUT} {...f('city')} placeholder="Paris" />
               </div>
             </div>
+            {/* Slug URL du tournoi */}
+            <div>
+              <label style={LABEL}>Identifiant URL (slug)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--fg3)', flexShrink: 0 }}>/t/</span>
+                <input
+                  style={{ ...INPUT, fontFamily: 'monospace', fontSize: 12 }}
+                  value={form.slug ?? ''}
+                  onChange={e => setForm((p: any) => ({ ...p, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                  placeholder="voiron-2026"
+                />
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 4 }}>
+                Utilisé dans toutes les URLs du tournoi. Lettres minuscules, chiffres et tirets uniquement.
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={LABEL}>Statut</label>
