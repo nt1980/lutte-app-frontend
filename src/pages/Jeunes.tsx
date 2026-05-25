@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Baby, RefreshCw, Trash2, Play, AlertTriangle, Check,
-  ChevronDown, User, Monitor, Award, Clock,
+  ChevronDown, Monitor, Award, Clock,
 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
