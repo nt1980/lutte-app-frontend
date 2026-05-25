@@ -57,6 +57,22 @@ const GENDER_COLOR: Record<string, string> = { M: '#60a5fa', F: '#f472b6', MX: '
 
 const AGE_TABS = ['Tout', 'U9', 'U11'];
 
+const GENDER_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  M:  { label: 'M', color: '#60a5fa', bg: 'rgba(96,165,250,0.15)'  },
+  F:  { label: 'F', color: '#f472b6', bg: 'rgba(244,114,182,0.15)' },
+  MX: { label: 'MX', color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' },
+};
+
+function GenderBadge({ gender }: { gender: string }) {
+  const b = GENDER_BADGE[gender] ?? { label: gender, color: 'var(--faint)', bg: 'var(--bg2)' };
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 800, color: b.color, background: b.bg,
+      borderRadius: 4, padding: '1px 5px', flexShrink: 0, letterSpacing: '0.04em',
+    }}>{b.label}</span>
+  );
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function checkConstraints(athletes: PoolAthlete[]): string[] {
@@ -69,6 +85,15 @@ function checkConstraints(athletes: PoolAthlete[]): string[] {
     if (spread > 1.10) v.push(`Écart de poids > 10 % (${((spread - 1) * 100).toFixed(1)} %)`);
   }
   return v;
+}
+
+/** Retourne true si cet athlète est hors tolérance (10%) par rapport aux autres du groupe */
+function isOutOfTolerance(weight: number, allWeights: number[]): boolean {
+  if (allWeights.length < 2) return false;
+  const wMin = Math.min(...allWeights);
+  const wMax = Math.max(...allWeights);
+  if (wMax <= wMin * 1.10) return false; // poule valide → personne en rouge
+  return weight > wMin * 1.10 || weight < wMax / 1.10;
 }
 
 function fmtElapsed(secs: number) {
@@ -89,8 +114,14 @@ function PoolCard({
   onRemoveAthlete?: (poolId: string, athleteId: string) => void;
   compact?: boolean;
 }) {
-  const violations = checkConstraints(pool.athletes ?? []);
+  const athletes = pool.athletes ?? [];
+  const violations = checkConstraints(athletes);
   const color = GENDER_COLOR[pool.gender] ?? '#94a3b8';
+
+  // Calcul du vrai min/max depuis les athlètes présents (mis à jour côté client)
+  const weights = athletes.map(a => Number(a.weight)).filter(Boolean);
+  const effMin = weights.length ? Math.min(...weights) : null;
+  const effMax = weights.length ? Math.max(...weights) : null;
 
   return (
     <div style={{
@@ -117,8 +148,9 @@ function PoolCard({
         <div style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>
           {pool.pool_name}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--faint)' }}>
-          {Number(pool.weight_min).toFixed(1)}–{Number(pool.weight_max).toFixed(1)} kg
+        {/* Range de poids recalculée depuis les athlètes réels */}
+        <div style={{ fontSize: 10, color: violations.length ? '#f87171' : 'var(--faint)' }}>
+          {effMin !== null ? `${effMin.toFixed(1)}–${effMax!.toFixed(1)} kg` : '—'}
         </div>
         <div style={{ fontSize: 10, color, fontWeight: 600 }}>
           {GENDER_LABEL[pool.gender] ?? pool.gender}
@@ -139,37 +171,51 @@ function PoolCard({
 
       {/* Athletes */}
       <div style={{ flex: 1 }}>
-        {(pool.athletes ?? []).map((a, i) => (
-          <div key={a.athlete_id} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '6px 12px',
-            borderBottom: i < (pool.athletes.length - 1) ? '1px solid var(--b1)' : 'none',
-          }}>
-            <div style={{
-              width: 20, height: 20, borderRadius: 6,
-              background: 'var(--bg2)', border: '1px solid var(--b2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10, fontWeight: 700, color: 'var(--dim)', flexShrink: 0,
-            }}>{i + 1}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
-              <div style={{ fontSize: 10, color: 'var(--faint)' }}>{a.club} · {Number(a.weight).toFixed(1)} kg</div>
+        {athletes.map((a, i) => {
+          const w = Number(a.weight);
+          const outOfTol = isOutOfTolerance(w, weights);
+          return (
+            <div key={a.athlete_id} style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '6px 12px',
+              background: outOfTol ? 'rgba(239,68,68,0.07)' : 'transparent',
+              borderBottom: i < athletes.length - 1 ? '1px solid var(--b1)' : 'none',
+            }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                background: outOfTol ? 'rgba(239,68,68,0.18)' : 'var(--bg2)',
+                border: `1px solid ${outOfTol ? 'rgba(239,68,68,0.4)' : 'var(--b2)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 9, fontWeight: 700,
+                color: outOfTol ? '#f87171' : 'var(--dim)',
+              }}>{i + 1}</div>
+              <GenderBadge gender={a.gender} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: outOfTol ? '#f87171' : 'var(--fg)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{a.name}</div>
+                <div style={{ fontSize: 10, color: outOfTol ? 'rgba(248,113,113,0.7)' : 'var(--faint)' }}>
+                  {a.club} · <span style={{ fontWeight: outOfTol ? 700 : 400 }}>{w.toFixed(1)} kg</span>
+                  {outOfTol && <span style={{ marginLeft: 4, fontSize: 9 }}>⚠ hors tolérance</span>}
+                </div>
+              </div>
+              {!compact && onRemoveAthlete && (
+                <button
+                  onClick={() => onRemoveAthlete(pool.id, a.athlete_id)}
+                  title="Retirer de la poule"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer', padding: 3,
+                    color: 'var(--faint)', display: 'flex', borderRadius: 4, opacity: 0.6,
+                  }}
+                >
+                  <Trash2 size={11} />
+                </button>
+              )}
             </div>
-            {!compact && onRemoveAthlete && (
-              <button
-                onClick={() => onRemoveAthlete(pool.id, a.athlete_id)}
-                title="Retirer de la poule"
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 3,
-                  color: 'var(--faint)', display: 'flex', borderRadius: 4,
-                  opacity: 0.6,
-                }}
-              >
-                <Trash2 size={11} />
-              </button>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Match progress */}
@@ -290,6 +336,13 @@ export default function Jeunes() {
       api.post(`/api/tournaments/${id}/jeunes/${ageCat}/generate-matches`),
     onSuccess: (r) => { toast.success(`${r.data.matches_created} combat(s) générés (${r.data.pools_processed} poules)`); invalidate(); },
     onError: () => toast.error('Erreur génération combats'),
+  });
+
+  const assignUnassignedMut = useMutation({
+    mutationFn: ({ athleteId, jeunes_pool_id }: { athleteId: string; jeunes_pool_id: string }) =>
+      api.post(`/api/tournaments/${id}/jeunes/unassigned/${athleteId}/assign`, { jeunes_pool_id }),
+    onSuccess: () => { toast.success('Athlète assigné à la poule'); invalidate(); },
+    onError: () => toast.error('Erreur lors de l\'assignation'),
   });
 
   // ── UI Helpers ───────────────────────────────────────────────────────────
@@ -428,7 +481,11 @@ export default function Jeunes() {
 
                 {/* Unassigned */}
                 {unassigned.length > 0 && (
-                  <UnassignedSection athletes={unassigned} />
+                  <UnassignedSection
+                    athletes={unassigned}
+                    pools={pools}
+                    onAssign={(athleteId, jeunes_pool_id) => assignUnassignedMut.mutate({ athleteId, jeunes_pool_id })}
+                  />
                 )}
               </>
             )}
@@ -550,8 +607,16 @@ function EmptyState({ onGenerate, hasFilter }: { onGenerate: () => void; hasFilt
   );
 }
 
-function UnassignedSection({ athletes }: { athletes: Unassigned[] }) {
-  const [open, setOpen] = useState(false);
+function UnassignedSection({
+  athletes, pools, onAssign,
+}: {
+  athletes: Unassigned[];
+  pools: JeunesPool[];
+  onAssign: (athleteId: string, jeunes_pool_id: string) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const [selectedPool, setSelectedPool] = useState<Record<string, string>>({});
+
   const byAge: Record<string, Unassigned[]> = {};
   for (const a of athletes) {
     if (!byAge[a.age_category]) byAge[a.age_category] = [];
@@ -582,25 +647,69 @@ function UnassignedSection({ athletes }: { athletes: Unassigned[] }) {
 
       {open && (
         <div style={{ padding: '0 14px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {Object.entries(byAge).map(([ageCat, aths]) => (
-            <div key={ageCat}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dim)', marginBottom: 4, marginTop: 4 }}>{ageCat}</div>
-              {aths.map(a => (
-                <div key={a.athlete_id} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '5px 8px', borderRadius: 6, background: 'var(--bg2)', marginBottom: 3,
-                }}>
-                  <User size={11} color="var(--faint)" />
-                  <span style={{ flex: 1, fontSize: 12, color: 'var(--fg)' }}>{a.name}</span>
-                  <span style={{ fontSize: 11, color: 'var(--faint)' }}>{a.club}</span>
-                  <span style={{ fontSize: 11, color: 'var(--faint)' }}>{Number(a.weigh_in_weight).toFixed(1)} kg</span>
-                  <span style={{ fontSize: 10, color: '#fbbf24' }}>
-                    {a.reason === 'manual_removal' ? 'Retiré manuellement' : 'Pas de poule compatible'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ))}
+          {Object.entries(byAge).map(([ageCat, aths]) => {
+            const agePools = pools.filter(p => p.age_category === ageCat);
+            return (
+              <div key={ageCat}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--dim)', marginBottom: 6, marginTop: 8,
+                  textTransform: 'uppercase', letterSpacing: '0.06em' }}>{ageCat}</div>
+                {aths.map(a => {
+                  const selKey = a.athlete_id;
+                  const selPool = selectedPool[selKey] ?? '';
+                  return (
+                    <div key={a.athlete_id} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
+                      padding: '7px 10px', borderRadius: 8, background: 'var(--bg2)', marginBottom: 4,
+                      border: '1px solid var(--b2)',
+                    }}>
+                      <GenderBadge gender={a.gender} />
+                      <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--fg)', minWidth: 120 }}>{a.name}</span>
+                      <span style={{ fontSize: 11, color: 'var(--faint)' }}>{a.club}</span>
+                      <span style={{ fontSize: 11, color: 'var(--faint)', fontWeight: 600 }}>
+                        {Number(a.weigh_in_weight).toFixed(1)} kg
+                      </span>
+                      <span style={{ fontSize: 10, color: '#fbbf24' }}>
+                        {a.reason === 'manual_removal' ? 'Retiré' : 'Sans poule'}
+                      </span>
+                      {/* Sélecteur de poule + bouton assigner */}
+                      {agePools.length > 0 && (
+                        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                          <select
+                            value={selPool}
+                            onChange={e => setSelectedPool(prev => ({ ...prev, [selKey]: e.target.value }))}
+                            style={{
+                              padding: '3px 6px', borderRadius: 5, fontSize: 11,
+                              background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg)',
+                            }}
+                          >
+                            <option value="">— Poule —</option>
+                            {agePools.map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.pool_name} ({Number(p.weight_min).toFixed(1)}–{Number(p.weight_max).toFixed(1)} kg
+                                {' · '}{GENDER_LABEL[p.gender] ?? p.gender})
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            disabled={!selPool}
+                            onClick={() => { if (selPool) { onAssign(a.athlete_id, selPool); setSelectedPool(prev => ({ ...prev, [selKey]: '' })); } }}
+                            style={{
+                              padding: '3px 9px', borderRadius: 5, border: 'none', cursor: selPool ? 'pointer' : 'not-allowed',
+                              background: selPool ? '#3b82f6' : 'var(--bg2)',
+                              color: selPool ? '#fff' : 'var(--faint)',
+                              fontSize: 11, fontWeight: 600, opacity: selPool ? 1 : 0.6,
+                            }}
+                          >
+                            Assigner
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
