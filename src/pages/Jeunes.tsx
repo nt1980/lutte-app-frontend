@@ -245,6 +245,7 @@ export default function Jeunes() {
   const [genOpts, setGenOpts] = useState({ reset: false, U9: true, U11: true });
   const [createPoolModal, setCreatePoolModal] = useState<{ age_category: string } | null>(null);
   const [selectedRankingPoolId, setSelectedRankingPoolId] = useState<string | null>(null);
+  const [emptyPoolConfirm, setEmptyPoolConfirm] = useState<{ poolId: string; poolName: string } | null>(null);
 
   // ── Data ─────────────────────────────────────────────────────────────────
 
@@ -322,9 +323,23 @@ export default function Jeunes() {
 
   const removeAthleteMut = useMutation({
     mutationFn: ({ poolId, athleteId }: { poolId: string; athleteId: string }) =>
-      api.delete(`/api/tournaments/${id}/jeunes/pools/${poolId}/athletes/${athleteId}`),
-    onSuccess: () => { toast.success('Athlète retiré de la poule'); invalidate(); },
+      api.delete(`/api/tournaments/${id}/jeunes/pools/${poolId}/athletes/${athleteId}`).then(r => r.data),
+    onSuccess: (data, { poolId }) => {
+      toast.success('Athlète retiré de la poule');
+      invalidate();
+      if (data.athletes_remaining === 0) {
+        const poolName = pools.find(p => p.id === poolId)?.pool_name ?? 'cette poule';
+        setEmptyPoolConfirm({ poolId, poolName });
+      }
+    },
     onError: () => toast.error('Erreur'),
+  });
+
+  const deletePoolMut = useMutation({
+    mutationFn: (poolId: string) =>
+      api.delete(`/api/tournaments/${id}/jeunes/pools/${poolId}`),
+    onSuccess: () => { toast.success('Poule supprimée'); setEmptyPoolConfirm(null); invalidate(); },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur suppression poule'),
   });
 
   const assignMut = useMutation({
@@ -635,6 +650,61 @@ export default function Jeunes() {
           onClose={() => setCreatePoolModal(null)}
           tolPct={weightTolerance}
         />
+      )}
+
+      {/* Empty pool confirmation */}
+      {emptyPoolConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--card)', borderRadius: 16, padding: 24, width: 380,
+            border: '1px solid rgba(239,68,68,0.3)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Trash2 size={17} color="#ef4444" />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>Poule vide</div>
+                <div style={{ fontSize: 11, color: 'var(--faint)' }}>{emptyPoolConfirm.poolName}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--fg3)', marginBottom: 20, lineHeight: 1.6 }}>
+              La poule <strong style={{ color: 'var(--fg)' }}>{emptyPoolConfirm.poolName}</strong> ne contient
+              plus d'athlètes. Voulez-vous la supprimer ?
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setEmptyPoolConfirm(null)}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid var(--b3)',
+                  background: 'var(--inp)', color: 'var(--fg3)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Garder
+              </button>
+              <button
+                onClick={() => deletePoolMut.mutate(emptyPoolConfirm.poolId)}
+                disabled={deletePoolMut.isPending}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  background: '#dc2626', color: '#fff', fontSize: 12, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: 6, opacity: deletePoolMut.isPending ? 0.7 : 1,
+                }}
+              >
+                <Trash2 size={12} /> {deletePoolMut.isPending ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Generate modal */}
