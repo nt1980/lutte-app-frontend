@@ -53,6 +53,8 @@ export default function TournamentSettings() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editingSlugId, setEditingSlugId] = useState<string | null>(null);
+  const [editingSlug, setEditingSlug] = useState('');
 
   const { data: allMats = [] } = useQuery({
     queryKey: ['mats', id],
@@ -66,10 +68,10 @@ export default function TournamentSettings() {
   });
 
   const updateMat = useMutation({
-    mutationFn: (data: { matId: string; name?: string; is_active?: boolean }) =>
-      api.put(`/api/mats/${data.matId}`, { name: data.name, is_active: data.is_active }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['mats', id] }); setEditingId(null); },
-    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur'),
+    mutationFn: (data: { matId: string; name?: string; is_active?: boolean; slug?: string }) =>
+      api.put(`/api/mats/${data.matId}`, { name: data.name, is_active: data.is_active, slug: data.slug }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['mats', id] }); setEditingId(null); setEditingSlugId(null); },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Ce slug est déjà utilisé ou invalide'),
   });
 
   const deleteMat = useMutation({
@@ -301,51 +303,93 @@ export default function TournamentSettings() {
                 );
               }
 
-              const matLivePath = slug && mat.slug ? `/mat/${slug}/${mat.slug}` : null;
+              const matLivePath = mat.slug ? `/mat/${mat.slug}` : null;
               const matLiveUrl  = matLivePath ? `${origin}${matLivePath}` : null;
+              const isEditingSlug = editingSlugId === mat.id;
 
               return (
                 <div key={mat.id} style={{ background: 'var(--inp)', border: `1px solid ${isActive ? 'var(--b2)' : 'var(--b1)'}`, borderRadius: 10, padding: '10px 14px', opacity: isActive ? 1 : 0.5 }}>
+                  {/* ── Ligne nom + boutons ── */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#22c55e' : 'var(--dim)', flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: isActive ? 'var(--fg2)' : 'var(--fg3)' }}>{mat.name}</span>
-                  {!isActive && (
-                    <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg3)', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 5, padding: '1px 7px' }}>Inactif</span>
-                  )}
-                  <button
-                    onClick={() => updateMat.mutate({ matId: mat.id, is_active: !isActive })}
-                    disabled={updateMat.isPending}
-                    title={isActive ? 'Désactiver ce tapis' : 'Réactiver ce tapis'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 7, background: isActive ? 'rgba(34,197,94,0.1)' : 'var(--inp)', border: `1px solid ${isActive ? 'rgba(34,197,94,0.25)' : 'var(--b2)'}`, color: isActive ? '#4ade80' : 'var(--fg3)', cursor: 'pointer' }}
-                  >
-                    {isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                    {isActive ? 'Actif' : 'Inactif'}
-                  </button>
-                  <button
-                    onClick={() => { setEditingId(mat.id); setEditingName(mat.name); setConfirmDeleteId(null); }}
-                    title="Renommer"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b2)', color: 'var(--fg3)', cursor: 'pointer', padding: 0 }}
-                  >
-                    <Pencil size={13} />
-                  </button>
-                  <button
-                    onClick={() => { setConfirmDeleteId(mat.id); setEditingId(null); }}
-                    title="Supprimer définitivement"
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#f87171', cursor: 'pointer', padding: 0 }}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                  </div>{/* end flex row */}
-                  {/* URL live du tapis */}
-                  {matLiveUrl && matLivePath && (
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#22c55e' : 'var(--dim)', flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: isActive ? 'var(--fg2)' : 'var(--fg3)' }}>{mat.name}</span>
+                    {!isActive && (
+                      <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--fg3)', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 5, padding: '1px 7px' }}>Inactif</span>
+                    )}
+                    <button
+                      onClick={() => updateMat.mutate({ matId: mat.id, is_active: !isActive })}
+                      disabled={updateMat.isPending}
+                      title={isActive ? 'Désactiver ce tapis' : 'Réactiver ce tapis'}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 7, background: isActive ? 'rgba(34,197,94,0.1)' : 'var(--inp)', border: `1px solid ${isActive ? 'rgba(34,197,94,0.25)' : 'var(--b2)'}`, color: isActive ? '#4ade80' : 'var(--fg3)', cursor: 'pointer' }}
+                    >
+                      {isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                      {isActive ? 'Actif' : 'Inactif'}
+                    </button>
+                    <button
+                      onClick={() => { setEditingId(mat.id); setEditingName(mat.name); setConfirmDeleteId(null); setEditingSlugId(null); }}
+                      title="Renommer"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b2)', color: 'var(--fg3)', cursor: 'pointer', padding: 0 }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => { setConfirmDeleteId(mat.id); setEditingId(null); setEditingSlugId(null); }}
+                      title="Supprimer définitivement"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#f87171', cursor: 'pointer', padding: 0 }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  {/* ── Ligne URL live — normale ou en édition ── */}
+                  {isEditingSlug ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, paddingLeft: 18 }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--fg3)', flexShrink: 0 }}>/mat/</span>
+                      <input
+                        autoFocus
+                        value={editingSlug}
+                        onChange={e => setEditingSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && editingSlug.trim()) updateMat.mutate({ matId: mat.id, slug: editingSlug.trim() });
+                          if (e.key === 'Escape') setEditingSlugId(null);
+                        }}
+                        placeholder="ex : tapisa"
+                        style={{ flex: 1, fontFamily: 'monospace', fontSize: 11, background: 'var(--b3)', border: '1px solid var(--b4)', borderRadius: 6, padding: '4px 8px', color: 'var(--fg)', outline: 'none' }}
+                      />
+                      <button
+                        onClick={() => editingSlug.trim() && updateMat.mutate({ matId: mat.id, slug: editingSlug.trim() })}
+                        disabled={!editingSlug.trim() || updateMat.isPending}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 6, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', cursor: 'pointer', padding: 0 }}
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button
+                        onClick={() => setEditingSlugId(null)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 26, borderRadius: 6, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg3)', cursor: 'pointer', padding: 0 }}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, paddingLeft: 18 }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--fg3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {matLivePath}
+                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#60a5fa', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {matLivePath ?? '—'}
                       </span>
-                      <CopyButton text={matLiveUrl} />
-                      <a href={matLivePath} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg3)', display: 'flex', alignItems: 'center' }}>
-                        <ExternalLink size={10} />
-                      </a>
+                      {matLiveUrl && matLivePath && (
+                        <>
+                          <CopyButton text={matLiveUrl} />
+                          <a href={matLivePath} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg3)', display: 'flex', alignItems: 'center' }}>
+                            <ExternalLink size={10} />
+                          </a>
+                        </>
+                      )}
+                      <button
+                        onClick={() => { setEditingSlugId(mat.id); setEditingSlug(mat.slug ?? ''); setEditingId(null); setConfirmDeleteId(null); }}
+                        title="Modifier l'URL"
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22, borderRadius: 5, background: 'transparent', border: '1px solid var(--b2)', color: 'var(--fg3)', cursor: 'pointer', padding: 0 }}
+                      >
+                        <Pencil size={10} />
+                      </button>
                     </div>
                   )}
                 </div>

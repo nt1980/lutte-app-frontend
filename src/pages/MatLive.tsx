@@ -14,8 +14,10 @@ function useIsMobile() {
   return v;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function MatLive() {
-  const { matId, tournamentSlug, matSlug } = useParams<{ matId?: string; tournamentSlug?: string; matSlug?: string }>();
+  const { matId } = useParams<{ matId: string }>();
   const [data, setData] = useState<any>(null);
   const [timer, setTimer] = useState(0);
   const isMobile = useIsMobile();
@@ -25,10 +27,10 @@ export default function MatLive() {
   const [scoreBlue, setScoreBlue] = useState<number | null>(null);
   const prevMatchIdRef = useRef<string | null>(null);
 
-  // Build API path based on route format
-  const apiPath = (tournamentSlug && matSlug)
-    ? `/api/live/${tournamentSlug}/${matSlug}`
-    : `/api/mats/${matId}/live`;
+  // UUID → ancien endpoint, slug lisible → nouvel endpoint global
+  const apiPath = UUID_RE.test(matId ?? '')
+    ? `/api/mats/${matId}/live`
+    : `/api/live/${matId}`;
 
   const fetchData = useCallback(() => {
     api.get(apiPath).then(r => setData(r.data)).catch(() => {});
