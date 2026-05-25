@@ -53,6 +53,7 @@ export default function App() {
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
           <Route path="/mat/:matId" element={<PublicRoute><MatLive /></PublicRoute>} />
+          <Route path="/mat/:tournamentSlug/:matSlug" element={<PublicRoute><MatLive /></PublicRoute>} />
           <Route path="/tournoi/:slug" element={<PublicRoute><PublicTournament /></PublicRoute>} />
           <Route path="/tournoi/:slug/programme" element={<PublicRoute><PublicProgramme /></PublicRoute>} />
           <Route path="/tournoi/:slug/resultats" element={<PublicRoute><PublicResultats /></PublicRoute>} />

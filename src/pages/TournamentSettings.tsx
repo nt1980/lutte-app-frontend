@@ -301,8 +301,12 @@ export default function TournamentSettings() {
                 );
               }
 
+              const matLivePath = slug && mat.slug ? `/mat/${slug}/${mat.slug}` : null;
+              const matLiveUrl  = matLivePath ? `${origin}${matLivePath}` : null;
+
               return (
-                <div key={mat.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--inp)', border: `1px solid ${isActive ? 'var(--b2)' : 'var(--b1)'}`, borderRadius: 10, padding: '10px 14px', opacity: isActive ? 1 : 0.5 }}>
+                <div key={mat.id} style={{ background: 'var(--inp)', border: `1px solid ${isActive ? 'var(--b2)' : 'var(--b1)'}`, borderRadius: 10, padding: '10px 14px', opacity: isActive ? 1 : 0.5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#22c55e' : 'var(--dim)', flexShrink: 0 }} />
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: isActive ? 'var(--fg2)' : 'var(--fg3)' }}>{mat.name}</span>
                   {!isActive && (
@@ -331,6 +335,19 @@ export default function TournamentSettings() {
                   >
                     <Trash2 size={13} />
                   </button>
+                  </div>{/* end flex row */}
+                  {/* URL live du tapis */}
+                  {matLiveUrl && matLivePath && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, paddingLeft: 18 }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--fg3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {matLivePath}
+                      </span>
+                      <CopyButton text={matLiveUrl} />
+                      <a href={matLivePath} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--fg3)', display: 'flex', alignItems: 'center' }}>
+                        <ExternalLink size={10} />
+                      </a>
+                    </div>
+                  )}
                 </div>
               );
             })}

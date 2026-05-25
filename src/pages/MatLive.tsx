@@ -15,7 +15,7 @@ function useIsMobile() {
 }
 
 export default function MatLive() {
-  const { matId } = useParams<{ matId: string }>();
+  const { matId, tournamentSlug, matSlug } = useParams<{ matId?: string; tournamentSlug?: string; matSlug?: string }>();
   const [data, setData] = useState<any>(null);
   const [timer, setTimer] = useState(0);
   const isMobile = useIsMobile();
@@ -25,9 +25,14 @@ export default function MatLive() {
   const [scoreBlue, setScoreBlue] = useState<number | null>(null);
   const prevMatchIdRef = useRef<string | null>(null);
 
+  // Build API path based on route format
+  const apiPath = (tournamentSlug && matSlug)
+    ? `/api/live/${tournamentSlug}/${matSlug}`
+    : `/api/mats/${matId}/live`;
+
   const fetchData = useCallback(() => {
-    api.get(`/api/mats/${matId}/live`).then(r => setData(r.data)).catch(() => {});
-  }, [matId]);
+    api.get(apiPath).then(r => setData(r.data)).catch(() => {});
+  }, [apiPath]);
 
   // Polling de secours (5 s)
   useEffect(() => {
