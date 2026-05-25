@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Baby, RefreshCw, Trash2, Play, AlertTriangle, Check,
+  Baby, RefreshCw, Trash2, Play, AlertTriangle,
   ChevronDown, Monitor, Award, Swords,
 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
@@ -1148,7 +1148,7 @@ function PoolRankingCard({ ranking }: { ranking: any }) {
                   textTransform: 'uppercase', letterSpacing: '0.08em', background: 'var(--bg2)',
                   borderBottom: '1px solid var(--b1)',
                 }}>En attente ({pending.length})</div>
-                {pending.map((m: any, i: number) => (
+                {pending.map((m: any) => (
                   <div key={m.id} style={{
                     display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
                     borderBottom: '1px solid var(--b1)',
