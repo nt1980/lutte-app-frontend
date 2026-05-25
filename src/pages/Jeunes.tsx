@@ -75,25 +75,26 @@ function GenderBadge({ gender }: { gender: string }) {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function checkConstraints(athletes: PoolAthlete[]): string[] {
+function checkConstraints(athletes: PoolAthlete[], tolPct = 10): string[] {
   const v: string[] = [];
   if (athletes.length > 4) v.push(`Trop d'athlètes (${athletes.length}/4 max)`);
   if (athletes.length < 2) v.push('Moins de 2 athlètes');
   const ws = athletes.map(a => Number(a.weight)).filter(Boolean);
   if (ws.length > 1) {
     const spread = Math.max(...ws) / Math.min(...ws);
-    if (spread > 1.10) v.push(`Écart de poids > 10 % (${((spread - 1) * 100).toFixed(1)} %)`);
+    if (spread > 1 + tolPct / 100) v.push(`Écart de poids > ${tolPct} % (${((spread - 1) * 100).toFixed(1)} %)`);
   }
   return v;
 }
 
-/** Retourne true si cet athlète est hors tolérance (10%) par rapport aux autres du groupe */
-function isOutOfTolerance(weight: number, allWeights: number[]): boolean {
+/** Retourne true si cet athlète est hors tolérance par rapport aux autres du groupe */
+function isOutOfTolerance(weight: number, allWeights: number[], tolPct = 10): boolean {
   if (allWeights.length < 2) return false;
+  const tol = 1 + tolPct / 100;
   const wMin = Math.min(...allWeights);
   const wMax = Math.max(...allWeights);
-  if (wMax <= wMin * 1.10) return false; // poule valide → personne en rouge
-  return weight > wMin * 1.10 || weight < wMax / 1.10;
+  if (wMax <= wMin * tol) return false; // poule valide → personne en rouge
+  return weight > wMin * tol || weight < wMax / tol;
 }
 
 function fmtElapsed(secs: number) {
@@ -109,13 +110,15 @@ function PoolCard({
   pool,
   onRemoveAthlete,
   compact = false,
+  tolPct = 10,
 }: {
   pool: JeunesPool;
   onRemoveAthlete?: (poolId: string, athleteId: string) => void;
   compact?: boolean;
+  tolPct?: number;
 }) {
   const athletes = pool.athletes ?? [];
-  const violations = checkConstraints(athletes);
+  const violations = checkConstraints(athletes, tolPct);
   const color = GENDER_COLOR[pool.gender] ?? '#94a3b8';
 
   // Calcul du vrai min/max depuis les athlètes présents (mis à jour côté client)
@@ -173,7 +176,7 @@ function PoolCard({
       <div style={{ flex: 1 }}>
         {[...athletes].sort((a, b) => Number(a.weight) - Number(b.weight)).map((a, i) => {
           const w = Number(a.weight);
-          const outOfTol = isOutOfTolerance(w, weights);
+          const outOfTol = isOutOfTolerance(w, weights, tolPct);
           return (
             <div key={a.athlete_id} style={{
               display: 'flex', alignItems: 'center', gap: 7,
@@ -252,6 +255,12 @@ export default function Jeunes() {
   // ── Data ─────────────────────────────────────────────────────────────────
 
   const ageCatParam = ageFilter !== 'Tout' ? ageFilter : undefined;
+
+  const { data: tournament } = useQuery({
+    queryKey: ['tournament', id],
+    queryFn: () => api.get(`/api/tournaments/${id}`).then(r => r.data),
+  });
+  const weightTolerance = Number(tournament?.jeunes_weight_tolerance ?? 10);
 
   const { data: jeunesData, isLoading } = useQuery({
     queryKey: ['jeunes', id, ageCatParam],
@@ -497,6 +506,7 @@ export default function Jeunes() {
                           key={p.id}
                           pool={p}
                           onRemoveAthlete={(poolId, athleteId) => removeAthleteMut.mutate({ poolId, athleteId })}
+                          tolPct={weightTolerance}
                         />
                       ))}
                     </div>
@@ -547,6 +557,7 @@ export default function Jeunes() {
                         onAssign={(mat_id, referee_id) => assignMut.mutate({ poolId: p.id, mat_id, referee_id })}
                         onGenerateMatches={() => genMatchesMut.mutate(p.id)}
                         generating={genMatchesMut.isPending}
+                        tolPct={weightTolerance}
                       />
                     ))}
                   </div>
@@ -590,6 +601,7 @@ export default function Jeunes() {
           loading={createPoolMut.isPending}
           onConfirm={(athleteIds) => createPoolMut.mutate({ age_category: createPoolModal.age_category, athlete_ids: athleteIds })}
           onClose={() => setCreatePoolModal(null)}
+          tolPct={weightTolerance}
         />
       )}
 
@@ -752,7 +764,7 @@ function UnassignedSection({
 }
 
 function MatRow({
-  pool, mats, users, onAssign, onGenerateMatches, generating,
+  pool, mats, users, onAssign, onGenerateMatches, generating, tolPct = 10,
 }: {
   pool: JeunesPool;
   mats: any[];
@@ -760,97 +772,174 @@ function MatRow({
   onAssign: (mat_id: string | null, referee_id: string | null) => void;
   onGenerateMatches: () => void;
   generating: boolean;
+  tolPct?: number;
 }) {
-  const violations = checkConstraints(pool.athletes ?? []);
+  const [showViolationConfirm, setShowViolationConfirm] = useState(false);
+  const violations = checkConstraints(pool.athletes ?? [], tolPct);
   const activeMats = mats.filter((m: any) => m.is_active !== false);
   const referees = users.filter((u: any) => ['referee', 'tournament_admin'].includes(u.role));
 
+  const handleGenerate = () => {
+    if (violations.length > 0) {
+      setShowViolationConfirm(true);
+    } else {
+      onGenerateMatches();
+    }
+  };
+
   return (
-    <div style={{
-      background: 'var(--card)',
-      border: violations.length ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--b2)',
-      borderRadius: 10,
-      padding: '10px 14px',
-      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-    }}>
-      {/* Pool info */}
-      <div style={{ minWidth: 160, flex: '0 0 auto' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>
-          {pool.pool_name}
-          <span style={{
-            marginLeft: 6, fontSize: 10, color: GENDER_COLOR[pool.gender],
-            background: `${GENDER_COLOR[pool.gender]}20`, borderRadius: 4, padding: '1px 5px',
+    <>
+      <div style={{
+        background: 'var(--card)',
+        border: violations.length ? '1px solid rgba(239,68,68,0.4)' : '1px solid var(--b2)',
+        borderRadius: 10,
+        padding: '10px 14px',
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+      }}>
+        {/* Pool info */}
+        <div style={{ minWidth: 160, flex: '0 0 auto' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>
+            {pool.pool_name}
+            <span style={{
+              marginLeft: 6, fontSize: 10, color: GENDER_COLOR[pool.gender],
+              background: `${GENDER_COLOR[pool.gender]}20`, borderRadius: 4, padding: '1px 5px',
+            }}>
+              {pool.age_category} · {GENDER_LABEL[pool.gender] ?? pool.gender}
+            </span>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 2 }}>
+            {Number(pool.weight_min).toFixed(1)}–{Number(pool.weight_max).toFixed(1)} kg · {pool.athletes?.length ?? 0} athlètes
+          </div>
+        </div>
+
+        {/* Mat selector */}
+        <div style={{ flex: 1, minWidth: 140 }}>
+          <label style={{ fontSize: 10, color: 'var(--faint)', display: 'block', marginBottom: 3 }}>Tapis</label>
+          <select
+            value={pool.mat_id ?? ''}
+            onChange={e => onAssign(e.target.value || null, pool.referee_id ?? null)}
+            style={{
+              width: '100%', padding: '5px 8px', borderRadius: 6, fontSize: 12,
+              background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg)',
+            }}
+          >
+            <option value="">— Non assigné —</option>
+            {activeMats.map((m: any) => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Referee selector */}
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label style={{ fontSize: 10, color: 'var(--faint)', display: 'block', marginBottom: 3 }}>Arbitre</label>
+          <select
+            value={pool.referee_id ?? ''}
+            onChange={e => onAssign(pool.mat_id ?? null, e.target.value || null)}
+            style={{
+              width: '100%', padding: '5px 8px', borderRadius: 6, fontSize: 12,
+              background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg)',
+            }}
+          >
+            <option value="">— Non assigné —</option>
+            {referees.map((u: any) => (
+              <option key={u.user_id} value={u.user_id}>{u.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Match info + generate */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {Number(pool.match_count) > 0 ? (
+            <span style={{ fontSize: 11, color: 'var(--faint)' }}>
+              {pool.matches_done}/{pool.match_count} combats
+              {Number(pool.matches_done) === Number(pool.match_count) && (
+                <span style={{ color: '#22c55e', marginLeft: 4 }}>✓</span>
+              )}
+            </span>
+          ) : null}
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            title={violations.length > 0 ? `Violations détectées — cliquer pour confirmer` : 'Générer les combats'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+              background: violations.length > 0 ? '#f59e0b' : '#3b82f6',
+              color: '#fff',
+              fontSize: 11, fontWeight: 600, opacity: generating ? 0.7 : 1,
+            }}
+          >
+            {violations.length > 0 && <AlertTriangle size={10} />}
+            <Play size={10} /> {Number(pool.match_count) > 0 ? 'Regénérer' : 'Générer combats'}
+          </button>
+        </div>
+      </div>
+
+      {/* Confirmation popup si violations */}
+      {showViolationConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--card)', borderRadius: 16, padding: 24, width: 400,
+            border: '1px solid rgba(245,158,11,0.4)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
           }}>
-            {pool.age_category} · {GENDER_LABEL[pool.gender] ?? pool.gender}
-          </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <AlertTriangle size={18} color="#f59e0b" />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>Violations détectées</div>
+                <div style={{ fontSize: 11, color: 'var(--faint)' }}>{pool.pool_name}</div>
+              </div>
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              {violations.map(v => (
+                <div key={v} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '5px 0', fontSize: 12, color: '#f87171',
+                  borderBottom: '1px solid var(--b1)',
+                }}>
+                  <AlertTriangle size={10} color="#ef4444" /> {v}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--fg3)', marginBottom: 20, lineHeight: 1.5 }}>
+              Les combats peuvent quand même être générés. Voulez-vous continuer ?
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowViolationConfirm(false)}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid var(--b3)',
+                  background: 'var(--inp)', color: 'var(--fg3)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => { setShowViolationConfirm(false); onGenerateMatches(); }}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  background: '#f59e0b', color: '#fff', fontSize: 12, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <Play size={12} /> Générer quand même
+              </button>
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 2 }}>
-          {Number(pool.weight_min).toFixed(1)}–{Number(pool.weight_max).toFixed(1)} kg · {pool.athletes?.length ?? 0} athlètes
-        </div>
-      </div>
-
-      {/* Mat selector */}
-      <div style={{ flex: 1, minWidth: 140 }}>
-        <label style={{ fontSize: 10, color: 'var(--faint)', display: 'block', marginBottom: 3 }}>Tapis</label>
-        <select
-          value={pool.mat_id ?? ''}
-          onChange={e => onAssign(e.target.value || null, pool.referee_id ?? null)}
-          style={{
-            width: '100%', padding: '5px 8px', borderRadius: 6, fontSize: 12,
-            background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg)',
-          }}
-        >
-          <option value="">— Non assigné —</option>
-          {activeMats.map((m: any) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Referee selector */}
-      <div style={{ flex: 1, minWidth: 160 }}>
-        <label style={{ fontSize: 10, color: 'var(--faint)', display: 'block', marginBottom: 3 }}>Arbitre</label>
-        <select
-          value={pool.referee_id ?? ''}
-          onChange={e => onAssign(pool.mat_id ?? null, e.target.value || null)}
-          style={{
-            width: '100%', padding: '5px 8px', borderRadius: 6, fontSize: 12,
-            background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg)',
-          }}
-        >
-          <option value="">— Non assigné —</option>
-          {referees.map((u: any) => (
-            <option key={u.user_id} value={u.user_id}>{u.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Match info + generate */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        {Number(pool.match_count) > 0 ? (
-          <span style={{ fontSize: 11, color: 'var(--faint)' }}>
-            {pool.matches_done}/{pool.match_count} combats
-            {Number(pool.matches_done) === Number(pool.match_count) && (
-              <span style={{ color: '#22c55e', marginLeft: 4 }}>✓</span>
-            )}
-          </span>
-        ) : null}
-        <button
-          onClick={onGenerateMatches}
-          disabled={generating || violations.length > 0}
-          title={violations.length > 0 ? 'Corrigez les violations avant de générer' : 'Générer les combats'}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 10px', borderRadius: 6, border: 'none', cursor: violations.length > 0 ? 'not-allowed' : 'pointer',
-            background: violations.length > 0 ? 'var(--bg2)' : '#3b82f6',
-            color: violations.length > 0 ? 'var(--faint)' : '#fff',
-            fontSize: 11, fontWeight: 600, opacity: generating ? 0.7 : 1,
-          }}
-        >
-          <Play size={10} /> {Number(pool.match_count) > 0 ? 'Regénérer' : 'Générer combats'}
-        </button>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 
@@ -983,13 +1072,14 @@ function RestTimesBanner({ restData }: { restData: any }) {
 }
 
 function CreatePoolModal({
-  ageCat, unassigned, loading, onConfirm, onClose,
+  ageCat, unassigned, loading, onConfirm, onClose, tolPct = 10,
 }: {
   ageCat: string;
   unassigned: Unassigned[];
   loading: boolean;
   onConfirm: (athleteIds: string[]) => void;
   onClose: () => void;
+  tolPct?: number;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -1004,7 +1094,8 @@ function CreatePoolModal({
   const selWeights = selAthletes.map(a => Number(a.weigh_in_weight)).filter(Boolean);
   const spread = selWeights.length > 1 ? Math.max(...selWeights) / Math.min(...selWeights) : 1;
   const spreadPct = ((spread - 1) * 100).toFixed(1);
-  const overTol = spread > 1.10;
+  const tol = 1 + tolPct / 100;
+  const overTol = spread > tol;
   const overSize = selected.size > 4;
 
   return (
@@ -1040,7 +1131,7 @@ function CreatePoolModal({
               background: overTol ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)',
               color: overTol ? '#f87171' : '#22c55e', fontWeight: 600,
             }}>
-              Écart {spreadPct} %{overTol ? ' ⚠ > 10 %' : ' ✓'}
+              Écart {spreadPct} %{overTol ? ` ⚠ > ${tolPct} %` : ' ✓'}
             </span>
           )}
         </div>
@@ -1053,10 +1144,10 @@ function CreatePoolModal({
             // Est-ce que cet athlète est hors tolérance avec la sélection actuelle ?
             let outOfTolWithSel = false;
             if (isSelected && selWeights.length > 1) {
-              outOfTolWithSel = isOutOfTolerance(w, selWeights);
+              outOfTolWithSel = isOutOfTolerance(w, selWeights, tolPct);
             } else if (!isSelected && selWeights.length > 0) {
               const testWs = [...selWeights, w];
-              outOfTolWithSel = Math.max(...testWs) > Math.min(...testWs) * 1.10;
+              outOfTolWithSel = Math.max(...testWs) > Math.min(...testWs) * tol;
             }
 
             return (

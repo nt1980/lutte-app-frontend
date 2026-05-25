@@ -377,6 +377,20 @@ export default function TournamentSettings() {
                 </span>
               </div>
             </div>
+            <div>
+              <label style={LABEL}>Tolérance de poids Jeunes U9/U11 (%)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  type="number" min="1" max="30" step="0.5"
+                  style={{ ...INPUT, maxWidth: 100 }}
+                  value={form.jeunes_weight_tolerance ?? 10}
+                  onChange={e => setForm((p: any) => ({ ...p, jeunes_weight_tolerance: parseFloat(e.target.value) || 10 }))}
+                />
+                <span style={{ fontSize: 12, color: 'var(--fg3)' }}>
+                  Écart maximum autorisé entre le plus léger et le plus lourd dans une poule Jeunes (par défaut 10 %).
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
