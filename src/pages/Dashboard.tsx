@@ -146,7 +146,7 @@ function TournamentCard({ t, highlight, i }: { t: any; highlight?: boolean; i: n
 
   return (
     <Link
-      to={`/t/${t.id}`}
+      to={`/t/${t.slug || t.id}`}
       style={{
         display: 'flex', alignItems: 'center', gap: 16,
         background: 'var(--card)', border: '1px solid var(--b2)',

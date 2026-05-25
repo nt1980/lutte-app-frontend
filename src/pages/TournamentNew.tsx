@@ -26,7 +26,7 @@ export default function TournamentNew() {
 
   const create = useMutation({
     mutationFn: (data: any) => api.post('/api/tournaments', data),
-    onSuccess: (r) => { toast.success('Tournoi créé !'); navigate(`/t/${r.data.id}`); },
+    onSuccess: (r) => { toast.success('Tournoi créé !'); navigate(`/t/${r.data.slug || r.data.id}`); },
     onError: () => toast.error('Erreur lors de la création'),
   });
 

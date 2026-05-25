@@ -303,7 +303,9 @@ export default function TournamentSettings() {
                 );
               }
 
-              const matLivePath = mat.slug ? `/mat/${mat.slug}` : null;
+              const matLivePath = mat.slug
+                ? (slug ? `/t/${slug}/mat/${mat.slug}` : `/mat/${mat.slug}`)
+                : null;
               const matLiveUrl  = matLivePath ? `${origin}${matLivePath}` : null;
               const isEditingSlug = editingSlugId === mat.id;
 
