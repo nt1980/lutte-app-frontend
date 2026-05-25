@@ -169,36 +169,38 @@ function PoolCard({
         </div>
       )}
 
-      {/* Athletes */}
+      {/* Athletes — triés par poids croissant */}
       <div style={{ flex: 1 }}>
-        {athletes.map((a, i) => {
+        {[...athletes].sort((a, b) => Number(a.weight) - Number(b.weight)).map((a, i) => {
           const w = Number(a.weight);
           const outOfTol = isOutOfTolerance(w, weights);
           return (
             <div key={a.athlete_id} style={{
               display: 'flex', alignItems: 'center', gap: 7,
-              padding: '6px 12px',
-              background: outOfTol ? 'rgba(239,68,68,0.07)' : 'transparent',
+              padding: '6px 10px 6px 8px',
+              borderLeft: outOfTol ? '3px solid rgba(239,68,68,0.55)' : '3px solid transparent',
               borderBottom: i < athletes.length - 1 ? '1px solid var(--b1)' : 'none',
+              background: 'transparent',
             }}>
               <div style={{
-                width: 18, height: 18, borderRadius: 5, flexShrink: 0,
-                background: outOfTol ? 'rgba(239,68,68,0.18)' : 'var(--bg2)',
-                border: `1px solid ${outOfTol ? 'rgba(239,68,68,0.4)' : 'var(--b2)'}`,
+                width: 17, height: 17, borderRadius: 5, flexShrink: 0,
+                background: 'var(--bg2)', border: '1px solid var(--b2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 9, fontWeight: 700,
-                color: outOfTol ? '#f87171' : 'var(--dim)',
+                fontSize: 9, fontWeight: 700, color: 'var(--dim)',
               }}>{i + 1}</div>
               <GenderBadge gender={a.gender} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
-                  fontSize: 12, fontWeight: 600,
-                  color: outOfTol ? '#f87171' : 'var(--fg)',
+                  fontSize: 12, fontWeight: 600, color: 'var(--fg)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 }}>{a.name}</div>
-                <div style={{ fontSize: 10, color: outOfTol ? 'rgba(248,113,113,0.7)' : 'var(--faint)' }}>
-                  {a.club} · <span style={{ fontWeight: outOfTol ? 700 : 400 }}>{w.toFixed(1)} kg</span>
-                  {outOfTol && <span style={{ marginLeft: 4, fontSize: 9 }}>⚠ hors tolérance</span>}
+                <div style={{ fontSize: 10, color: 'var(--faint)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span>{a.club}</span>
+                  <span>·</span>
+                  <span style={{ color: outOfTol ? '#f97316' : 'var(--faint)', fontWeight: outOfTol ? 700 : 400 }}>
+                    {w.toFixed(1)} kg
+                  </span>
+                  {outOfTol && <span style={{ color: '#f97316', fontSize: 9 }}>⚠</span>}
                 </div>
               </div>
               {!compact && onRemoveAthlete && (
@@ -207,7 +209,7 @@ function PoolCard({
                   title="Retirer de la poule"
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer', padding: 3,
-                    color: 'var(--faint)', display: 'flex', borderRadius: 4, opacity: 0.6,
+                    color: 'var(--faint)', display: 'flex', borderRadius: 4, opacity: 0.5,
                   }}
                 >
                   <Trash2 size={11} />
@@ -245,6 +247,7 @@ export default function Jeunes() {
   const [ageFilter, setAgeFilter] = useState<string>('Tout');
   const [showGenModal, setShowGenModal] = useState(false);
   const [genOpts, setGenOpts] = useState({ reset: false, U9: true, U11: true });
+  const [createPoolModal, setCreatePoolModal] = useState<{ age_category: string } | null>(null);
 
   // ── Data ─────────────────────────────────────────────────────────────────
 
@@ -343,6 +346,13 @@ export default function Jeunes() {
       api.post(`/api/tournaments/${id}/jeunes/unassigned/${athleteId}/assign`, { jeunes_pool_id }),
     onSuccess: () => { toast.success('Athlète assigné à la poule'); invalidate(); },
     onError: () => toast.error('Erreur lors de l\'assignation'),
+  });
+
+  const createPoolMut = useMutation({
+    mutationFn: ({ age_category, athlete_ids }: { age_category: string; athlete_ids: string[] }) =>
+      api.post(`/api/tournaments/${id}/jeunes/pools`, { age_category, athlete_ids }),
+    onSuccess: () => { toast.success('Poule créée'); setCreatePoolModal(null); invalidate(); },
+    onError: () => toast.error('Erreur lors de la création'),
   });
 
   // ── UI Helpers ───────────────────────────────────────────────────────────
@@ -462,6 +472,20 @@ export default function Jeunes() {
                       }}>
                         {agePools.length} poule{agePools.length > 1 ? 's' : ''}
                       </span>
+                      {/* Bouton créer une poule manuelle */}
+                      {unassigned.filter(u => u.age_category === ageCat).length > 0 && (
+                        <button
+                          onClick={() => setCreatePoolModal({ age_category: ageCat })}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '4px 10px', borderRadius: 7, border: '1px dashed rgba(59,130,246,0.5)',
+                            background: 'rgba(59,130,246,0.07)', color: '#60a5fa',
+                            fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                          }}
+                        >
+                          + Créer une poule
+                        </button>
+                      )}
                     </div>
                     <div style={{
                       display: 'grid',
@@ -557,6 +581,17 @@ export default function Jeunes() {
           </>
         )}
       </div>
+
+      {/* Create pool modal */}
+      {createPoolModal && (
+        <CreatePoolModal
+          ageCat={createPoolModal.age_category}
+          unassigned={unassigned.filter(u => u.age_category === createPoolModal.age_category)}
+          loading={createPoolMut.isPending}
+          onConfirm={(athleteIds) => createPoolMut.mutate({ age_category: createPoolModal.age_category, athlete_ids: athleteIds })}
+          onClose={() => setCreatePoolModal(null)}
+        />
+      )}
 
       {/* Generate modal */}
       {showGenModal && (
@@ -943,6 +978,143 @@ function RestTimesBanner({ restData }: { restData: any }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function CreatePoolModal({
+  ageCat, unassigned, loading, onConfirm, onClose,
+}: {
+  ageCat: string;
+  unassigned: Unassigned[];
+  loading: boolean;
+  onConfirm: (athleteIds: string[]) => void;
+  onClose: () => void;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) =>
+    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+
+  // Tri par poids
+  const sorted = [...unassigned].sort((a, b) => Number(a.weigh_in_weight) - Number(b.weigh_in_weight));
+
+  // Vérification des contraintes de la sélection
+  const selAthletes = sorted.filter(a => selected.has(a.athlete_id));
+  const selWeights = selAthletes.map(a => Number(a.weigh_in_weight)).filter(Boolean);
+  const spread = selWeights.length > 1 ? Math.max(...selWeights) / Math.min(...selWeights) : 1;
+  const spreadPct = ((spread - 1) * 100).toFixed(1);
+  const overTol = spread > 1.10;
+  const overSize = selected.size > 4;
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <div style={{
+        background: 'var(--card)', borderRadius: 16, padding: 24, width: 420, maxHeight: '80vh',
+        border: '1px solid var(--b2)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+        display: 'flex', flexDirection: 'column', gap: 0,
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)', marginBottom: 4 }}>
+          Créer une poule — {ageCat}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--faint)', marginBottom: 16 }}>
+          Sélectionnez les athlètes à inclure dans cette poule.
+        </div>
+
+        {/* Contraintes live */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <span style={{
+            fontSize: 11, padding: '3px 8px', borderRadius: 6,
+            background: overSize ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)',
+            color: overSize ? '#f87171' : '#22c55e', fontWeight: 600,
+          }}>
+            {selected.size}/4 athlètes{overSize ? ' ⚠ max 4' : ''}
+          </span>
+          {selWeights.length > 1 && (
+            <span style={{
+              fontSize: 11, padding: '3px 8px', borderRadius: 6,
+              background: overTol ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.1)',
+              color: overTol ? '#f87171' : '#22c55e', fontWeight: 600,
+            }}>
+              Écart {spreadPct} %{overTol ? ' ⚠ > 10 %' : ' ✓'}
+            </span>
+          )}
+        </div>
+
+        {/* Liste des athlètes non-assignés */}
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
+          {sorted.map(a => {
+            const w = Number(a.weigh_in_weight);
+            const isSelected = selected.has(a.athlete_id);
+            // Est-ce que cet athlète est hors tolérance avec la sélection actuelle ?
+            let outOfTolWithSel = false;
+            if (isSelected && selWeights.length > 1) {
+              outOfTolWithSel = isOutOfTolerance(w, selWeights);
+            } else if (!isSelected && selWeights.length > 0) {
+              const testWs = [...selWeights, w];
+              outOfTolWithSel = Math.max(...testWs) > Math.min(...testWs) * 1.10;
+            }
+
+            return (
+              <label key={a.athlete_id} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '7px 10px', borderRadius: 8, cursor: 'pointer',
+                border: `1px solid ${isSelected ? 'rgba(59,130,246,0.4)' : 'var(--b2)'}`,
+                background: isSelected ? 'rgba(59,130,246,0.08)' : 'var(--bg2)',
+                transition: 'all 0.12s',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggle(a.athlete_id)}
+                  style={{ width: 14, height: 14, accentColor: '#3b82f6', flexShrink: 0 }}
+                />
+                <GenderBadge gender={a.gender} />
+                <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--fg)' }}>{a.name}</span>
+                <span style={{ fontSize: 11, color: 'var(--faint)' }}>{a.club}</span>
+                <span style={{
+                  fontSize: 11, fontWeight: 700,
+                  color: isSelected && outOfTolWithSel ? '#f97316' : 'var(--faint)',
+                }}>
+                  {w.toFixed(1)} kg
+                  {isSelected && outOfTolWithSel && ' ⚠'}
+                </span>
+              </label>
+            );
+          })}
+          {sorted.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 20, color: 'var(--faint)', fontSize: 12 }}>
+              Aucun athlète non-assigné en {ageCat}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', borderTop: '1px solid var(--b1)', paddingTop: 14 }}>
+          <button onClick={onClose} style={{
+            padding: '8px 16px', borderRadius: 8, border: '1px solid var(--b3)',
+            background: 'var(--inp)', color: 'var(--fg3)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+          }}>Annuler</button>
+          <button
+            disabled={loading || selected.size < 1}
+            onClick={() => onConfirm([...selected])}
+            style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none', cursor: selected.size < 1 ? 'not-allowed' : 'pointer',
+              background: selected.size < 1 ? 'var(--bg2)' : '#3b82f6',
+              color: selected.size < 1 ? 'var(--faint)' : '#fff',
+              fontSize: 12, fontWeight: 700, opacity: loading ? 0.7 : 1,
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            {loading && <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} />}
+            {loading ? 'Création…' : `Créer la poule (${selected.size})`}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
