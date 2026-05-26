@@ -42,11 +42,15 @@ export default function WeighIn() {
   // Auto-calcul de la catégorie de poids dès que le poids change
   useEffect(() => {
     if (!selected) return;
+    // Catégories jeunes (U5/U7/U9/U11) → poids libre, pas de catégorie fixe
+    if (!hasWeightCategories(selected.final_age_category || '')) {
+      setWeightCat('');
+      return;
+    }
     const w = parseFloat(weight);
     if (isNaN(w) || w <= 0) return;
     const cat = getWeightCategory(w, selected.final_age_category || '', selected.final_style || '');
     if (cat !== null) setWeightCat(cat);
-    // Si pas de catégorie fixe (U9/U11…), on laisse le champ libre
   }, [weight, selected?.id]); // déclenche sur changement de poids OU d'athlète sélectionné
 
   // Bloquer le scroll du body quand le bottom sheet est ouvert sur mobile
@@ -96,7 +100,9 @@ export default function WeighIn() {
   const openSelected = (reg: any) => {
     setSelected(reg);
     setWeight(reg.weigh_in_weight_kg || '');
-    setWeightCat(reg.final_weight_category ? String(reg.final_weight_category) : '');
+    // Si l'athlète est en poids libre (jeune catégorie), ne pas remplir la catégorie de poids
+    const libre = !hasWeightCategories(reg.final_age_category || '');
+    setWeightCat(libre ? '' : (reg.final_weight_category ? String(reg.final_weight_category) : ''));
     setStatus(reg.weigh_in_status === 'pending' ? 'done' : (reg.weigh_in_status || 'done'));
   };
 
@@ -159,14 +165,28 @@ export default function WeighIn() {
               </span>
             )}
           </label>
-          <input
-            type="text"
-            inputMode="decimal"
-            style={{ width: '100%', background: weightCat ? 'rgba(220,38,38,0.07)' : 'var(--inp)', border: `1px solid ${weightCat ? 'rgba(220,38,38,0.4)' : 'var(--b3)'}`, borderRadius: 10, padding: '14px', fontSize: isMobile ? 32 : 26, fontWeight: 900, color: weightCat ? '#f87171' : 'var(--fg3)', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' as const }}
-            value={weightCat}
-            onChange={e => setWeightCat(e.target.value.replace(',', '.'))}
-            placeholder={hasWeightCategories(selected.final_age_category || '') ? 'auto' : 'libre'}
-          />
+          {hasWeightCategories(selected.final_age_category || '') ? (
+            <input
+              type="text"
+              inputMode="decimal"
+              style={{ width: '100%', background: weightCat ? 'rgba(220,38,38,0.07)' : 'var(--inp)', border: `1px solid ${weightCat ? 'rgba(220,38,38,0.4)' : 'var(--b3)'}`, borderRadius: 10, padding: '14px', fontSize: isMobile ? 32 : 26, fontWeight: 900, color: weightCat ? '#f87171' : 'var(--fg3)', textAlign: 'center', outline: 'none', letterSpacing: '-1px', boxSizing: 'border-box' as const }}
+              value={weightCat}
+              onChange={e => setWeightCat(e.target.value.replace(',', '.'))}
+              placeholder="auto"
+            />
+          ) : (
+            /* Catégorie libre (U5/U7/U9/U11) : badge informatif, pas de saisie */
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              height: isMobile ? 68 : 58, borderRadius: 10,
+              background: 'rgba(96,165,250,0.08)',
+              border: '1px solid rgba(96,165,250,0.25)',
+              gap: 3,
+            }}>
+              <span style={{ fontSize: isMobile ? 15 : 13, fontWeight: 900, color: '#60a5fa', letterSpacing: '0.06em' }}>POIDS LIBRE</span>
+              <span style={{ fontSize: 9, color: '#93c5fd', fontWeight: 500 }}>{selected.final_age_category}</span>
+            </div>
+          )}
         </div>
       </div>
 

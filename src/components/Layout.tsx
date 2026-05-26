@@ -63,14 +63,37 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
   const myTournamentRole: string = tournamentId
     ? (tournamentUsers.find((u: any) => u.user_id === user?.id)?.role ?? '')
     : '';
-  const isReferee = myTournamentRole === 'referee';
+  const isReferee        = myTournamentRole === 'referee';
+  const isWeighInManager = myTournamentRole === 'weigh_in_manager';
 
-  const showGlobalNav = isGlobalAdmin || !tournamentId;
+  // Fetch mat assignment for referee → used to redirect them to their specific mat
+  const { data: refMat } = useQuery({
+    queryKey: ['referee-mat'],
+    queryFn: () => api.get('/api/users/me/referee-mat').then(r => r.data),
+    enabled: isReferee,
+    staleTime: 300000,
+  });
+
+  // Redirect referee directly to their assigned mat (public live view, no layout nav)
+  useEffect(() => {
+    if (isReferee && refMat?.mat_id) {
+      navigate(`/mat/${refMat.mat_id}`, { replace: true });
+    }
+  }, [isReferee, refMat, navigate]);
+
+  // weigh_in_manager gets access to /clubs even when inside a tournament
+  const showGlobalNav = isGlobalAdmin || !tournamentId || isWeighInManager;
   const showLabel     = isMobile || !collapsed;
+
+  const visibleGlobalNav = () => {
+    if (isWeighInManager) return globalNav.filter(n => n.to === '/clubs');
+    return globalNav;
+  };
 
   const visibleTournamentNav = (id: string) => {
     const all = tournamentNav(id);
     if (isReferee) return all.filter(n => n.label === 'Tapis');
+    if (isWeighInManager) return all.filter(n => ['Inscriptions', 'Pesée'].includes(n.label));
     return all;
   };
 
@@ -166,7 +189,7 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
           {/* Navigation */}
           <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-            {showGlobalNav && !isReferee && globalNav.map(({ to, label, icon: Icon }) => {
+            {showGlobalNav && !isReferee && visibleGlobalNav().map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return <NavLink key={to} to={to} label={label} icon={Icon} active={active} collapsed={collapsed && !isMobile} />;
             })}
@@ -192,8 +215,8 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
 
           </nav>
 
-          {/* Affichage — toujours visible sauf arbitres */}
-          {!isReferee && (
+          {/* Affichage — masqué pour arbitres et responsables pesée */}
+          {!isReferee && !isWeighInManager && (
             <div style={{ padding: '4px 8px', borderTop: '1px solid var(--b1)' }}>
               <NavLink
                 to="/settings"
