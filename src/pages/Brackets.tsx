@@ -809,18 +809,26 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Onglets ── */}
-      <div style={{ display: 'flex', gap: 0, background: 'var(--inp)', padding: 3, borderRadius: 10, border: '1px solid var(--b2)', width: 'fit-content' }}>
+      {/* ── Onglets (même style que BracketView) ── */}
+      <div style={{ display: 'flex', gap: 6 }}>
         {(['poules', 'finale'] as const).map(t => {
           const active = tab === t;
+          const accent   = t === 'poules' ? '#60a5fa'              : '#ca8a04';
+          const accentBg = t === 'poules' ? 'rgba(96,165,250,0.12)' : 'rgba(202,138,4,0.12)';
           return (
             <button key={t} onClick={() => setTab(t)} style={{
-              padding: '6px 20px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-              background: active ? 'var(--card)' : 'transparent',
-              color: active ? '#ef4444' : 'var(--fg3)',
-              border: active ? '1px solid rgba(220,38,38,0.25)' : '1px solid transparent',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '7px 16px', borderRadius: 9,
+              fontSize: 12, fontWeight: 700,
+              cursor: 'pointer', transition: 'all 0.15s',
+              background: active ? accentBg : 'var(--inp)',
+              color: active ? accent : 'var(--fg3)',
+              border: active ? `1px solid ${accent}40` : '1px solid var(--b2)',
+              boxShadow: active ? `0 0 0 1px ${accent}20` : 'none',
             }}>
-              {t === 'poules' ? 'Poules' : 'Phase finale'}
+              {t === 'poules'
+                ? <><Trophy size={13} color={active ? accent : 'var(--fg3)'} /> Poules</>
+                : <><Medal  size={13} color={active ? accent : 'var(--fg3)'} /> Phase finale</>}
             </button>
           );
         })}
@@ -830,14 +838,16 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
           ONGLET POULES
           ══════════════════════════════════════════════════ */}
       {tab === 'poules' && (
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Gauche : matchs de poule */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {pools.map(pool => {
-              const pMatches = poolMatches.filter((m: any) => m.pool_id === pool.id);
-              return (
-                <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+          {/* Chaque poule = sa propre ligne horizontale → matchs + classement toujours alignés */}
+          {poolRankings.map(({ pool, ranking }) => {
+            const pMatches = poolMatches.filter((m: any) => m.pool_id === pool.id);
+            return (
+              <div key={pool.id} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+                {/* Matchs */}
+                <div style={{ flex: 1, minWidth: 0, background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
                   <div style={{ padding: '9px 16px', borderBottom: '1px solid var(--b2)', fontSize: 11, fontWeight: 800, color: 'var(--fg2)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                     Poule {pool.name}
                   </div>
@@ -848,9 +858,7 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
                       const blueWon = isFinished && m.winner_id === m.blue_athlete_id;
                       return (
                         <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
-                          {/* Numéro match */}
                           <div style={{ width: 18, flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--faint)', textAlign: 'center' }}>{i + 1}</div>
-                          {/* Rouge */}
                           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
                             <div>
@@ -858,11 +866,9 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
                               {m.red_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 1 }}>{m.red_club}</div>}
                             </div>
                           </div>
-                          {/* Score / VS */}
                           <div style={{ fontFamily: 'monospace', fontWeight: 900, color: isFinished ? 'var(--fg)' : 'var(--dim)', fontSize: 14, flexShrink: 0, minWidth: 52, textAlign: 'center' }}>
                             {isFinished ? `${m.score_red} – ${m.score_blue}` : 'vs'}
                           </div>
-                          {/* Bleu */}
                           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
                             <div style={{ textAlign: 'right' }}>
                               <div style={{ fontSize: 13, fontWeight: blueWon ? 700 : 500, color: blueWon ? 'var(--fg)' : '#60a5fa', lineHeight: 1.2 }}>{m.blue_name || '?'}</div>
@@ -870,7 +876,6 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
                             </div>
                             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
                           </div>
-                          {/* Arbitrer */}
                           <Link to={`/ref/${m.id}`} target="_blank" style={{ color: 'var(--dim)', display: 'flex', textDecoration: 'none', marginLeft: 2, flexShrink: 0 }}>
                             <ChevronRight size={14} />
                           </Link>
@@ -882,49 +887,46 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
                     )}
                   </div>
                 </div>
-              );
-            })}
 
-            {/* Bannière info */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 9, fontSize: 12, color: 'var(--fg3)' }}>
-              <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1 }}>ⓘ</span>
-              <span>Les 2 premiers de chaque poule se qualifient pour les demi-finales.</span>
-            </div>
-          </div>
-
-          {/* Droite : classements par poule */}
-          <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {poolRankings.map(({ pool, ranking }) => (
-              <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
-                <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <Trophy size={12} color="#fbbf24" />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Classement Poule {pool.name}</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '6px 12px 5px', borderBottom: '1px solid var(--b1)' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)' }}>#</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Athlète</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts class.</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts tech.</div>
-                </div>
-                {ranking.map((r, i) => {
-                  const rs = RANK_STYLE(i);
-                  return (
-                    <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '9px 12px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none', alignItems: 'center' }}>
-                      <div style={{ width: 22, height: 22, borderRadius: 6, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-                        {r.club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>{r.club}</div>}
+                {/* Classement — toujours aligné en haut avec sa poule */}
+                <div style={{ width: 320, flexShrink: 0, background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <Trophy size={12} color="#fbbf24" />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Classement Poule {pool.name}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 58px 58px', gap: 4, padding: '6px 12px 5px', borderBottom: '1px solid var(--b1)' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)' }}>#</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Athlète</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Cl.</div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Tech.</div>
+                  </div>
+                  {ranking.map((r, i) => {
+                    const rs = RANK_STYLE(i);
+                    return (
+                      <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 58px 58px', gap: 4, padding: '9px 12px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none', alignItems: 'center' }}>
+                        <div style={{ width: 22, height: 22, borderRadius: 6, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                          {r.club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>{r.club}</div>}
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg2)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.pts}</div>
+                        <div style={{ fontSize: 13, color: 'var(--fg3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.tech}</div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg2)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.pts}</div>
-                      <div style={{ fontSize: 13, color: 'var(--fg3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.tech}</div>
-                    </div>
-                  );
-                })}
-                {ranking.length === 0 && (
-                  <div style={{ padding: '12px 14px', fontSize: 11, color: 'var(--dim)' }}>Aucun athlète</div>
-                )}
+                    );
+                  })}
+                  {ranking.length === 0 && (
+                    <div style={{ padding: '12px 14px', fontSize: 11, color: 'var(--dim)' }}>Aucun athlète</div>
+                  )}
+                </div>
+
               </div>
-            ))}
+            );
+          })}
+
+          {/* Bannière info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 9, fontSize: 12, color: 'var(--fg3)' }}>
+            <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1 }}>ⓘ</span>
+            <span>Les 2 premiers de chaque poule se qualifient pour les demi-finales.</span>
           </div>
         </div>
       )}
