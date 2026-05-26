@@ -66,20 +66,24 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
   const isReferee        = myTournamentRole === 'referee';
   const isWeighInManager = myTournamentRole === 'weigh_in_manager';
 
-  // Fetch mat assignment for referee → used to redirect them to their specific mat
-  const { data: refMat } = useQuery({
+  // Toujours vérifier si l'utilisateur est affecté à un tapis (indépendamment du rôle tournament_users)
+  // → fonctionne pour les comptes dont le mat.referee_id est défini sans rôle explicite
+  const { data: refMat, isLoading: refMatLoading } = useQuery({
     queryKey: ['referee-mat'],
-    queryFn: () => api.get('/api/users/me/referee-mat').then(r => r.data),
-    enabled: isReferee,
+    queryFn: () => api.get('/api/users/me/referee-mat').then(r => r.data).catch(() => null),
+    enabled: !!tournamentId && !isGlobalAdmin,
     staleTime: 300000,
   });
 
-  // Redirect referee directly to their assigned mat (public live view, no layout nav)
+  // Un juge de tapis = non-admin ayant un tapis assigné via mats.referee_id
+  const isMatReferee = !isGlobalAdmin && !!refMat?.mat_id;
+
+  // Rediriger immédiatement le juge vers sa vue tapis (pas de sidebar, pas d'autres menus)
   useEffect(() => {
-    if (isReferee && refMat?.mat_id) {
+    if (isMatReferee && refMat?.mat_id) {
       navigate(`/mat/${refMat.mat_id}`, { replace: true });
     }
-  }, [isReferee, refMat, navigate]);
+  }, [isMatReferee, refMat, navigate]);
 
   // weigh_in_manager gets access to /clubs even when inside a tournament
   const showGlobalNav = isGlobalAdmin || !tournamentId || isWeighInManager;
@@ -92,10 +96,23 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
 
   const visibleTournamentNav = (id: string) => {
     const all = tournamentNav(id);
-    if (isReferee) return all.filter(n => n.label === 'Tapis');
+    if (isReferee || isMatReferee) return all.filter(n => n.label === 'Tapis');
     if (isWeighInManager) return all.filter(n => ['Inscriptions', 'Pesée'].includes(n.label));
     return all;
   };
+
+  // Bloquer l'affichage tant qu'on ne sait pas si l'utilisateur est un juge de tapis
+  // → évite le flash du menu complet avant la redirection
+  if (!isGlobalAdmin && tournamentId && refMatLoading) {
+    return (
+      <>
+        <PrivateThemeApplier />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)' }}>
+          <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Chargement…</div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -189,7 +206,7 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
           {/* Navigation */}
           <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
-            {showGlobalNav && !isReferee && visibleGlobalNav().map(({ to, label, icon: Icon }) => {
+            {showGlobalNav && !isReferee && !isMatReferee && visibleGlobalNav().map(({ to, label, icon: Icon }) => {
               const active = location.pathname === to;
               return <NavLink key={to} to={to} label={label} icon={Icon} active={active} collapsed={collapsed && !isMobile} />;
             })}
@@ -215,8 +232,8 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
 
           </nav>
 
-          {/* Affichage — masqué pour arbitres et responsables pesée */}
-          {!isReferee && !isWeighInManager && (
+          {/* Affichage — masqué pour arbitres/juges de tapis et responsables pesée */}
+          {!isReferee && !isMatReferee && !isWeighInManager && (
             <div style={{ padding: '4px 8px', borderTop: '1px solid var(--b1)' }}>
               <NavLink
                 to="/settings"
