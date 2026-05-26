@@ -81,9 +81,10 @@ export default function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
   const isMobile = useIsMobile();
 
-  const { data: tournament } = useQuery({
+  const { data: tournament, isPending: tournamentPending, isError: tournamentError } = useQuery({
     queryKey: ['tournament', id],
     queryFn: () => api.get(`/api/tournaments/${id}`).then(r => r.data),
+    retry: 2,
   });
 
   const { data: stats } = useQuery({
@@ -91,9 +92,10 @@ export default function TournamentDetail() {
     queryFn: () => api.get(`/api/tournaments/${id}/dashboard`).then(r => r.data),
     enabled: !!id,
     refetchInterval: 15000,
+    retry: 1,
   });
 
-  if (!tournament) return (
+  if (tournamentPending) return (
     <Layout tournamentId={id}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -101,6 +103,16 @@ export default function TournamentDetail() {
             <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--dim)', animation: 'bounce 1s infinite', animationDelay: `${i * 150}ms` }} />
           ))}
         </div>
+      </div>
+    </Layout>
+  );
+
+  if (tournamentError && !tournament) return (
+    <Layout tournamentId={id}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 240, gap: 12 }}>
+        <AlertTriangle size={32} color="var(--dim)" />
+        <span style={{ fontSize: 14, color: 'var(--fg3)' }}>Impossible de charger le tournoi.</span>
+        <button onClick={() => window.location.reload()} style={{ fontSize: 12, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Réessayer</button>
       </div>
     </Layout>
   );
