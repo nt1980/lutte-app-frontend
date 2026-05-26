@@ -8,6 +8,7 @@
    TOKENS SÉMANTIQUES — thème clair (défaut)
    ══════════════════════════════════════════════════ */
 :root {
+  color-scheme: light;
   --bg:    #f8fafc;
   --bg2:   #f1f5f9;
   --card:  #ffffff;
@@ -35,6 +36,7 @@
    TOKENS SÉMANTIQUES — thème sombre
    ══════════════════════════════════════════════════ */
 .dark {
+  color-scheme: dark;
   --bg:    #080808;
   --bg2:   #0d0d0d;
   --card:  #141414;
@@ -75,10 +77,15 @@
   ::-webkit-scrollbar-thumb { background: var(--scr); border-radius: 99px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--fg3); }
 
-  /* Correction couleur des inputs date/select en mode clair */
-  input, select, textarea, option {
+  /* Correction couleur des inputs/select */
+  input, select, textarea {
     color: var(--fg);
     background-color: var(--inp);
+  }
+  /* Options : fond solide pour que le dropdown soit lisible dans les deux thèmes */
+  option {
+    color: var(--fg);
+    background-color: var(--card);  /* solide, jamais transparent */
   }
   input::placeholder, textarea::placeholder {
     color: var(--faint);
