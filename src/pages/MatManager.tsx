@@ -120,9 +120,15 @@ export default function MatManager() {
 
   // Rôle de l'utilisateur courant dans ce tournoi
   const myRole: string = tournamentUsers.find((u: any) => u.user_id === user?.id)?.role ?? '';
-  const isReferee = myRole === 'referee';
   const isAdmin   = myRole === 'tournament_admin' || myRole === 'mat_manager'
     || (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
+
+  // isReferee = rôle explicite OU tapis assigné via referee_id (sans rôle dans tournament_users)
+  // On utilise allMats car activeMats est calculé après
+  const isReferee = !isAdmin && (
+    myRole === 'referee' ||
+    allMats.some((m: any) => m.referee_id === user?.id)
+  );
 
   const { data: queue = [] } = useQuery({
     queryKey: ['queue', id],

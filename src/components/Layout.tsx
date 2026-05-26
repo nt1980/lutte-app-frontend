@@ -78,12 +78,16 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
   // Un juge de tapis = non-admin ayant un tapis assigné via mats.referee_id
   const isMatReferee = !isGlobalAdmin && !!refMat?.mat_id;
 
-  // Rediriger immédiatement le juge vers sa vue tapis (pas de sidebar, pas d'autres menus)
+  // Rediriger le juge de tapis vers la page MatManager de son tournoi (vue filtrée sur son tapis)
+  // Si déjà sur la bonne page → pas de redirection
   useEffect(() => {
-    if (isMatReferee && refMat?.mat_id) {
-      navigate(`/mat/${refMat.mat_id}`, { replace: true });
+    if (isMatReferee && refMat?.tournament_id) {
+      const matsPath = `/t/${refMat.tournament_id}/mats`;
+      if (location.pathname !== matsPath) {
+        navigate(matsPath, { replace: true });
+      }
     }
-  }, [isMatReferee, refMat, navigate]);
+  }, [isMatReferee, refMat, location.pathname, navigate]);
 
   // weigh_in_manager gets access to /clubs even when inside a tournament
   const showGlobalNav = isGlobalAdmin || !tournamentId || isWeighInManager;
