@@ -137,6 +137,77 @@ function MatchCard({ match }: { match: any }) {
   );
 }
 
+// ─── Carte de match style "phase finale" ────────────────────────────────────
+// Badge numéro · rouge · vs+score · bleu — fidèle au design des screenshots
+function FinalsMatchCard({ match, index }: { match: any; index?: number }) {
+  const isFinished = match.status === 'finished';
+  const redWon  = isFinished && match.winner_id === match.red_athlete_id;
+  const blueWon = isFinished && match.winner_id === match.blue_athlete_id;
+  const hasIdx  = index !== undefined;
+
+  return (
+    <div style={{
+      background: 'var(--card)', border: '1px solid var(--b3)',
+      borderRadius: 10, padding: '11px 14px',
+    }}>
+      {/* ── Rouge ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        {hasIdx && (
+          <div style={{
+            width: 20, height: 20, borderRadius: 5, flexShrink: 0, marginTop: 1,
+            background: 'var(--inp)', color: 'var(--fg3)',
+            fontSize: 10, fontWeight: 800,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>{index}</div>
+        )}
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: redWon ? 700 : 500, color: redWon ? 'var(--fg)' : '#f87171', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {match.red_name || '?'}
+          </div>
+          {match.red_club && (
+            <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {match.red_club}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── vs + score ── */}
+      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 16, margin: '7px 0' }}>
+        <span style={{ fontSize: 11, color: 'var(--fg3)', fontStyle: 'italic', flex: 1 }}>vs</span>
+        {isFinished ? (
+          <span style={{ fontSize: 15, fontWeight: 900, color: 'var(--fg)', fontFamily: 'monospace' }}>
+            {match.score_red} - {match.score_blue}
+          </span>
+        ) : match.status === 'on_mat' ? (
+          <span style={{ fontSize: 10, color: '#fbbf24', fontWeight: 700 }}>● En cours</span>
+        ) : null}
+      </div>
+
+      {/* ── Bleu ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: blueWon ? 700 : 500, color: blueWon ? 'var(--fg)' : '#60a5fa', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {match.blue_name || '?'}
+          </div>
+          {match.blue_club && (
+            <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {match.blue_club}
+            </div>
+          )}
+        </div>
+        {!isFinished && match.id && (
+          <Link to={`/ref/${match.id}`} target="_blank" style={{ color: 'var(--dim)', display: 'flex', textDecoration: 'none', flexShrink: 0, marginTop: 3 }}>
+            <ChevronRight size={13} />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function NordicView({ matches, pools }: { matches: any[]; pools: any[] }) {
   if (pools.length === 0) return <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucune poule générée</div>;
   return (
@@ -704,18 +775,27 @@ function computePoolRankings(
   });
 }
 
-function RoundColumn({ matches, label }: { matches: any[]; label: string }) {
-  return (
-    <div style={{ minWidth: 220, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>{label}</div>
-      {matches.map((m: any) => <MatchCard key={m.id} match={m} />)}
-    </div>
-  );
-}
+// Bracket layout pour la phase finale (pools_finals)
+const FK = { cardH: 114, cardW: 240, gap: 20, lineW: 50, labelH: 26 } as const;
 
-function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
+function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: any[]; rankings: any[] }) {
+  const [tab, setTab] = useState<'poules' | 'finale'>('poules');
+
   const poolMatches  = matches.filter((m: any) => m.pool_id);
-  const finalMatches = matches.filter((m: any) => ['semifinal', 'final', 'bronze'].includes(m.match_type));
+  const semis   = matches.filter((m: any) => m.match_type === 'semifinal')
+                          .sort((a: any, b: any) => (a.index_in_round ?? 0) - (b.index_in_round ?? 0));
+  const finalM  = matches.find((m: any) => m.match_type === 'final')  ?? null;
+  const bronzeM = matches.find((m: any) => m.match_type === 'bronze') ?? null;
+  const hasFinals = semis.length > 0 || finalM;
+
+  // Bracket geometry
+  const semiCY    = (i: number) => i * (FK.cardH + FK.gap) + FK.cardH / 2;
+  const semisH    = semis.length > 0 ? semis.length * FK.cardH + (semis.length - 1) * FK.gap : FK.cardH;
+  const connMidY  = semis.length > 1
+    ? (semiCY(0) + semiCY(semis.length - 1)) / 2
+    : semiCY(0);
+  const bracketW  = (semis.length > 0 ? FK.cardW + FK.lineW : 0) + FK.cardW;
+  const bracketH  = semisH + 10;
 
   if (pools.length === 0) {
     return <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucune poule générée</div>;
@@ -723,124 +803,263 @@ function PoolsFinalsView({ matches, pools }: { matches: any[]; pools: any[] }) {
 
   const poolRankings = pools.map(pool => ({
     pool,
-    ranking: computePoolRankings(
-      pool.id,
-      (pool.athletes ?? []).filter((a: any) => a?.id),
-      poolMatches
-    ),
+    ranking: computePoolRankings(pool.id, (pool.athletes ?? []).filter((a: any) => a?.id), poolMatches),
   }));
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Gauche : matchs + phase finale ── */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-        {pools.map(pool => {
-          const pMatches = poolMatches.filter((m: any) => m.pool_id === pool.id);
+      {/* ── Onglets ── */}
+      <div style={{ display: 'flex', gap: 0, background: 'var(--inp)', padding: 3, borderRadius: 10, border: '1px solid var(--b2)', width: 'fit-content' }}>
+        {(['poules', 'finale'] as const).map(t => {
+          const active = tab === t;
           return (
-            <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ padding: '9px 16px', borderBottom: '1px solid var(--b2)', fontSize: 11, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                Poule {pool.name}
-              </div>
-              <div>
-                {pMatches.map((m: any, i: number) => {
-                  const isFinished = m.status === 'finished';
-                  const redWon  = isFinished && m.winner_id === m.red_athlete_id;
-                  const blueWon = isFinished && m.winner_id === m.blue_athlete_id;
-                  return (
-                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
-                      {/* Rouge */}
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: redWon ? 700 : 500, color: redWon ? 'var(--fg)' : '#f87171', lineHeight: 1.2 }}>{m.red_name || '?'}</div>
-                          {m.red_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 1 }}>{m.red_club}</div>}
-                        </div>
-                      </div>
-                      {/* Score / VS */}
-                      <div style={{ fontFamily: 'monospace', fontWeight: 900, color: isFinished ? 'var(--fg)' : 'var(--dim)', fontSize: 14, flexShrink: 0, minWidth: 52, textAlign: 'center' }}>
-                        {isFinished ? `${m.score_red} – ${m.score_blue}` : 'vs'}
-                      </div>
-                      {/* Bleu */}
-                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: 13, fontWeight: blueWon ? 700 : 500, color: blueWon ? 'var(--fg)' : '#60a5fa', lineHeight: 1.2 }}>{m.blue_name || '?'}</div>
-                          {m.blue_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>{m.blue_club}</div>}
-                        </div>
-                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
-                      </div>
-                      {/* Arbitrer */}
-                      <Link to={`/ref/${m.id}`} target="_blank" style={{ color: 'var(--dim)', display: 'flex', textDecoration: 'none', marginLeft: 2, flexShrink: 0 }}>
-                        <ChevronRight size={14} />
-                      </Link>
-                    </div>
-                  );
-                })}
-                {pMatches.length === 0 && (
-                  <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
-                )}
-              </div>
-            </div>
+            <button key={t} onClick={() => setTab(t)} style={{
+              padding: '6px 20px', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
+              background: active ? 'var(--card)' : 'transparent',
+              color: active ? '#ef4444' : 'var(--fg3)',
+              border: active ? '1px solid rgba(220,38,38,0.25)' : '1px solid transparent',
+            }}>
+              {t === 'poules' ? 'Poules' : 'Phase finale'}
+            </button>
           );
         })}
-
-        {/* Phase finale */}
-        {finalMatches.length > 0 && (
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg2)', marginBottom: 12 }}>Phase finale</div>
-            <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
-              {(['semifinal', 'final', 'bronze'] as const).map(type => {
-                const t = finalMatches.filter((m: any) => m.match_type === type);
-                if (t.length === 0) return null;
-                const labels: Record<string, string> = { semifinal: 'Demi-finales', final: 'Finale', bronze: 'Bronze' };
-                return <RoundColumn key={type} matches={t} label={labels[type]} />;
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* ── Droite : classements par poule ── */}
-      <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {poolRankings.map(({ pool, ranking }) => (
-          <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
-            {/* Titre */}
-            <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 7 }}>
-              <Trophy size={12} color="#fbbf24" />
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)' }}>Classement Poule {pool.name}</span>
-            </div>
-            {/* En-têtes colonnes */}
-            <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '6px 12px 5px', borderBottom: '1px solid var(--b1)' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)' }}>#</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Athlète</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts class.</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts tech.</div>
-            </div>
-            {/* Lignes */}
-            {ranking.map((r, i) => {
-              const rs = RANK_STYLE(i);
+      {/* ══════════════════════════════════════════════════
+          ONGLET POULES
+          ══════════════════════════════════════════════════ */}
+      {tab === 'poules' && (
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+          {/* Gauche : matchs de poule */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {pools.map(pool => {
+              const pMatches = poolMatches.filter((m: any) => m.pool_id === pool.id);
               return (
-                <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '9px 12px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none', alignItems: 'center' }}>
-                  <div style={{ width: 22, height: 22, borderRadius: 6, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
-                    {i + 1}
+                <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '9px 16px', borderBottom: '1px solid var(--b2)', fontSize: 11, fontWeight: 800, color: 'var(--fg2)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                    Poule {pool.name}
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-                    {r.club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>{r.club}</div>}
+                  <div>
+                    {pMatches.map((m: any, i: number) => {
+                      const isFinished = m.status === 'finished';
+                      const redWon  = isFinished && m.winner_id === m.red_athlete_id;
+                      const blueWon = isFinished && m.winner_id === m.blue_athlete_id;
+                      return (
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
+                          {/* Numéro match */}
+                          <div style={{ width: 18, flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--faint)', textAlign: 'center' }}>{i + 1}</div>
+                          {/* Rouge */}
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: redWon ? 700 : 500, color: redWon ? 'var(--fg)' : '#f87171', lineHeight: 1.2 }}>{m.red_name || '?'}</div>
+                              {m.red_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 1 }}>{m.red_club}</div>}
+                            </div>
+                          </div>
+                          {/* Score / VS */}
+                          <div style={{ fontFamily: 'monospace', fontWeight: 900, color: isFinished ? 'var(--fg)' : 'var(--dim)', fontSize: 14, flexShrink: 0, minWidth: 52, textAlign: 'center' }}>
+                            {isFinished ? `${m.score_red} – ${m.score_blue}` : 'vs'}
+                          </div>
+                          {/* Bleu */}
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: 13, fontWeight: blueWon ? 700 : 500, color: blueWon ? 'var(--fg)' : '#60a5fa', lineHeight: 1.2 }}>{m.blue_name || '?'}</div>
+                              {m.blue_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>{m.blue_club}</div>}
+                            </div>
+                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                          </div>
+                          {/* Arbitrer */}
+                          <Link to={`/ref/${m.id}`} target="_blank" style={{ color: 'var(--dim)', display: 'flex', textDecoration: 'none', marginLeft: 2, flexShrink: 0 }}>
+                            <ChevronRight size={14} />
+                          </Link>
+                        </div>
+                      );
+                    })}
+                    {pMatches.length === 0 && (
+                      <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
+                    )}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg2)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.pts}</div>
-                  <div style={{ fontSize: 13, color: 'var(--fg3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.tech}</div>
                 </div>
               );
             })}
-            {ranking.length === 0 && (
-              <div style={{ padding: '12px 14px', fontSize: 11, color: 'var(--dim)' }}>Aucun athlète</div>
+
+            {/* Bannière info */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 9, fontSize: 12, color: 'var(--fg3)' }}>
+              <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1 }}>ⓘ</span>
+              <span>Les 2 premiers de chaque poule se qualifient pour les demi-finales.</span>
+            </div>
+          </div>
+
+          {/* Droite : classements par poule */}
+          <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {poolRankings.map(({ pool, ranking }) => (
+              <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+                <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <Trophy size={12} color="#fbbf24" />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Classement Poule {pool.name}</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '6px 12px 5px', borderBottom: '1px solid var(--b1)' }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)' }}>#</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Athlète</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts class.</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right' }}>Pts tech.</div>
+                </div>
+                {ranking.map((r, i) => {
+                  const rs = RANK_STYLE(i);
+                  return (
+                    <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 62px 62px', gap: 4, padding: '9px 12px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none', alignItems: 'center' }}>
+                      <div style={{ width: 22, height: 22, borderRadius: 6, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                        {r.club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>{r.club}</div>}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg2)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.pts}</div>
+                      <div style={{ fontSize: 13, color: 'var(--fg3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.tech}</div>
+                    </div>
+                  );
+                })}
+                {ranking.length === 0 && (
+                  <div style={{ padding: '12px 14px', fontSize: 11, color: 'var(--dim)' }}>Aucun athlète</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════
+          ONGLET PHASE FINALE
+          ══════════════════════════════════════════════════ */}
+      {tab === 'finale' && (
+        <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+
+          {/* Gauche : tableau bracket + bronze */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+            {/* Titre section */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg2)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+              Tableau Phase Finale
+            </div>
+
+            {!hasFinals ? (
+              <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Phase finale non encore générée</div>
+            ) : (
+              <>
+                {/* ── Bracket demi-finales → finale ── */}
+                <div>
+                  <div style={{ overflowX: 'auto' }}>
+                    <div style={{ position: 'relative', width: bracketW + 16, height: FK.labelH + bracketH }}>
+
+                      {/* Labels colonnes */}
+                      {semis.length > 0 && (
+                        <div style={{ position: 'absolute', top: 0, left: 0, width: FK.cardW, height: FK.labelH, display: 'flex', alignItems: 'center', fontSize: 10, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                          Demi-finales
+                        </div>
+                      )}
+                      {finalM && (
+                        <div style={{ position: 'absolute', top: 0, left: semis.length > 0 ? FK.cardW + FK.lineW : 0, width: FK.cardW, height: FK.labelH, display: 'flex', alignItems: 'center', fontSize: 10, fontWeight: 700, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                          Finale
+                        </div>
+                      )}
+
+                      {/* Cartes demi-finales */}
+                      {semis.map((m: any, i: number) => (
+                        <div key={m.id} style={{ position: 'absolute', top: FK.labelH + i * (FK.cardH + FK.gap), left: 0, width: FK.cardW }}>
+                          <FinalsMatchCard match={m} index={i + 1} />
+                        </div>
+                      ))}
+
+                      {/* SVG connecteurs semis → finale */}
+                      {semis.length > 0 && finalM && (
+                        <svg style={{ position: 'absolute', top: FK.labelH, left: FK.cardW, width: FK.lineW, height: bracketH, overflow: 'visible', pointerEvents: 'none' }}>
+                          {semis.map((_: any, i: number) => {
+                            const cy = semiCY(i);
+                            if (i % 2 === 0) {
+                              const sibY = i + 1 < semis.length ? semiCY(i + 1) : cy;
+                              return (
+                                <path key={i}
+                                  d={`M0,${cy} H${FK.lineW / 2} V${sibY} M${FK.lineW / 2},${connMidY} H${FK.lineW}`}
+                                  fill="none" stroke="var(--b4)" strokeWidth={1.5}
+                                />
+                              );
+                            }
+                            return <line key={i} x1={0} y1={cy} x2={FK.lineW / 2} y2={cy} stroke="var(--b4)" strokeWidth={1.5} />;
+                          })}
+                        </svg>
+                      )}
+
+                      {/* Carte finale */}
+                      {finalM && (
+                        <div style={{
+                          position: 'absolute',
+                          top: FK.labelH + Math.max(0, connMidY - FK.cardH / 2),
+                          left: semis.length > 0 ? FK.cardW + FK.lineW : 0,
+                          width: FK.cardW,
+                        }}>
+                          <FinalsMatchCard match={finalM} />
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Petite finale (3e place) ── */}
+                {bronzeM && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg3)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                      Petite finale (3e place)
+                    </div>
+                    <div style={{ width: FK.cardW }}>
+                      <FinalsMatchCard match={bronzeM} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Bannière info */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 9, fontSize: 12, color: 'var(--fg3)' }}>
+                  <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1 }}>ⓘ</span>
+                  <span>Le classement final est établi selon : victoires, points techniques, puis critères réglementaires.</span>
+                </div>
+              </>
             )}
           </div>
-        ))}
-      </div>
 
+          {/* Droite : classement final */}
+          <div style={{ width: 280, flexShrink: 0 }}>
+            <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 7 }}>
+                <Trophy size={12} color="#fbbf24" />
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Classement Final</span>
+              </div>
+              {rankings.length === 0 && (
+                <div style={{ padding: '14px', fontSize: 11, color: 'var(--dim)' }}>Résultats en attente</div>
+              )}
+              {rankings.map((r: any, i: number) => {
+                const rs = RANK_STYLE(i);
+                return (
+                  <div key={r.athlete_id || i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
+                    <div style={{ width: 26, height: 26, borderRadius: 6, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
+                      {r.rank ?? i + 1}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {r.athlete_name || r.name}
+                      </div>
+                      {(r.club_name || r.club) && (
+                        <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>{r.club_name || r.club}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
@@ -1023,14 +1242,14 @@ export default function Brackets() {
                       <NordicView matches={bracketData?.matches || []} pools={bracketData?.pools || []} />
                     )}
                     {comp.format_type === 'pools_finals' && (
-                      <PoolsFinalsView matches={bracketData?.matches || []} pools={bracketData?.pools || []} />
+                      <PoolsFinalsView matches={bracketData?.matches || []} pools={bracketData?.pools || []} rankings={rankings} />
                     )}
                     {comp.format_type === 'bracket_repechage' && (
                       <BracketView matches={bracketData?.matches || []} />
                     )}
 
-                    {/* Rankings */}
-                    {rankings.length > 0 && (
+                    {/* Rankings — masqué pour pools_finals (intégré dans PoolsFinalsView) */}
+                    {rankings.length > 0 && comp.format_type !== 'pools_finals' && (
                       <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', borderBottom: '1px solid var(--b2)' }}>
                           <Trophy size={14} color="#fbbf24" />
