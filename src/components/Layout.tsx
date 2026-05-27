@@ -6,7 +6,7 @@ import { PrivateThemeApplier } from '../contexts/ThemeContext';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import {
-  Trophy, LayoutDashboard, Users, Building2, ListChecks, Scale, Zap,
+  LayoutDashboard, Users, Building2, ListChecks, Scale, Zap,
   Grid3X3, LogOut, Settings, Activity, Shield, ChevronLeft, Menu, X, Monitor, Baby, Bell,
 } from 'lucide-react';
 
@@ -234,19 +234,15 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
             overflow: 'hidden',
             justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
           }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 9,
-              background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 4px 12px rgba(220,38,38,0.35)',
-            }}>
-              <Trophy size={15} color="#fff" strokeWidth={2.2} />
-            </div>
+            <img
+              src="/logo.svg"
+              alt="Mat Manager"
+              style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }}
+            />
 
             {showLabel && (
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>Lutte App</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--fg)', letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>Mat Manager</div>
                 <div style={{ fontSize: 10, color: 'var(--faint)', fontWeight: 500, marginTop: 1 }}>FFLDA / UWW</div>
               </div>
             )}
@@ -375,14 +371,8 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
                 <Menu size={20} />
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{
-                  width: 24, height: 24, borderRadius: 7,
-                  background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Trophy size={11} color="#fff" strokeWidth={2.2} />
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--fg)' }}>Lutte App</span>
+                <img src="/logo.svg" alt="Mat Manager" style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--fg)' }}>Mat Manager</span>
               </div>
             </div>
           )}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
-import { Trophy, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import api from '../lib/api';
 
 export default function Login() {
@@ -40,14 +40,12 @@ export default function Login() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 16, background: '#dc2626',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 1rem', boxShadow: '0 8px 32px rgba(220,38,38,0.35)'
-          }}>
-            <Trophy size={26} color="white" />
-          </div>
-          <h1 style={{ color: 'var(--fg)', fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Lutte App</h1>
+          <img
+            src="/logo.svg"
+            alt="Mat Manager"
+            style={{ width: 140, height: 'auto', margin: '0 auto 1rem', display: 'block' }}
+          />
+          <h1 style={{ color: 'var(--fg)', fontSize: '1.5rem', fontWeight: 900, margin: 0 }}>Mat Manager</h1>
           <p style={{ color: 'var(--fg3)', fontSize: '0.8rem', marginTop: '0.3rem' }}>Gestion de tournois FFLDA / UWW</p>
         </div>
 

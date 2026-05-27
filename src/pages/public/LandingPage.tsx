@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Trophy,
   Upload,
   Scale,
   Zap,
@@ -199,11 +198,9 @@ const Navbar = () => {
     <nav style={navStyle}>
       <div style={{ ...CONTAINER, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Logo */}
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg,#dc2626,#b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Trophy size={17} color="#fff" strokeWidth={2.2} />
-          </div>
-          <span style={{ fontWeight: 700, fontSize: 16, color: '#fff', letterSpacing: '-0.3px' }}>Lutte App</span>
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <img src="/logo.svg" alt="Mat Manager" style={{ width: 36, height: 36, objectFit: 'contain' }} />
+          <span style={{ fontWeight: 700, fontSize: 16, color: '#fff', letterSpacing: '-0.3px' }}>Mat Manager</span>
         </Link>
 
         {/* Desktop links */}
@@ -304,10 +301,8 @@ const DashboardMockup = () => (
       {/* Sidebar */}
       <div style={{ width: 180, background: 'rgba(0,0,0,0.35)', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '16px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', marginBottom: 8 }}>
-          <div style={{ width: 22, height: 22, borderRadius: 6, background: 'linear-gradient(135deg,#dc2626,#b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Trophy size={11} color="#fff" />
-          </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>Lutte App</span>
+          <img src="/logo.svg" alt="Mat Manager" style={{ width: 22, height: 22, objectFit: 'contain' }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>Mat Manager</span>
         </div>
         {[
           { label: 'Tableau de bord', active: true },
@@ -540,6 +535,11 @@ const Hero = () => (
     </div>
 
     <div style={{ ...CONTAINER, textAlign: 'center', position: 'relative', zIndex: 1, padding: '60px 24px' }}>
+      {/* Grand logo */}
+      <div className="fade-up" style={{ marginBottom: 32 }}>
+        <img src="/logo.svg" alt="Mat Manager" style={{ width: 'clamp(160px, 22vw, 280px)', height: 'auto', margin: '0 auto', display: 'block', filter: 'drop-shadow(0 8px 32px rgba(220,38,38,0.25))' }} />
+      </div>
+
       {/* Badge */}
       <div className="fade-up" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 30, padding: '5px 14px 5px 8px', marginBottom: 36 }}>
         <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(220,38,38,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -729,7 +729,7 @@ const Testimonials = () => (
         <h2 style={{ fontSize: 'clamp(26px, 3.5vw, 44px)', fontWeight: 800, letterSpacing: '-1.2px', color: '#fff', marginBottom: 12 }}>
           Ils nous font confiance.
         </h2>
-        <p style={{ fontSize: 15, color: '#6b7280' }}>Clubs et ligues qui organisent leurs tournois avec Lutte App.</p>
+        <p style={{ fontSize: 15, color: '#6b7280' }}>Clubs et ligues qui organisent leurs tournois avec Mat Manager.</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
@@ -886,7 +886,7 @@ const Contact = () => {
 const faqs = [
   {
     q: 'Le logiciel est-il compatible avec les exports FFLDA ?',
-    a: 'Oui, Lutte App importe directement les fichiers CSV exportés depuis le site de la FFLDA, avec toutes les catégories d\'âge et les styles (libre, gréco-romaine, féminine).',
+    a: 'Oui, Mat Manager importe directement les fichiers CSV exportés depuis le site de la FFLDA, avec toutes les catégories d\'âge et les styles (libre, gréco-romaine, féminine).',
   },
   {
     q: 'Combien de tapis peut-on gérer simultanément ?',
@@ -955,10 +955,8 @@ const Footer = () => (
         {/* Brand */}
         <div style={{ gridColumn: 'span 1' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: 'linear-gradient(135deg,#dc2626,#b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Trophy size={15} color="#fff" strokeWidth={2.2} />
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Lutte App</span>
+            <img src="/logo.svg" alt="Mat Manager" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+            <span style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>Mat Manager</span>
           </div>
           <p style={{ fontSize: 13, color: '#4b5563', lineHeight: 1.65, maxWidth: 220 }}>
             La plateforme de référence pour la gestion de tournois de lutte en France.
@@ -1007,7 +1005,7 @@ const Footer = () => (
 
       {/* Bottom bar */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <span style={{ fontSize: 12, color: '#374151' }}>© 2025 Lutte App. Tous droits réservés.</span>
+        <span style={{ fontSize: 12, color: '#374151' }}>© 2025 Mat Manager. Tous droits réservés.</span>
         <span style={{ fontSize: 12, color: '#374151' }}>Conforme FFLDA · UWW</span>
       </div>
     </div>
