@@ -187,7 +187,7 @@ export default function PublicProgramme() {
         {isLoading && (
           <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--fg3)' }}>Chargement du programme…</div>
         )}
-        {isError && (
+        {isError && competitions.length === 0 && (
           <div style={{ textAlign: 'center', padding: '4rem' }}>
             <div style={{ color: '#f87171', fontWeight: 600, marginBottom: '0.5rem' }}>
               {is403 ? 'Programme non activé' : 'Programme non disponible'}
