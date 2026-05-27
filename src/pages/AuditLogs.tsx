@@ -92,38 +92,105 @@ function RawSection({ label, data }: { label: string; data: any }) {
   );
 }
 
-/* ─── Vue spéciale MATCH_RESULT ──────────────────────────────────────────── */
-function MatchResultDetail({ d, entityId }: { d: any; entityId: string }) {
-  const redWon  = d.winner_id === d.red_athlete_id;
-  const blueWon = d.winner_id === d.blue_athlete_id;
+/* ─── Vue spéciale MATCH_RESULT (enrichie avec données jointes) ──────────── */
+function MatchResultDetail({
+  d, entityId, matchData, isLoading,
+}: {
+  d: any; entityId: string; matchData: any; isLoading: boolean;
+}) {
+  // Utilise les IDs de l'audit pour déterminer le vainqueur
+  const redAthleteId  = d.red_athlete_id  || matchData?.red_athlete_id;
+  const blueAthleteId = d.blue_athlete_id || matchData?.blue_athlete_id;
+  const redWon  = !!d.winner_id && d.winner_id === redAthleteId;
+  const blueWon = !!d.winner_id && d.winner_id === blueAthleteId;
+
+  const redName  = matchData?.red_name  || '—';
+  const blueName = matchData?.blue_name || '—';
+  const redClub  = matchData?.red_club;
+  const blueClub = matchData?.blue_club;
+
+  // Tour lisible
+  let tourLabel = '';
+  if (matchData?.match_type === 'final')     tourLabel = 'Finale';
+  else if (matchData?.match_type === 'semifinal') tourLabel = 'Demi-finale';
+  else if (matchData?.match_type === 'bronze')    tourLabel = 'Match pour la 3e place';
+  else if (d.round != null) tourLabel = `Tour ${d.round + 1}${d.max_round != null ? ` / ${d.max_round + 1}` : ''}`;
+  if (d.bracket === 'repechage') tourLabel = (tourLabel ? tourLabel + ' — ' : '') + 'Repêchage';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* Score banner */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center', background: 'var(--inp)', borderRadius: 12, padding: '14px 16px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', margin: '0 auto 6px' }} />
-          <div style={{ fontSize: 32, fontWeight: 900, color: redWon ? '#fff' : '#f87171', lineHeight: 1 }}>{d.score_red ?? '?'}</div>
-          <div style={{ fontSize: 10, color: '#f87171', fontWeight: 600, marginTop: 4 }}>ROUGE</div>
-          {redWon && <div style={{ fontSize: 10, color: '#fbbf24', fontWeight: 800, marginTop: 4 }}>🏆 VAINQUEUR</div>}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* Athlètes + score ─────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 10, alignItems: 'stretch', background: 'var(--inp)', borderRadius: 12, padding: '14px' }}>
+        {/* Rouge */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#ef4444' }} />
+          <div style={{ fontSize: 14, fontWeight: 800, color: redWon ? '#fff' : '#f87171', textAlign: 'center', lineHeight: 1.25 }}>
+            {isLoading ? '…' : redName}
+          </div>
+          {redClub && (
+            <div style={{ fontSize: 10, color: 'var(--fg3)', textAlign: 'center' }}>{redClub}</div>
+          )}
+          <div style={{ fontSize: 40, fontWeight: 900, color: redWon ? '#fff' : '#f87171', lineHeight: 1, marginTop: 6 }}>
+            {d.score_red ?? '?'}
+          </div>
+          {redWon && (
+            <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 800, marginTop: 2 }}>🏆 Vainqueur</div>
+          )}
         </div>
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--fg3)', fontStyle: 'italic' }}>vs</div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', margin: '0 auto 6px' }} />
-          <div style={{ fontSize: 32, fontWeight: 900, color: blueWon ? '#fff' : '#60a5fa', lineHeight: 1 }}>{d.score_blue ?? '?'}</div>
-          <div style={{ fontSize: 10, color: '#60a5fa', fontWeight: 600, marginTop: 4 }}>BLEU</div>
-          {blueWon && <div style={{ fontSize: 10, color: '#fbbf24', fontWeight: 800, marginTop: 4 }}>🏆 VAINQUEUR</div>}
+
+        {/* vs */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: 'var(--fg3)', fontStyle: 'italic' }}>vs</div>
+
+        {/* Bleu */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#3b82f6' }} />
+          <div style={{ fontSize: 14, fontWeight: 800, color: blueWon ? '#fff' : '#60a5fa', textAlign: 'center', lineHeight: 1.25 }}>
+            {isLoading ? '…' : blueName}
+          </div>
+          {blueClub && (
+            <div style={{ fontSize: 10, color: 'var(--fg3)', textAlign: 'center' }}>{blueClub}</div>
+          )}
+          <div style={{ fontSize: 40, fontWeight: 900, color: blueWon ? '#fff' : '#60a5fa', lineHeight: 1, marginTop: 6 }}>
+            {d.score_blue ?? '?'}
+          </div>
+          {blueWon && (
+            <div style={{ fontSize: 11, color: '#fbbf24', fontWeight: 800, marginTop: 2 }}>🏆 Vainqueur</div>
+          )}
         </div>
       </div>
 
-      {/* Détails */}
+      {/* Champs détaillés ─────────────────────────── */}
       <div>
-        {d.win_type      && <FieldRow label="Victoire par"     value={WIN_TYPE_LABELS[d.win_type] || d.win_type} />}
-        {d.mat_id        && <FieldRow label="Tapis (ID)"       value={d.mat_id.slice(0, 8) + '…'} mono />}
-        {d.competition_id && <FieldRow label="Compétition (ID)" value={d.competition_id.slice(0, 8) + '…'} mono />}
-        {d.pool_id       && <FieldRow label="Poule (ID)"       value={d.pool_id.slice(0, 8) + '…'} mono />}
-        {d.round != null && <FieldRow label="Tour"             value={`Tour ${d.round + 1}${d.max_round != null ? ` / ${d.max_round + 1}` : ''}`} />}
-        {d.match_type    && <FieldRow label="Type de combat"   value={d.match_type} />}
-        {d.bracket       && <FieldRow label="Tableau"          value={d.bracket} />}
+        {d.win_type && (
+          <FieldRow label="Victoire par" value={WIN_TYPE_LABELS[d.win_type] || d.win_type} />
+        )}
+        {matchData?.age_category && (
+          <FieldRow label="Catégorie d'âge" value={matchData.age_category} />
+        )}
+        {matchData?.weight_category != null && (
+          <FieldRow label="Catégorie de poids" value={`${matchData.weight_category} kg`} />
+        )}
+        {matchData?.style && (
+          <FieldRow label="Style" value={
+            matchData.style === 'libre' ? 'Lutte libre'
+            : matchData.style === 'greco' ? 'Gréco-romaine'
+            : matchData.style === 'feminine' ? 'Lutte féminine'
+            : matchData.style
+          } />
+        )}
+        {matchData?.pool_name && (
+          <FieldRow label="Poule" value={matchData.pool_name} />
+        )}
+        {tourLabel && (
+          <FieldRow label="Tour" value={tourLabel} />
+        )}
+        {matchData?.mat_name && (
+          <FieldRow label="Tapis" value={matchData.mat_name} />
+        )}
+        {matchData?.referee_name && (
+          <FieldRow label="Juge / Arbitre" value={matchData.referee_name} />
+        )}
       </div>
 
       {/* Lien vers le combat */}
@@ -192,6 +259,15 @@ function DetailModal({ log, onClose }: { log: any; onClose: () => void }) {
 
   const d = log.new_data || log.old_data || {};
 
+  // Fetch données enrichies du combat (noms athlètes, clubs, catégories, tapis, poule, arbitre)
+  const isMatchResult = log.action === 'MATCH_RESULT' && log.entity_type === 'match';
+  const { data: matchData, isLoading: matchLoading } = useQuery({
+    queryKey: ['match-audit', log.entity_id],
+    queryFn: () => api.get(`/api/matches/${log.entity_id}`).then(r => r.data),
+    enabled: isMatchResult,
+    staleTime: 300000,
+  });
+
   return (
     <>
       {/* Backdrop */}
@@ -253,8 +329,8 @@ function DetailModal({ log, onClose }: { log: any; onClose: () => void }) {
 
           {/* Contenu intelligent selon l'action */}
           <Section title="Détails">
-            {log.action === 'MATCH_RESULT' ? (
-              <MatchResultDetail d={d} entityId={log.entity_id} />
+            {isMatchResult ? (
+              <MatchResultDetail d={d} entityId={log.entity_id} matchData={matchData} isLoading={matchLoading} />
             ) : (
               <GenericDetail old_data={log.old_data} new_data={log.new_data} />
             )}
