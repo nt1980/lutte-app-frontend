@@ -312,7 +312,14 @@ export default function Jeunes() {
       setShowGenModal(false);
       invalidate();
     },
-    onError: () => toast.error('Erreur lors de la génération'),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error;
+      if (err?.response?.status === 409 && msg) {
+        toast.error(msg, { duration: 6000 });
+      } else {
+        toast.error('Erreur lors de la génération');
+      }
+    },
   });
 
   const deleteMut = useMutation({
@@ -1108,6 +1115,7 @@ function PoolRankingCard({ ranking }: { ranking: any }) {
       name: a.name,
       club: a.club,
       wins: s?.wins ?? 0,
+      draws: s?.draws ?? 0,
       losses: s?.losses ?? 0,
       pts: s?.pts ?? 0,
       tech_pts: s?.tech_pts ?? 0,
@@ -1149,10 +1157,22 @@ function PoolRankingCard({ ranking }: { ranking: any }) {
           )}
         </div>
 
+        {/* Légende barème */}
+        <div style={{ padding: '5px 14px', background: 'rgba(251,191,36,0.06)', borderBottom: '1px solid var(--b1)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {[['V', '2 pts', '#22c55e'], ['N', '1 pt', '#f59e0b'], ['D', '0 pt', '#ef4444']].map(([l, p, c]) => (
+            <span key={l} style={{ fontSize: 10, color: 'var(--faint)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontWeight: 800, color: c as string }}>{l}</span> = {p}
+            </span>
+          ))}
+          <span style={{ fontSize: 10, color: 'var(--faint)', marginLeft: 'auto' }}>
+            Dept. : goal average (pts marqués − pts encaissés)
+          </span>
+        </div>
+
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead>
             <tr style={{ background: 'var(--bg2)' }}>
-              {['#', 'Athlète', 'Club', 'Pts cl.', 'Pts tech.', 'V', 'D'].map(h => (
+              {['#', 'Athlète', 'Club', 'Pts cl.', 'G.A.', 'V', 'N', 'D'].map(h => (
                 <th key={h} style={{
                   padding: '6px 10px',
                   textAlign: h === 'Athlète' || h === 'Club' ? 'left' : 'center',
@@ -1164,12 +1184,13 @@ function PoolRankingCard({ ranking }: { ranking: any }) {
           </thead>
           <tbody>
             {allAthletes.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 16, textAlign: 'center', color: 'var(--faint)', fontSize: 12 }}>
+              <tr><td colSpan={8} style={{ padding: 16, textAlign: 'center', color: 'var(--faint)', fontSize: 12 }}>
                 Aucun athlète dans cette poule
               </td></tr>
             ) : allAthletes.map((r, i) => {
               const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7c3d' : 'var(--fg3)';
-              const hasPlayed = r.wins + r.losses > 0;
+              const hasPlayed = (r.wins + (r.draws ?? 0) + r.losses) > 0;
+              const goalAvg = (r.tech_pts ?? 0) - (r.tech_pts_against ?? 0);
               return (
                 <tr key={r.athlete_id} style={{
                   background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.03)',
@@ -1182,8 +1203,11 @@ function PoolRankingCard({ ranking }: { ranking: any }) {
                   <td style={{ padding: '7px 10px', fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap' }}>{r.name}</td>
                   <td style={{ padding: '7px 10px', color: 'var(--faint)', whiteSpace: 'nowrap' }}>{r.club ?? '—'}</td>
                   <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 800, color: hasPlayed ? 'var(--fg)' : 'var(--dim)', fontSize: 13 }}>{r.pts}</td>
-                  <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 600, color: 'var(--fg3)' }}>{r.tech_pts}</td>
+                  <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 600, color: goalAvg > 0 ? '#22c55e' : goalAvg < 0 ? '#ef4444' : 'var(--fg3)' }}>
+                    {hasPlayed ? (goalAvg > 0 ? `+${goalAvg}` : `${goalAvg}`) : '—'}
+                  </td>
                   <td style={{ padding: '7px 10px', textAlign: 'center', color: '#22c55e', fontWeight: 700 }}>{r.wins}</td>
+                  <td style={{ padding: '7px 10px', textAlign: 'center', color: '#f59e0b', fontWeight: 700 }}>{r.draws ?? 0}</td>
                   <td style={{ padding: '7px 10px', textAlign: 'center', color: '#ef4444', fontWeight: 700 }}>{r.losses}</td>
                 </tr>
               );
