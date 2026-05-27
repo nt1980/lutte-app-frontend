@@ -42,7 +42,9 @@ export default function RefView() {
   const [scoreRed,   setScoreRed]   = useState(0);
   const [scoreBlue,  setScoreBlue]  = useState(0);
   const [winType,    setWinType]    = useState('points');
-  const [showFinish, setShowFinish] = useState(false);
+  const [showFinish,     setShowFinish]     = useState(false);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertNote,      setAlertNote]      = useState('');
 
   // ── Timer state ───────────────────────────────────────────────────────────
   const [snap, setSnap]     = useState<TimerSnapshot>(TIMER_INIT);
@@ -214,6 +216,18 @@ export default function RefView() {
     if (!winnerId) return toast.error('Athlete introuvable');
     mutation.mutate({ winner_id: winnerId, loser_id: loserId });
   };
+
+  // ── Alert mutation ─────────────────────────────────────────────────────────
+  const alertMut = useMutation({
+    mutationFn: (note: string) =>
+      api.post(`/api/matches/${matchId}/alert`, { note }),
+    onSuccess: () => {
+      toast.success('Signalement envoyé aux responsables');
+      setShowAlertModal(false);
+      setAlertNote('');
+    },
+    onError: () => toast.error('Erreur lors du signalement'),
+  });
 
   if (!match) return (
     <div style={{ height: '100vh', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -406,7 +420,43 @@ export default function RefView() {
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>✓</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>Combat terminé</div>
             <div style={{ fontSize: 13, color: '#6b7280' }}>{match.winner_name} gagne</div>
+            <button
+              onClick={() => setShowAlertModal(true)}
+              style={{ marginTop: 8, padding: '10px 20px', borderRadius: 10, border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.07)', color: '#fbbf24', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+            >
+              ⚠️ Signaler une erreur
+            </button>
           </div>
+        )}
+
+        {/* Alert modal */}
+        {showAlertModal && (
+          <>
+            <div onClick={() => setShowAlertModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 200, backdropFilter: 'blur(3px)' }} />
+            <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, background: '#111', borderTop: '1px solid rgba(251,191,36,0.2)', borderRadius: '20px 20px 0 0', zIndex: 201, padding: '20px 20px 32px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fbbf24', marginBottom: 12, textAlign: 'center' }}>⚠️ Signaler une erreur de résultat</div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 12, textAlign: 'center' }}>
+                Un responsable de tapis sera alerté et pourra corriger le résultat.
+              </div>
+              <textarea
+                value={alertNote}
+                onChange={e => setAlertNote(e.target.value)}
+                placeholder="Décrivez l'erreur (facultatif)…"
+                rows={3}
+                style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#fff', fontSize: 13, padding: '10px 12px', resize: 'none', outline: 'none' }}
+              />
+              <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+                <button onClick={() => setShowAlertModal(false)} style={{ flex: 1, padding: '13px', borderRadius: 12, background: 'rgba(255,255,255,0.06)', border: 'none', color: '#6b7280', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Annuler</button>
+                <button onClick={() => alertMut.mutate(alertNote)} disabled={alertMut.isPending}
+                  style={{ flex: 2, padding: '13px', borderRadius: 12, background: '#d97706', border: 'none', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer', opacity: alertMut.isPending ? 0.7 : 1 }}>
+                  {alertMut.isPending ? 'Envoi…' : '⚠️ Envoyer le signalement'}
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         {/* Win modal */}
@@ -602,7 +652,40 @@ export default function RefView() {
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', fontSize: 18 }}>✓</div>
               <div style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>Enregistré</div>
               <div style={{ color: '#6b7280', fontSize: 11, marginTop: 4 }}>{match.winner_name} gagne</div>
+              <button
+                onClick={() => setShowAlertModal(true)}
+                style={{ marginTop: 14, padding: '9px 16px', borderRadius: 9, border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.07)', color: '#fbbf24', fontSize: 12, fontWeight: 700, cursor: 'pointer', width: '100%' }}
+              >
+                ⚠️ Signaler une erreur
+              </button>
             </div>
+          )}
+
+          {/* Alert modal (desktop) */}
+          {showAlertModal && (
+            <>
+              <div onClick={() => setShowAlertModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, backdropFilter: 'blur(3px)' }} />
+              <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#111', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 16, zIndex: 301, padding: 24, width: 380, maxWidth: '90vw' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#fbbf24', marginBottom: 8 }}>⚠️ Signaler une erreur de résultat</div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 14 }}>
+                  Un responsable de tapis sera alerté et pourra corriger le résultat.
+                </div>
+                <textarea
+                  value={alertNote}
+                  onChange={e => setAlertNote(e.target.value)}
+                  placeholder="Décrivez l'erreur (facultatif)…"
+                  rows={3}
+                  style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#fff', fontSize: 13, padding: '10px 12px', resize: 'none', outline: 'none' }}
+                />
+                <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+                  <button onClick={() => setShowAlertModal(false)} style={{ flex: 1, padding: '11px', borderRadius: 10, background: 'rgba(255,255,255,0.06)', border: 'none', color: '#6b7280', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Annuler</button>
+                  <button onClick={() => alertMut.mutate(alertNote)} disabled={alertMut.isPending}
+                    style={{ flex: 2, padding: '11px', borderRadius: 10, background: '#d97706', border: 'none', color: '#fff', fontSize: 13, fontWeight: 900, cursor: 'pointer', opacity: alertMut.isPending ? 0.7 : 1 }}>
+                    {alertMut.isPending ? 'Envoi…' : '⚠️ Envoyer le signalement'}
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
