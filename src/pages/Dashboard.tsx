@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Trophy, Plus, Calendar, MapPin, ChevronRight, Swords, Activity } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
+import { useAuth } from '../store/auth';
 import api from '../lib/api';
 
 const statusMap: Record<string, { label: string; color: string; bg: string; dot: string }> = {
@@ -13,6 +14,9 @@ const statusMap: Record<string, { label: string; color: string; bg: string; dot:
 };
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const isGlobalAdmin = (user?.globalRoles || []).some((r: string) => ['super_admin', 'admin'].includes(r));
+
   const { data: tournaments = [] } = useQuery({
     queryKey: ['tournaments'],
     queryFn: () => api.get('/api/tournaments').then(r => r.data),
@@ -35,15 +39,17 @@ export default function Dashboard() {
         title="Tableau de bord"
         subtitle="Gestion des tournois FFLDA / UWW"
         actions={
-          <Link to="/tournaments/new" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: '#dc2626', color: '#fff',
-            padding: '8px 16px', borderRadius: 9,
-            fontSize: 13, fontWeight: 600, textDecoration: 'none',
-            boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
-          }}>
-            <Plus size={14} /> Nouveau tournoi
-          </Link>
+          isGlobalAdmin ? (
+            <Link to="/tournaments/new" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: '#dc2626', color: '#fff',
+              padding: '8px 16px', borderRadius: 9,
+              fontSize: 13, fontWeight: 600, textDecoration: 'none',
+              boxShadow: '0 4px 12px rgba(220,38,38,0.3)',
+            }}>
+              <Plus size={14} /> Nouveau tournoi
+            </Link>
+          ) : undefined
         }
       />
 
