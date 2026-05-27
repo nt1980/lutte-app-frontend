@@ -294,9 +294,11 @@ export default function MatManager() {
                         }
                       </div>
                     </div>
-                    <Link to={`/mat/${mat.id}`} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.18)', borderRadius: 8, padding: '5px 11px', textDecoration: 'none' }}>
-                      <Tv size={11} /> Live
-                    </Link>
+                    {!isReferee && (
+                      <Link to={`/mat/${mat.id}`} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: '#60a5fa', background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.18)', borderRadius: 8, padding: '5px 11px', textDecoration: 'none' }}>
+                        <Tv size={11} /> Live
+                      </Link>
+                    )}
                   </div>
 
                   {/* ── Sélecteur d'arbitre (admins uniquement) ── */}

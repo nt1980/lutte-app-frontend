@@ -276,7 +276,7 @@ export default function RefView() {
         </div>
 
         {/* Score zone */}
-        <div style={{ display: 'flex', flexShrink: 0, height: '30vh' }}>
+        <div style={{ display: 'flex', flexShrink: 0, height: '26vh' }}>
           {/* Rouge */}
           <div style={{ flex: 1, background: 'linear-gradient(160deg,#991b1b,#b91c1c)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ height: 3, background: '#ef4444', flexShrink: 0 }} />
@@ -302,14 +302,15 @@ export default function RefView() {
           </div>
         </div>
 
-        {/* Point buttons */}
+        {/* Point buttons — empilés verticalement pour maximiser la taille sur mobile */}
         {!finished && (
-          <div style={{ display: 'flex', gap: 8, padding: '10px 12px', flexShrink: 0 }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 12px', flexShrink: 0 }}>
+            {/* Rouge — pleine largeur */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
                 {POINTS.map(p => (
                   <button key={p} onClick={() => addPoint('red', p)}
-                    style={{ background: '#b91c1c', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 900, fontSize: 18, cursor: 'pointer', paddingTop: 14, paddingBottom: 14, boxShadow: '0 3px 12px rgba(185,28,28,0.4)', WebkitTapHighlightColor: 'transparent' }}
+                    style={{ background: '#b91c1c', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 22, cursor: 'pointer', paddingTop: 18, paddingBottom: 18, boxShadow: '0 3px 12px rgba(185,28,28,0.4)', WebkitTapHighlightColor: 'transparent' }}
                     onPointerDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
                     onPointerUp={e => (e.currentTarget.style.transform = 'scale(1)')}
                     onPointerLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
@@ -317,14 +318,15 @@ export default function RefView() {
                 ))}
               </div>
               <button onClick={() => addPoint('red', -1)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#6b7280', fontSize: 12, cursor: 'pointer', padding: '6px 0' }}>
-                −1 correction
+                −1 correction Rouge
               </button>
             </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 5 }}>
+            {/* Bleu — pleine largeur */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
                 {POINTS.map(p => (
                   <button key={p} onClick={() => addPoint('blue', p)}
-                    style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 900, fontSize: 18, cursor: 'pointer', paddingTop: 14, paddingBottom: 14, boxShadow: '0 3px 12px rgba(29,78,216,0.4)', WebkitTapHighlightColor: 'transparent' }}
+                    style={{ background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 900, fontSize: 22, cursor: 'pointer', paddingTop: 18, paddingBottom: 18, boxShadow: '0 3px 12px rgba(29,78,216,0.4)', WebkitTapHighlightColor: 'transparent' }}
                     onPointerDown={e => (e.currentTarget.style.transform = 'scale(0.93)')}
                     onPointerUp={e => (e.currentTarget.style.transform = 'scale(1)')}
                     onPointerLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
@@ -332,7 +334,7 @@ export default function RefView() {
                 ))}
               </div>
               <button onClick={() => addPoint('blue', -1)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#6b7280', fontSize: 12, cursor: 'pointer', padding: '6px 0' }}>
-                −1 correction
+                −1 correction Bleu
               </button>
             </div>
           </div>
