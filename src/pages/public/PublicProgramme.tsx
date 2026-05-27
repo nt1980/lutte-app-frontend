@@ -43,12 +43,14 @@ export default function PublicProgramme() {
     queryFn: () => api.get(`/api/tournaments/${slug}`).then(r => r.data),
   });
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['public-programme', slug],
     queryFn: () => api.get(`/api/tournaments/${slug}/programme`).then(r => r.data),
-    enabled: !!tournament,
+    enabled: !!tournament?.public_page_enabled,
     refetchInterval: 30000,
+    retry: false,
   });
+  const is403 = (error as any)?.response?.status === 403;
 
   const { data: matsQueue = [] } = useQuery({
     queryKey: ['public-queue', slug],
@@ -187,8 +189,14 @@ export default function PublicProgramme() {
         )}
         {isError && (
           <div style={{ textAlign: 'center', padding: '4rem' }}>
-            <div style={{ color: '#f87171', fontWeight: 600, marginBottom: '0.5rem' }}>Programme non disponible</div>
-            <div style={{ color: 'var(--fg3)', fontSize: '0.875rem' }}>Le programme n'est pas encore publié pour ce tournoi.</div>
+            <div style={{ color: '#f87171', fontWeight: 600, marginBottom: '0.5rem' }}>
+              {is403 ? 'Programme non activé' : 'Programme non disponible'}
+            </div>
+            <div style={{ color: 'var(--fg3)', fontSize: '0.875rem' }}>
+              {is403
+                ? 'L\'organisateur n\'a pas encore publié le programme de ce tournoi.'
+                : 'Une erreur est survenue, veuillez réessayer dans quelques instants.'}
+            </div>
           </div>
         )}
 
