@@ -273,11 +273,12 @@ export default function Jeunes() {
     queryFn: () => api.get(`/api/tournaments/${id}/users`).then(r => r.data),
   });
 
-  const { data: rankings = [], isLoading: rankLoading } = useQuery({
+  const { data: rankings = [], isLoading: rankLoading, isError: rankError } = useQuery({
     queryKey: ['jeunes-rankings', id, ageCatParam],
     queryFn: () => api.get(`/api/tournaments/${id}/jeunes/rankings${ageCatParam ? `?age_category=${ageCatParam}` : ''}`).then(r => r.data),
     enabled: tab === 'rankings',
     refetchInterval: 10000,
+    retry: 1,
   });
 
   // Auto-select first pool when rankings load
@@ -594,8 +595,23 @@ export default function Jeunes() {
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--faint)' }}>
                 <RefreshCw size={22} color="var(--faint)" style={{ animation: 'spin 1s linear infinite' }} />
               </div>
-            ) : (rankings as any[]).length === 0 ? (
+            ) : pools.length === 0 ? (
+              /* Aucune poule générée du tout */
               <EmptyState onGenerate={() => setShowGenModal(true)} hasFilter={ageFilter !== 'Tout'} />
+            ) : rankError ? (
+              /* Les poules existent mais l'API a renvoyé une erreur */
+              <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--card)', borderRadius: 16, border: '1px solid rgba(239,68,68,0.2)', marginTop: 8 }}>
+                <Award size={32} color="var(--dim)" style={{ margin: '0 auto 12px', display: 'block' }} />
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>Classement indisponible</div>
+                <div style={{ fontSize: 13, color: 'var(--faint)' }}>Le serveur n'a pas pu calculer les classements. Réessayez dans quelques instants.</div>
+              </div>
+            ) : (rankings as any[]).length === 0 ? (
+              /* Les poules existent mais aucun classement retourné (données vides) */
+              <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--card)', borderRadius: 16, border: '1px solid var(--b2)', marginTop: 8 }}>
+                <Award size={32} color="var(--dim)" style={{ margin: '0 auto 12px', display: 'block' }} />
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>Aucun classement calculé</div>
+                <div style={{ fontSize: 13, color: 'var(--faint)' }}>Les classements apparaîtront ici dès que des combats auront été générés et terminés.</div>
+              </div>
             ) : (
               <>
                 {/* Pool selector */}
