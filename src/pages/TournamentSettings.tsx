@@ -475,6 +475,20 @@ export default function TournamentSettings() {
                 </span>
               </div>
             </div>
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg2)' }}>Lancement automatique du combat suivant</div>
+                  <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>
+                    Le prochain combat sur le tapis se lance automatiquement dès que le résultat du combat précédent est enregistré.
+                  </div>
+                </div>
+                <div style={{ position: 'relative', width: 40, height: 22, borderRadius: 11, background: form.auto_launch_next ? '#dc2626' : 'var(--b4)', transition: 'background 0.2s ease', flexShrink: 0 }}>
+                  <input type="checkbox" style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }} {...toggle('auto_launch_next')} />
+                  <div style={{ position: 'absolute', top: 2, left: form.auto_launch_next ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', transition: 'left 0.2s ease' }} />
+                </div>
+              </label>
+            </div>
           </div>
         </div>
 
