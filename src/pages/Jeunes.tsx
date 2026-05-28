@@ -364,10 +364,24 @@ export default function Jeunes() {
     onError: () => toast.error('Erreur génération combats'),
   });
 
+  const cancelMatchesMut = useMutation({
+    mutationFn: (poolId: string) =>
+      api.delete(`/api/tournaments/${id}/jeunes/pools/${poolId}/matches`),
+    onSuccess: () => { toast.success('Combats annulés'); invalidate(); },
+    onError: () => toast.error('Erreur lors de l\'annulation'),
+  });
+
   const genAllMatchesMut = useMutation({
     mutationFn: (ageCat: string) =>
       api.post(`/api/tournaments/${id}/jeunes/${ageCat}/generate-matches`),
-    onSuccess: (r) => { toast.success(`${r.data.matches_created} combat(s) générés (${r.data.pools_processed} poules)`); invalidate(); },
+    onSuccess: (r) => {
+      const skipped = r.data.pools_skipped ?? 0;
+      const msg = skipped > 0
+        ? `${r.data.matches_created} combat(s) générés (${r.data.pools_processed} poules — ${skipped} déjà générées ignorées)`
+        : `${r.data.matches_created} combat(s) générés (${r.data.pools_processed} poules)`;
+      toast.success(msg);
+      invalidate();
+    },
     onError: () => toast.error('Erreur génération combats'),
   });
 
@@ -577,7 +591,9 @@ export default function Jeunes() {
                         users={users}
                         onAssign={(mat_id, referee_id) => assignMut.mutate({ poolId: p.id, mat_id, referee_id })}
                         onGenerateMatches={() => genMatchesMut.mutate(p.id)}
+                        onCancelMatches={() => cancelMatchesMut.mutate(p.id)}
                         generating={genMatchesMut.isPending}
+                        canceling={cancelMatchesMut.isPending}
                         tolPct={weightTolerance}
                       />
                     ))}
@@ -889,26 +905,39 @@ function UnassignedSection({
 }
 
 function MatRow({
-  pool, mats, users, onAssign, onGenerateMatches, generating, tolPct = 10,
+  pool, mats, users, onAssign, onGenerateMatches, onCancelMatches, generating, canceling, tolPct = 10,
 }: {
   pool: JeunesPool;
   mats: any[];
   users: any[];
   onAssign: (mat_id: string | null, referee_id: string | null) => void;
   onGenerateMatches: () => void;
+  onCancelMatches: () => void;
   generating: boolean;
+  canceling: boolean;
   tolPct?: number;
 }) {
   const [showViolationConfirm, setShowViolationConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const violations = checkConstraints(pool.athletes ?? [], tolPct);
   const activeMats = mats.filter((m: any) => m.is_active !== false);
   const referees = users.filter((u: any) => ['referee', 'tournament_admin'].includes(u.role));
+  const hasMatches = Number(pool.match_count) > 0;
+  const hasFinished = Number(pool.matches_done) > 0;
 
   const handleGenerate = () => {
     if (violations.length > 0) {
       setShowViolationConfirm(true);
     } else {
       onGenerateMatches();
+    }
+  };
+
+  const handleCancel = () => {
+    if (hasFinished) {
+      setShowCancelConfirm(true);
+    } else {
+      onCancelMatches();
     }
   };
 
@@ -973,31 +1002,50 @@ function MatRow({
           </select>
         </div>
 
-        {/* Match info + generate */}
+        {/* Match info + action button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {Number(pool.match_count) > 0 ? (
+          {hasMatches && (
             <span style={{ fontSize: 11, color: 'var(--faint)' }}>
               {pool.matches_done}/{pool.match_count} combats
               {Number(pool.matches_done) === Number(pool.match_count) && (
                 <span style={{ color: '#22c55e', marginLeft: 4 }}>✓</span>
               )}
             </span>
-          ) : null}
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            title={violations.length > 0 ? `Violations détectées — cliquer pour confirmer` : 'Générer les combats'}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-              background: violations.length > 0 ? '#f59e0b' : '#3b82f6',
-              color: '#fff',
-              fontSize: 11, fontWeight: 600, opacity: generating ? 0.7 : 1,
-            }}
-          >
-            {violations.length > 0 && <AlertTriangle size={10} />}
-            <Play size={10} /> {Number(pool.match_count) > 0 ? 'Regénérer' : 'Générer combats'}
-          </button>
+          )}
+          {hasMatches ? (
+            /* Combats déjà générés → bouton Annuler */
+            <button
+              onClick={handleCancel}
+              disabled={canceling}
+              title="Supprimer les combats de cette poule"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: 'rgba(239,68,68,0.12)', color: '#f87171',
+                border: '1px solid rgba(239,68,68,0.3)',
+                fontSize: 11, fontWeight: 600, opacity: canceling ? 0.7 : 1,
+              } as React.CSSProperties}
+            >
+              ✕ Annuler génération
+            </button>
+          ) : (
+            /* Pas encore de combats → bouton Générer */
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              title={violations.length > 0 ? 'Violations détectées — cliquer pour confirmer' : 'Générer les combats'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: violations.length > 0 ? '#f59e0b' : '#3b82f6',
+                color: '#fff',
+                fontSize: 11, fontWeight: 600, opacity: generating ? 0.7 : 1,
+              }}
+            >
+              {violations.length > 0 && <AlertTriangle size={10} />}
+              <Play size={10} /> Générer combats
+            </button>
+          )}
         </div>
       </div>
 
