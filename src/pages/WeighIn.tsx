@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { Search, X, Scale, Mail } from 'lucide-react';
+import { Search, X, Scale, Mail, Camera, Tag } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { sortAgeCategories } from '../lib/ageSort';
 import { getWeightCategory, hasWeightCategories } from '../lib/weightCategories';
+import QrScannerModal from '../components/QrScannerModal';
+import { generateLabelsPdf } from '../lib/labelPdf';
 
 const STATUS_INFO: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   pending:    { label: 'En attente',     color: '#6b7280', bg: 'rgba(107,114,128,0.1)',  dot: '#4b5563'  },
@@ -30,14 +32,16 @@ export default function WeighIn() {
   const qc = useQueryClient();
   const isMobile = useIsMobile();
 
-  const [search,      setSearch]      = useState('');
-  const [selected,    setSelected]    = useState<any>(null);
-  const [weight,      setWeight]      = useState('');
-  const [weightCat,   setWeightCat]   = useState('');
-  const [status,      setStatus]      = useState('done');
-  const [filter,      setFilter]      = useState('all');
-  const [filterAge,   setFilterAge]   = useState('all');
-  const [filterClub,  setFilterClub]  = useState('all');
+  const [search,       setSearch]      = useState('');
+  const [selected,     setSelected]    = useState<any>(null);
+  const [weight,       setWeight]      = useState('');
+  const [weightCat,    setWeightCat]   = useState('');
+  const [status,       setStatus]      = useState('done');
+  const [filter,       setFilter]      = useState('all');
+  const [filterAge,    setFilterAge]   = useState('all');
+  const [filterClub,   setFilterClub]  = useState('all');
+  const [showScanner,  setShowScanner] = useState(false);
+  const [labelLoading, setLabelLoading] = useState(false);
 
   // Auto-calcul de la catégorie de poids dès que le poids change
   useEffect(() => {
@@ -115,6 +119,31 @@ export default function WeighIn() {
     const libre = !hasWeightCategories(reg.final_age_category || '');
     setWeightCat(libre ? '' : (reg.final_weight_category ? String(reg.final_weight_category) : ''));
     setStatus(reg.weigh_in_status === 'pending' ? 'done' : (reg.weigh_in_status || 'done'));
+  };
+
+  // QR scan : cherche l'inscrit par son ID et ouvre son panel
+  const handleQrScan = (text: string) => {
+    setShowScanner(false);
+    const reg = (regs as any[]).find((r: any) => r.id === text.trim());
+    if (reg) {
+      openSelected(reg);
+      toast.success(`${reg.last_name} ${reg.first_name} détecté`);
+    } else {
+      toast.error('QR code non reconnu pour ce tournoi');
+    }
+  };
+
+  // Génération des étiquettes PDF
+  const handlePrintLabels = async () => {
+    if (regs.length === 0) return;
+    setLabelLoading(true);
+    try {
+      await generateLabelsPdf(regs as any[], filterAge);
+    } catch (e: any) {
+      toast.error('Erreur génération PDF : ' + e.message);
+    } finally {
+      setLabelLoading(false);
+    }
   };
 
   const statusActions = [
@@ -251,28 +280,76 @@ export default function WeighIn() {
         title="Pesée"
         subtitle={`${done} / ${regs.length} validés · ${pending} en attente`}
         actions={
-          <button
-            onClick={() => sendCsvMutation.mutate()}
-            disabled={sendCsvMutation.isPending || regs.length === 0}
-            title={filterAge !== 'all' ? `Envoyer CSV pesées ${filterAge} par email` : 'Envoyer CSV de toutes les pesées par email'}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 7,
-              padding: '8px 16px', borderRadius: 9, border: 'none', cursor: sendCsvMutation.isPending || regs.length === 0 ? 'not-allowed' : 'pointer',
-              background: sendCsvMutation.isPending ? 'var(--inp)' : '#3b82f6',
-              color: sendCsvMutation.isPending ? 'var(--fg3)' : '#fff',
-              fontSize: 13, fontWeight: 600,
-              opacity: regs.length === 0 ? 0.5 : 1,
-              boxShadow: sendCsvMutation.isPending ? 'none' : '0 4px 12px rgba(59,130,246,0.3)',
-              transition: 'all 0.15s',
-            }}
-          >
-            <Mail size={14} />
-            {sendCsvMutation.isPending
-              ? 'Envoi…'
-              : filterAge !== 'all'
-                ? `Envoyer CSV ${filterAge}`
-                : 'Envoyer CSV'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+
+            {/* ── Étiquettes PDF ── */}
+            <button
+              onClick={handlePrintLabels}
+              disabled={labelLoading || regs.length === 0}
+              title={filterAge !== 'all' ? `Imprimer étiquettes ${filterAge}` : 'Imprimer toutes les étiquettes (un PDF par catégorie)'}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '8px 14px', borderRadius: 9, border: 'none',
+                cursor: labelLoading || regs.length === 0 ? 'not-allowed' : 'pointer',
+                background: labelLoading ? 'var(--inp)' : '#7c3aed',
+                color: labelLoading ? 'var(--fg3)' : '#fff',
+                fontSize: 13, fontWeight: 600,
+                opacity: regs.length === 0 ? 0.5 : 1,
+                boxShadow: labelLoading ? 'none' : '0 4px 12px rgba(124,58,237,0.3)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Tag size={14} />
+              {labelLoading
+                ? 'Génération…'
+                : filterAge !== 'all'
+                  ? `Étiquettes ${filterAge}`
+                  : 'Étiquettes'}
+            </button>
+
+            {/* ── Scanner QR ── */}
+            <button
+              onClick={() => setShowScanner(true)}
+              title="Scanner un QR code d'étiquette"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '8px 14px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                background: '#059669',
+                color: '#fff',
+                fontSize: 13, fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(5,150,105,0.3)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Camera size={14} />
+              Scanner
+            </button>
+
+            {/* ── Envoyer CSV ── */}
+            <button
+              onClick={() => sendCsvMutation.mutate()}
+              disabled={sendCsvMutation.isPending || regs.length === 0}
+              title={filterAge !== 'all' ? `Envoyer CSV pesées ${filterAge} par email` : 'Envoyer CSV de toutes les pesées par email'}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 7,
+                padding: '8px 14px', borderRadius: 9, border: 'none',
+                cursor: sendCsvMutation.isPending || regs.length === 0 ? 'not-allowed' : 'pointer',
+                background: sendCsvMutation.isPending ? 'var(--inp)' : '#3b82f6',
+                color: sendCsvMutation.isPending ? 'var(--fg3)' : '#fff',
+                fontSize: 13, fontWeight: 600,
+                opacity: regs.length === 0 ? 0.5 : 1,
+                boxShadow: sendCsvMutation.isPending ? 'none' : '0 4px 12px rgba(59,130,246,0.3)',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Mail size={14} />
+              {sendCsvMutation.isPending
+                ? 'Envoi…'
+                : filterAge !== 'all'
+                  ? `CSV ${filterAge}`
+                  : 'CSV'}
+            </button>
+          </div>
         }
       />
 
@@ -462,6 +539,14 @@ export default function WeighIn() {
           </div>
         )}
       </div>
+
+      {/* ── QR Scanner modal ── */}
+      {showScanner && (
+        <QrScannerModal
+          onScan={handleQrScan}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
 
       {/* ── Bottom Sheet mobile ── */}
       {isMobile && selected && (
