@@ -32,16 +32,18 @@ export default function WeighIn() {
   const qc = useQueryClient();
   const isMobile = useIsMobile();
 
-  const [search,       setSearch]      = useState('');
-  const [selected,     setSelected]    = useState<any>(null);
-  const [weight,       setWeight]      = useState('');
-  const [weightCat,    setWeightCat]   = useState('');
-  const [status,       setStatus]      = useState('done');
-  const [filter,       setFilter]      = useState('all');
-  const [filterAge,    setFilterAge]   = useState('all');
-  const [filterClub,   setFilterClub]  = useState('all');
-  const [showScanner,  setShowScanner] = useState(false);
-  const [labelLoading, setLabelLoading] = useState(false);
+  const [search,        setSearch]       = useState('');
+  const [selected,      setSelected]     = useState<any>(null);
+  const [weight,        setWeight]       = useState('');
+  const [weightCat,     setWeightCat]    = useState('');
+  const [status,        setStatus]       = useState('done');
+  const [filter,        setFilter]       = useState('all');
+  const [filterAge,     setFilterAge]    = useState('all');
+  const [filterClub,    setFilterClub]   = useState('all');
+  const [showScanner,   setShowScanner]  = useState(false);
+  const [showLabelModal,setShowLabelModal] = useState(false);
+  const [selectedCats,  setSelectedCats] = useState<string[]>([]);
+  const [labelLoading,  setLabelLoading] = useState(false);
 
   // Auto-calcul de la catégorie de poids dès que le poids change
   useEffect(() => {
@@ -66,6 +68,13 @@ export default function WeighIn() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [isMobile, selected]);
+
+  const { data: tournament } = useQuery({
+    queryKey: ['tournament', id],
+    queryFn: () => api.get(`/api/tournaments/${id}`).then(r => r.data),
+    staleTime: 60_000,
+  });
+  const tournamentName: string = tournament?.name || '';
 
   const { data: regs = [] } = useQuery({
     queryKey: ['registrations', id],
@@ -133,12 +142,20 @@ export default function WeighIn() {
     }
   };
 
-  // Génération des étiquettes PDF
+  // Ouvre la modal de sélection des catégories pour les étiquettes
+  const openLabelModal = () => {
+    // Pré-sélectionner toutes les catégories disponibles
+    setSelectedCats([...ageOptions]);
+    setShowLabelModal(true);
+  };
+
+  // Génération des étiquettes PDF pour les catégories choisies
   const handlePrintLabels = async () => {
-    if (regs.length === 0) return;
+    if (regs.length === 0 || selectedCats.length === 0) return;
+    setShowLabelModal(false);
     setLabelLoading(true);
     try {
-      await generateLabelsPdf(regs as any[], filterAge);
+      await generateLabelsPdf(regs as any[], selectedCats, tournamentName);
     } catch (e: any) {
       toast.error('Erreur génération PDF : ' + e.message);
     } finally {
@@ -284,9 +301,9 @@ export default function WeighIn() {
 
             {/* ── Étiquettes PDF ── */}
             <button
-              onClick={handlePrintLabels}
+              onClick={openLabelModal}
               disabled={labelLoading || regs.length === 0}
-              title={filterAge !== 'all' ? `Imprimer étiquettes ${filterAge}` : 'Imprimer toutes les étiquettes (un PDF par catégorie)'}
+              title="Imprimer les étiquettes QR (choisir les catégories)"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
                 padding: '8px 14px', borderRadius: 9, border: 'none',
@@ -300,11 +317,7 @@ export default function WeighIn() {
               }}
             >
               <Tag size={14} />
-              {labelLoading
-                ? 'Génération…'
-                : filterAge !== 'all'
-                  ? `Étiquettes ${filterAge}`
-                  : 'Étiquettes'}
+              {labelLoading ? 'Génération…' : 'Étiquettes'}
             </button>
 
             {/* ── Scanner QR ── */}
@@ -539,6 +552,102 @@ export default function WeighIn() {
           </div>
         )}
       </div>
+
+      {/* ── Modal sélection catégories étiquettes ── */}
+      {showLabelModal && (
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setShowLabelModal(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200 }}
+          />
+          {/* Modal */}
+          <div style={{
+            position: 'fixed', top: '50%', left: '50%',
+            transform: 'translate(-50%,-50%)',
+            background: 'var(--card)', border: '1px solid var(--b2)',
+            borderRadius: 18, padding: '24px 24px 20px',
+            width: 340, maxWidth: 'calc(100vw - 32px)',
+            zIndex: 201, boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Tag size={16} color="#7c3aed" />
+                <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--fg)' }}>Imprimer les étiquettes</span>
+              </div>
+              <button onClick={() => setShowLabelModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg3)' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ fontSize: 12, color: 'var(--fg3)', marginBottom: 14 }}>
+              Sélectionnez les catégories à imprimer. Un PDF par catégorie sera généré, avec un saut de page par club.
+            </div>
+
+            {/* Category checkboxes */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
+              {ageOptions.map(cat => {
+                const checked = selectedCats.includes(cat);
+                const count = (regs as any[]).filter((r: any) => r.final_age_category === cat).length;
+                return (
+                  <label key={cat} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
+                    background: checked ? 'rgba(124,58,237,0.1)' : 'var(--inp)',
+                    border: `1px solid ${checked ? 'rgba(124,58,237,0.4)' : 'var(--b2)'}`,
+                    transition: 'all 0.12s',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={e => setSelectedCats(prev =>
+                        e.target.checked ? [...prev, cat] : prev.filter(c => c !== cat)
+                      )}
+                      style={{ width: 16, height: 16, accentColor: '#7c3aed', cursor: 'pointer' }}
+                    />
+                    <span style={{ flex: 1, fontWeight: 600, color: checked ? '#a78bfa' : 'var(--fg)', fontSize: 14 }}>{cat}</span>
+                    <span style={{ fontSize: 11, color: 'var(--fg3)' }}>{count} athlète{count > 1 ? 's' : ''}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {/* Select all / none */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <button
+                onClick={() => setSelectedCats([...ageOptions])}
+                style={{ flex: 1, padding: '7px', borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b2)', color: 'var(--fg3)', fontSize: 12, cursor: 'pointer' }}
+              >
+                Tout sélectionner
+              </button>
+              <button
+                onClick={() => setSelectedCats([])}
+                style={{ flex: 1, padding: '7px', borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b2)', color: 'var(--fg3)', fontSize: 12, cursor: 'pointer' }}
+              >
+                Tout décocher
+              </button>
+            </div>
+
+            {/* Generate button */}
+            <button
+              onClick={handlePrintLabels}
+              disabled={selectedCats.length === 0}
+              style={{
+                width: '100%', padding: '12px', borderRadius: 10,
+                background: selectedCats.length === 0 ? 'var(--inp)' : '#7c3aed',
+                color: selectedCats.length === 0 ? 'var(--fg3)' : '#fff',
+                fontSize: 14, fontWeight: 700, border: 'none',
+                cursor: selectedCats.length === 0 ? 'not-allowed' : 'pointer',
+                boxShadow: selectedCats.length === 0 ? 'none' : '0 4px 16px rgba(124,58,237,0.35)',
+                transition: 'all 0.15s',
+              }}
+            >
+              Générer {selectedCats.length > 0 ? `${selectedCats.length} PDF` : ''}
+            </button>
+          </div>
+        </>
+      )}
 
       {/* ── QR Scanner modal ── */}
       {showScanner && (
