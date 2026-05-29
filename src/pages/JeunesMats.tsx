@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import {
-  Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check,
+  Tv, AlertCircle, Clock, CornerDownLeft, Check,
   GripVertical, UserCheck, RefreshCw, Baby,
 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
