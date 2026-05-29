@@ -1020,11 +1020,11 @@ function MatRow({
               title="Supprimer les combats de cette poule"
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                padding: '5px 10px', borderRadius: 6, cursor: 'pointer',
                 background: 'rgba(239,68,68,0.12)', color: '#f87171',
                 border: '1px solid rgba(239,68,68,0.3)',
                 fontSize: 11, fontWeight: 600, opacity: canceling ? 0.7 : 1,
-              } as React.CSSProperties}
+              }}
             >
               ✕ Annuler génération
             </button>
@@ -1107,6 +1107,61 @@ function MatRow({
                 }}
               >
                 <Play size={12} /> Générer quand même
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation modale si des combats sont déjà terminés */}
+      {showCancelConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--card)', borderRadius: 16, padding: 24, width: 400,
+            border: '1px solid rgba(239,68,68,0.4)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <AlertTriangle size={18} color="#ef4444" />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>Annuler les combats ?</div>
+                <div style={{ fontSize: 11, color: 'var(--faint)' }}>{pool.pool_name}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--fg3)', marginBottom: 20, lineHeight: 1.5 }}>
+              <strong style={{ color: '#f87171' }}>{pool.matches_done}/{pool.match_count} combat{Number(pool.match_count) > 1 ? 's' : ''}</strong> sont
+              déjà terminés. Cette action supprimera tous les combats et leurs résultats définitivement.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid var(--b3)',
+                  background: 'var(--inp)', color: 'var(--fg3)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Garder
+              </button>
+              <button
+                onClick={() => { setShowCancelConfirm(false); onCancelMatches(); }}
+                disabled={canceling}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  background: '#dc2626', color: '#fff', fontSize: 12, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: 6, opacity: canceling ? 0.7 : 1,
+                }}
+              >
+                <Trash2 size={12} /> Supprimer les combats
               </button>
             </div>
           </div>
