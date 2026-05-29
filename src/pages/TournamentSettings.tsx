@@ -69,8 +69,8 @@ export default function TournamentSettings() {
   });
 
   const updateMat = useMutation({
-    mutationFn: (data: { matId: string; name?: string; is_active?: boolean; slug?: string }) =>
-      api.put(`/api/mats/${data.matId}`, { name: data.name, is_active: data.is_active, slug: data.slug }),
+    mutationFn: (data: { matId: string; name?: string; is_active?: boolean; is_jeune?: boolean; slug?: string }) =>
+      api.put(`/api/mats/${data.matId}`, { name: data.name, is_active: data.is_active, is_jeune: data.is_jeune, slug: data.slug }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['mats', id] }); setEditingId(null); setEditingSlugId(null); },
     onError: (err: any) => toast.error(err?.response?.data?.error || 'Ce slug est déjà utilisé ou invalide'),
   });
@@ -347,6 +347,15 @@ export default function TournamentSettings() {
                     >
                       {isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                       {isActive ? 'Actif' : 'Inactif'}
+                    </button>
+                    <button
+                      onClick={() => updateMat.mutate({ matId: mat.id, is_jeune: !mat.is_jeune })}
+                      disabled={updateMat.isPending}
+                      title={mat.is_jeune ? 'Tapis Jeunes (cliquer pour passer en tapis standard)' : 'Tapis standard (cliquer pour passer en tapis Jeunes)'}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 7, background: mat.is_jeune ? 'rgba(167,139,250,0.12)' : 'var(--inp)', border: `1px solid ${mat.is_jeune ? 'rgba(167,139,250,0.35)' : 'var(--b2)'}`, color: mat.is_jeune ? '#a78bfa' : 'var(--fg3)', cursor: 'pointer' }}
+                    >
+                      {mat.is_jeune ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                      {mat.is_jeune ? 'Jeunes' : 'Standard'}
                     </button>
                     <button
                       onClick={() => { setEditingId(mat.id); setEditingName(mat.name); setConfirmDeleteId(null); setEditingSlugId(null); }}

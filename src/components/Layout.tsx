@@ -20,10 +20,11 @@ const tournamentNav = (id: string) => [
   { to: `/t/${id}`,               label: 'Vue générale',  icon: LayoutDashboard },
   { to: `/t/${id}/registrations`, label: 'Inscriptions',  icon: ListChecks      },
   { to: `/t/${id}/weigh-in`,      label: 'Pesée',         icon: Scale           },
-  { to: `/t/${id}/jeunes`,        label: 'Jeunes',        icon: Baby            },
-  { to: `/t/${id}/competitions`,  label: 'Compétitions',  icon: Grid3X3         },
-  { to: `/t/${id}/brackets`,      label: 'Tableaux',      icon: Zap             },
-  { to: `/t/${id}/mats`,          label: 'Tapis',         icon: Activity        },
+  { to: `/t/${id}/jeunes`,        label: 'Tableaux Jeunes', icon: Baby            },
+  { to: `/t/${id}/jeunes-mats`,   label: 'Tapis Jeunes',   icon: Monitor        },
+  { to: `/t/${id}/competitions`,  label: 'Compétitions',   icon: Grid3X3        },
+  { to: `/t/${id}/brackets`,      label: 'Tableaux',       icon: Zap            },
+  { to: `/t/${id}/mats`,          label: 'Tapis',          icon: Activity       },
   { to: `/t/${id}/users`,         label: 'Utilisateurs',  icon: Users           },
   { to: `/t/${id}/audit`,         label: 'Audit',         icon: Shield          },
   { to: `/t/${id}/settings`,      label: 'Paramètres',    icon: Settings        },
@@ -171,7 +172,7 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
 
   const visibleTournamentNav = (id: string) => {
     const all = tournamentNav(id);
-    if (isReferee || isMatReferee) return all.filter(n => n.label === 'Tapis');
+    if (isReferee || isMatReferee) return all.filter(n => n.label === 'Tapis' || n.label === 'Tapis Jeunes');
     if (isWeighInManager) return all.filter(n => ['Inscriptions', 'Pesée'].includes(n.label));
     return all;
   };
