@@ -920,7 +920,7 @@ function MatRow({
   const [showViolationConfirm, setShowViolationConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const violations = checkConstraints(pool.athletes ?? [], tolPct);
-  const activeMats = mats.filter((m: any) => m.is_active !== false);
+  const activeMats = mats.filter((m: any) => m.is_active !== false && m.is_jeune === true);
   const referees = users.filter((u: any) => ['referee', 'tournament_admin'].includes(u.role));
   const hasMatches = Number(pool.match_count) > 0;
   const hasFinished = Number(pool.matches_done) > 0;
