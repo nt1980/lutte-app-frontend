@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { Search, X, Scale } from 'lucide-react';
+import { Search, X, Scale, Mail } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -77,6 +77,17 @@ export default function WeighIn() {
       setSelected(null); setWeight(''); setWeightCat(''); setStatus('done');
     },
     onError: () => toast.error('Erreur lors de la pesée'),
+  });
+
+  const sendCsvMutation = useMutation({
+    mutationFn: () => api.post(`/api/tournaments/${id}/weigh-in/send-csv`, {
+      age_category: filterAge !== 'all' ? filterAge : undefined,
+    }),
+    onSuccess: (r) => {
+      const cat = filterAge !== 'all' ? ` (${filterAge})` : '';
+      toast.success(`CSV pesées${cat} envoyé à ${r.data.recipients.join(', ')} — ${r.data.rows} lignes`);
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.error || 'Erreur envoi email'),
   });
 
   const pending    = regs.filter((r: any) => r.weigh_in_status === 'pending').length;
@@ -236,7 +247,34 @@ export default function WeighIn() {
 
   return (
     <Layout tournamentId={id}>
-      <PageHeader title="Pesée" subtitle={`${done} / ${regs.length} validés · ${pending} en attente`} />
+      <PageHeader
+        title="Pesée"
+        subtitle={`${done} / ${regs.length} validés · ${pending} en attente`}
+        actions={
+          <button
+            onClick={() => sendCsvMutation.mutate()}
+            disabled={sendCsvMutation.isPending || regs.length === 0}
+            title={filterAge !== 'all' ? `Envoyer CSV pesées ${filterAge} par email` : 'Envoyer CSV de toutes les pesées par email'}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '8px 16px', borderRadius: 9, border: 'none', cursor: sendCsvMutation.isPending || regs.length === 0 ? 'not-allowed' : 'pointer',
+              background: sendCsvMutation.isPending ? 'var(--inp)' : '#3b82f6',
+              color: sendCsvMutation.isPending ? 'var(--fg3)' : '#fff',
+              fontSize: 13, fontWeight: 600,
+              opacity: regs.length === 0 ? 0.5 : 1,
+              boxShadow: sendCsvMutation.isPending ? 'none' : '0 4px 12px rgba(59,130,246,0.3)',
+              transition: 'all 0.15s',
+            }}
+          >
+            <Mail size={14} />
+            {sendCsvMutation.isPending
+              ? 'Envoi…'
+              : filterAge !== 'all'
+                ? `Envoyer CSV ${filterAge}`
+                : 'Envoyer CSV'}
+          </button>
+        }
+      />
 
       <div style={{ padding: isMobile ? '12px 12px' : '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 

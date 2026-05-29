@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, Globe, Settings2, Copy, Check, ExternalLink, Activity, Plus, Trash2, Pencil, X, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Save, Globe, Settings2, Copy, Check, ExternalLink, Activity, Plus, Trash2, Pencil, X, ToggleLeft, ToggleRight, Mail } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -497,6 +497,26 @@ export default function TournamentSettings() {
                   <div style={{ position: 'absolute', top: 2, left: form.auto_launch_next ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', transition: 'left 0.2s ease' }} />
                 </div>
               </label>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Notifications ── */}
+        <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px', borderBottom: '1px solid var(--b2)' }}>
+            <Mail size={14} color="var(--fg3)" />
+            <span style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 14 }}>Notifications</span>
+          </div>
+          <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={LABEL}>Adresses e-mail (séparées par ";")</label>
+            <input
+              style={INPUT}
+              placeholder="arbitre@club.fr ; secretariat@ligue.fr"
+              value={form.notification_emails ?? ''}
+              onChange={e => setForm((p: any) => ({ ...p, notification_emails: e.target.value }))}
+            />
+            <div style={{ fontSize: 11, color: 'var(--fg3)', lineHeight: 1.5 }}>
+              Ces adresses recevront les exports CSV de pesée quand vous cliquerez sur "Envoyer CSV" depuis la page Pesée.
             </div>
           </div>
         </div>
