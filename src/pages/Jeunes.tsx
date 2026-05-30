@@ -246,6 +246,7 @@ export default function Jeunes() {
   const [createPoolModal, setCreatePoolModal] = useState<{ age_category: string } | null>(null);
   const [selectedRankingPoolId, setSelectedRankingPoolId] = useState<string | null>(null);
   const [emptyPoolConfirm, setEmptyPoolConfirm] = useState<{ poolId: string; poolName: string } | null>(null);
+  const [resetCatConfirm, setResetCatConfirm] = useState<string | null>(null); // age_category en cours de confirmation
 
   // ── Data ─────────────────────────────────────────────────────────────────
 
@@ -327,6 +328,17 @@ export default function Jeunes() {
     mutationFn: () => api.delete(`/api/tournaments/${id}/jeunes`),
     onSuccess: () => { toast.success('Poules supprimées'); invalidate(); },
     onError: () => toast.error('Erreur lors de la suppression'),
+  });
+
+  const resetCategoryMut = useMutation({
+    mutationFn: (ageCategory: string) =>
+      api.delete(`/api/tournaments/${id}/jeunes/reset/${ageCategory}`),
+    onSuccess: (_, ageCategory) => {
+      toast.success(`Poules ${ageCategory} réinitialisées`);
+      setResetCatConfirm(null);
+      invalidate();
+    },
+    onError: () => toast.error('Erreur lors de la réinitialisation'),
   });
 
   const removeAthleteMut = useMutation({
@@ -530,6 +542,20 @@ export default function Jeunes() {
                           + Créer une poule
                         </button>
                       )}
+                      {/* Bouton réinitialiser cette catégorie */}
+                      <button
+                        onClick={() => setResetCatConfirm(ageCat)}
+                        title={`Supprimer toutes les poules ${ageCat} et réinitialiser`}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 5,
+                          padding: '4px 10px', borderRadius: 7,
+                          border: '1px solid rgba(239,68,68,0.35)',
+                          background: 'rgba(239,68,68,0.07)', color: '#f87171',
+                          fontSize: 11, fontWeight: 700, cursor: 'pointer', marginLeft: 'auto',
+                        }}
+                      >
+                        <Trash2 size={11} /> Réinitialiser {ageCat}
+                      </button>
                     </div>
                     <div style={{
                       display: 'grid',
@@ -740,6 +766,66 @@ export default function Jeunes() {
                 }}
               >
                 <Trash2 size={12} /> {deletePoolMut.isPending ? 'Suppression…' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset category confirmation modal */}
+      {resetCatConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            background: 'var(--card)', borderRadius: 16, padding: 24, width: 400,
+            border: '1px solid rgba(239,68,68,0.35)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Trash2 size={17} color="#ef4444" />
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--fg)' }}>
+                  Réinitialiser {resetCatConfirm}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--faint)' }}>Cette action est irréversible</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--fg3)', marginBottom: 20, lineHeight: 1.6 }}>
+              Toutes les poules, combats et résultats de la catégorie{' '}
+              <strong style={{ color: 'var(--fg)' }}>{resetCatConfirm}</strong> seront supprimés.
+              Les autres catégories ne sont pas affectées.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setResetCatConfirm(null)}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: '1px solid var(--b3)',
+                  background: 'var(--inp)', color: 'var(--fg3)', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={() => resetCategoryMut.mutate(resetCatConfirm)}
+                disabled={resetCategoryMut.isPending}
+                style={{
+                  padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  background: '#dc2626', color: '#fff', fontSize: 12, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  opacity: resetCategoryMut.isPending ? 0.7 : 1,
+                }}
+              >
+                <Trash2 size={12} />
+                {resetCategoryMut.isPending ? 'Réinitialisation…' : `Réinitialiser ${resetCatConfirm}`}
               </button>
             </div>
           </div>
