@@ -38,10 +38,12 @@ export default function RefView() {
   const qc          = useQueryClient();
   const isMobile    = useIsMobile();
 
-  // ── Score & result state (unchanged) ──────────────────────────────────────
+  // ── Score & result state ──────────────────────────────────────────────────
   const [scoreRed,   setScoreRed]   = useState(0);
   const [scoreBlue,  setScoreBlue]  = useState(0);
   const [winType,    setWinType]    = useState('points');
+  // true uniquement après une action arbitre — empêche le broadcast au montage
+  const scoreChangedRef = useRef(false);
   const [showFinish,     setShowFinish]     = useState(false);
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [alertNote,      setAlertNote]      = useState('');
@@ -61,12 +63,17 @@ export default function RefView() {
 
   const config = getMatchConfig(match?.age_category);
 
-  // Init snap from DB on first load
+  // Init snap + scores from DB on first load (reconnexion mi-match)
   useEffect(() => {
     if (!match || snapInitialized.current) return;
     snapInitialized.current = true;
     if (match.timer_state?.phase) {
       setSnap(match.timer_state as TimerSnapshot);
+    }
+    // Restore scores from DB without déclencher un broadcast
+    if (!scoreChangedRef.current) {
+      if (match.score_red  != null) setScoreRed(match.score_red);
+      if (match.score_blue != null) setScoreBlue(match.score_blue);
     }
   }, [match]);
 
@@ -181,9 +188,11 @@ export default function RefView() {
   }, [syncTimer]);
 
   // ── Score broadcast (debounced 400ms) ────────────────────────────────────
+  // Ne se déclenche QUE si l'arbitre a modifié le score (scoreChangedRef=true)
+  // → évite d'écraser le score live au simple montage du composant
   const liveScoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!matchId) return;
+    if (!matchId || !scoreChangedRef.current) return;
     if (liveScoreTimer.current) clearTimeout(liveScoreTimer.current);
     liveScoreTimer.current = setTimeout(() => {
       api.put(`/api/matches/${matchId}/live-score`, { score_red: scoreRed, score_blue: scoreBlue }).catch(() => {});
@@ -193,6 +202,7 @@ export default function RefView() {
 
   // ── Score helpers ─────────────────────────────────────────────────────────
   const addPoint = useCallback((side: 'red' | 'blue', pts: number) => {
+    scoreChangedRef.current = true;   // marque comme action arbitre → autorise le broadcast
     if (side === 'red')  setScoreRed(p  => Math.max(0, p + pts));
     else                 setScoreBlue(p => Math.max(0, p + pts));
   }, []);
