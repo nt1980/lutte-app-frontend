@@ -1202,7 +1202,10 @@ export default function Brackets() {
   const generateBracket = useMutation({
     mutationFn: (cid: string) => api.post(`/api/competitions/${cid}/generate-bracket`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['bracket', compId] }); toast.success('Tableau généré'); },
-    onError: () => toast.error('Erreur lors de la génération du tableau'),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || 'Erreur lors de la génération du tableau';
+      toast.error(msg, { duration: 6000 });
+    },
   });
 
   const deleteSingle = useMutation({
@@ -1312,6 +1315,15 @@ export default function Brackets() {
                   <span>·</span>
                   <span style={{ textTransform: 'capitalize' }}>{STYLE_LABELS[comp.style] ?? comp.style}</span>
                 </div>
+
+                {/* Warning: no athletes linked */}
+                {Number(comp.athlete_count ?? 0) === 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 10, fontSize: 12 }}>
+                    <AlertTriangle size={14} color="#fbbf24" style={{ flexShrink: 0 }} />
+                    <span style={{ color: '#fbbf24', fontWeight: 600 }}>Aucun athlète lié à cette compétition.</span>
+                    <span style={{ color: 'var(--fg3)' }}>Allez dans l'onglet <strong style={{ color: 'var(--fg2)' }}>Compétitions</strong> et cliquez sur <strong style={{ color: 'var(--fg2)' }}>Générer les compétitions</strong> pour lier les athlètes pesés.</span>
+                  </div>
+                )}
 
                 {isLoading ? (
                   <div style={{ color: 'var(--fg3)', fontSize: 13, padding: '20px 0' }}>Chargement…</div>
