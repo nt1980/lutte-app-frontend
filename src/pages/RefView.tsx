@@ -42,6 +42,10 @@ export default function RefView() {
   const [scoreRed,   setScoreRed]   = useState(0);
   const [scoreBlue,  setScoreBlue]  = useState(0);
   const [winType,    setWinType]    = useState('points');
+  // Indicateurs tie-break : meilleure action individuelle + dernier à marquer
+  const [maxRed,     setMaxRed]     = useState(0);
+  const [maxBlue,    setMaxBlue]    = useState(0);
+  const [lastScorer, setLastScorer] = useState<'red' | 'blue' | null>(null);
   // true uniquement après une action arbitre — empêche le broadcast au montage
   const scoreChangedRef = useRef(false);
   const [showFinish,     setShowFinish]     = useState(false);
@@ -194,8 +198,13 @@ export default function RefView() {
   // ── Score helpers ─────────────────────────────────────────────────────────
   const addPoint = useCallback((side: 'red' | 'blue', pts: number) => {
     scoreChangedRef.current = true;   // marque comme action arbitre → autorise le broadcast
-    if (side === 'red')  setScoreRed(p  => Math.max(0, p + pts));
-    else                 setScoreBlue(p => Math.max(0, p + pts));
+    if (side === 'red') {
+      setScoreRed(p => Math.max(0, p + pts));
+      if (pts > 0) { setMaxRed(p => Math.max(p, pts)); setLastScorer('red'); }
+    } else {
+      setScoreBlue(p => Math.max(0, p + pts));
+      if (pts > 0) { setMaxBlue(p => Math.max(p, pts)); setLastScorer('blue'); }
+    }
   }, []);
 
   // ── Result mutation (unchanged) ───────────────────────────────────────────
@@ -296,26 +305,52 @@ export default function RefView() {
         {/* Score zone */}
         <div style={{ display: 'flex', flexShrink: 0, height: '26vh' }}>
           {/* Rouge */}
-          <div style={{ flex: 1, background: 'linear-gradient(160deg,#991b1b,#b91c1c)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ flex: 1, background: 'linear-gradient(160deg,#991b1b,#b91c1c)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
             <div style={{ height: 3, background: '#ef4444', flexShrink: 0 }} />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px', gap: 4 }}>
               <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Rouge</div>
               <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.2 }}>{match.red_name || '—'}</div>
               {match.red_club && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>{match.red_club}</div>}
               <div style={{ fontSize: '4rem', fontWeight: 900, color: '#fff', lineHeight: 1, marginTop: 4 }}>{scoreRed}</div>
+              {/* Indicateurs tie-break */}
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center', marginTop: 2 }}>
+                {maxRed > 0 && (
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#fca5a5', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 5, padding: '2px 6px' }}>
+                    max +{maxRed}
+                  </span>
+                )}
+                {lastScorer === 'red' && (
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#fca5a5', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: 5, padding: '2px 6px' }}>
+                    ⬤ dernier
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
           <div style={{ width: 1, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
 
           {/* Bleu */}
-          <div style={{ flex: 1, background: 'linear-gradient(160deg,#1d4ed8,#2563eb)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ flex: 1, background: 'linear-gradient(160deg,#1d4ed8,#2563eb)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
             <div style={{ height: 3, background: '#3b82f6', flexShrink: 0 }} />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 12px', gap: 4 }}>
               <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Bleu</div>
               <div style={{ fontSize: 13, fontWeight: 900, color: '#fff', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.2 }}>{match.blue_name || '—'}</div>
               {match.blue_club && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)' }}>{match.blue_club}</div>}
               <div style={{ fontSize: '4rem', fontWeight: 900, color: '#fff', lineHeight: 1, marginTop: 4 }}>{scoreBlue}</div>
+              {/* Indicateurs tie-break */}
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center', marginTop: 2 }}>
+                {maxBlue > 0 && (
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#93c5fd', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(59,130,246,0.4)', borderRadius: 5, padding: '2px 6px' }}>
+                    max +{maxBlue}
+                  </span>
+                )}
+                {lastScorer === 'blue' && (
+                  <span style={{ fontSize: 9, fontWeight: 900, color: '#93c5fd', background: 'rgba(59,130,246,0.2)', border: '1px solid rgba(59,130,246,0.5)', borderRadius: 5, padding: '2px 6px' }}>
+                    ⬤ dernier
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -526,8 +561,19 @@ export default function RefView() {
             <div style={{ fontSize: 30, fontWeight: 900, textTransform: 'uppercase', color: '#fff', lineHeight: 1.1 }}>{match.red_name || 'ROUGE'}</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>{match.red_club}</div>
           </div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Meilleure action — coin haut-droit */}
+          {maxRed > 0 && (
+            <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: 10, padding: '6px 14px', fontSize: 15, fontWeight: 900, color: '#fca5a5', letterSpacing: '0.04em' }}>
+              max +{maxRed}
+            </div>
+          )}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: '9rem', fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', textShadow: '0 4px 32px rgba(0,0,0,0.5)' }}>{scoreRed}</div>
+            {lastScorer === 'red' && (
+              <div style={{ marginTop: 10, fontSize: 12, fontWeight: 800, color: '#fca5a5', background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.45)', borderRadius: 20, padding: '5px 16px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                ⬤ Dernier point
+              </div>
+            )}
           </div>
           {!finished && (
             <>
@@ -693,8 +739,19 @@ export default function RefView() {
             <div style={{ fontSize: 30, fontWeight: 900, textTransform: 'uppercase', color: '#fff', lineHeight: 1.1 }}>{match.blue_name || 'BLEU'}</div>
             <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>{match.blue_club}</div>
           </div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {/* Meilleure action — coin haut-gauche */}
+          {maxBlue > 0 && (
+            <div style={{ position: 'absolute', top: 16, left: 16, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(59,130,246,0.5)', borderRadius: 10, padding: '6px 14px', fontSize: 15, fontWeight: 900, color: '#93c5fd', letterSpacing: '0.04em' }}>
+              max +{maxBlue}
+            </div>
+          )}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: '9rem', fontWeight: 900, color: '#fff', fontVariantNumeric: 'tabular-nums', textShadow: '0 4px 32px rgba(0,0,0,0.5)' }}>{scoreBlue}</div>
+            {lastScorer === 'blue' && (
+              <div style={{ marginTop: 10, fontSize: 12, fontWeight: 800, color: '#93c5fd', background: 'rgba(59,130,246,0.18)', border: '1px solid rgba(59,130,246,0.45)', borderRadius: 20, padding: '5px 16px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                ⬤ Dernier point
+              </div>
+            )}
           </div>
           {!finished && (
             <>
