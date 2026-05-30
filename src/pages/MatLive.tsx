@@ -5,7 +5,6 @@ import {
   type TimerSnapshot,
   getMatchConfig,
   computeElapsed,
-  computeBreakElapsed,
   fmtTime,
 } from '../lib/matchTimer';
 
@@ -130,9 +129,6 @@ export default function MatLive() {
   const timerRemaining  = timerSnap
     ? Math.max(0, timerConfig.periodDuration - timerElapsed)
     : timerConfig.periodDuration; // show full duration when idle / no snap
-
-  const breakElapsedNow = timerSnap ? computeBreakElapsed(timerSnap) : 0;
-  const breakRemaining  = timerSnap ? Math.max(0, timerConfig.breakDuration - breakElapsedNow) : 0;
 
   const phase         = timerSnap?.phase ?? 'idle';
   const timerIsBreak  = phase === 'break';
