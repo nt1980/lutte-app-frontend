@@ -102,60 +102,37 @@ export default function RefView() {
 
   // ── Auto-transition detector ──────────────────────────────────────────────
   useEffect(() => {
-    if (snap.phase !== 'running' && snap.phase !== 'break') {
+    if (snap.phase !== 'running') {
       transitionKey.current = null;
       return;
     }
     const iv = setInterval(() => {
       const now = Date.now();
+      const el = snap.elapsed + (snap.periodStartMs ? (now - snap.periodStartMs) / 1000 : 0);
+      if (el >= config.periodDuration) {
+        const key = `p${snap.period}-end`;
+        if (transitionKey.current === key) return;
+        transitionKey.current = key;
 
-      if (snap.phase === 'running') {
-        const el = snap.elapsed + (snap.periodStartMs ? (now - snap.periodStartMs) / 1000 : 0);
-        if (el >= config.periodDuration) {
-          const key = `p${snap.period}-end`;
-          if (transitionKey.current === key) return;
-          transitionKey.current = key;
-
-          if (config.periods === 1 || snap.period >= config.periods) {
-            // End of match
-            const ns: TimerSnapshot = {
-              ...snap, phase: 'finished',
-              elapsed: config.periodDuration, periodStartMs: null,
-            };
-            setSnap(ns);
-            syncTimer(ns);
-            playBeeps(5, 660); // 5 beeps — end of match
-          } else {
-            // End of period 1 → start break
-            const ns: TimerSnapshot = {
-              ...snap, phase: 'break',
-              elapsed: config.periodDuration, periodStartMs: null,
-              breakStartMs: now, breakElapsed: 0,
-            };
-            setSnap(ns);
-            syncTimer(ns);
-            playBeeps(3); // 3 beeps — end of period
-          }
-        }
-      }
-
-      if (snap.phase === 'break') {
-        const bel = snap.breakElapsed + (snap.breakStartMs ? (now - snap.breakStartMs) / 1000 : 0);
-        if (bel >= config.breakDuration) {
-          const key = 'break-end';
-          if (transitionKey.current === key) return;
-          transitionKey.current = key;
-
-          // Break over → start period 2
+        if (config.periods === 1 || snap.period >= config.periods) {
+          // Fin du match
           const ns: TimerSnapshot = {
-            ...snap, phase: 'running',
-            period: snap.period + 1,
-            elapsed: 0, periodStartMs: now,
-            breakElapsed: config.breakDuration, breakStartMs: null,
+            ...snap, phase: 'finished',
+            elapsed: config.periodDuration, periodStartMs: null,
           };
           setSnap(ns);
           syncTimer(ns);
-          playBeeps(2, 660); // 2 beeps — start of period 2
+          playBeeps(5, 660); // 5 bips — fin du match
+        } else {
+          // Fin de la 1ère mi-temps → mi-temps figée, P2 lancé par l'arbitre
+          const ns: TimerSnapshot = {
+            ...snap, phase: 'break',
+            elapsed: config.periodDuration, periodStartMs: null,
+            breakStartMs: null, breakElapsed: 0,
+          };
+          setSnap(ns);
+          syncTimer(ns);
+          playBeeps(3); // 3 bips — fin de mi-temps
         }
       }
     }, 200);
@@ -164,6 +141,20 @@ export default function RefView() {
 
   // ── Timer controls ────────────────────────────────────────────────────────
   const startOrResume = useCallback(() => {
+    if (snap.phase === 'break') {
+      // L'arbitre lance manuellement la 2e mi-temps
+      const ns: TimerSnapshot = {
+        ...snap, phase: 'running',
+        period: snap.period + 1,
+        elapsed: 0, periodStartMs: Date.now(),
+        breakElapsed: 0, breakStartMs: null,
+      };
+      setSnap(ns);
+      syncTimer(ns);
+      playBeeps(2, 660);
+      transitionKey.current = null;
+      return;
+    }
     if (snap.phase !== 'idle' && snap.phase !== 'paused') return;
     const ns: TimerSnapshot = { ...snap, phase: 'running', periodStartMs: Date.now() };
     setSnap(ns);
@@ -254,7 +245,7 @@ export default function RefView() {
   const statusLabel = finished
     ? '✓ Terminé'
     : isBreak
-      ? `MI-TEMPS  ${fmtTime(breakRemaining)}`
+      ? 'MI-TEMPS'
       : isFinishedTimer
         ? '⏱ Terminé'
         : isRunning
@@ -374,23 +365,19 @@ export default function RefView() {
             {/* Start / Pause / Resume — big button */}
             <button
               onClick={isRunning ? pauseTimer : startOrResume}
-              disabled={isBreak || isFinishedTimer}
+              disabled={isFinishedTimer}
               style={{
                 flex: 2, padding: '16px 0',
-                background: isBreak
-                  ? '#374151'
-                  : isRunning
-                    ? '#f59e0b'
-                    : '#16a34a',
+                background: isRunning ? '#f59e0b' : '#16a34a',
                 color: isRunning ? '#000' : '#fff',
-                border: 'none', cursor: isBreak || isFinishedTimer ? 'default' : 'pointer',
+                border: 'none', cursor: isFinishedTimer ? 'default' : 'pointer',
                 fontWeight: 900, fontSize: 16,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 WebkitTapHighlightColor: 'transparent',
               }}
             >
               {isBreak
-                ? `⏸ Mi-temps`
+                ? `▶ Lancer P${snap.period + 1}`
                 : isRunning
                   ? '⏸ Pause'
                   : snap.phase === 'paused'
@@ -586,7 +573,7 @@ export default function RefView() {
 
             {/* Period label */}
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: isBreak ? '#f59e0b' : '#4b5563', textTransform: 'uppercase', marginTop: 6 }}>
-              {isBreak ? `Mi-temps · P2 dans ${fmtTime(breakRemaining)}` : `Période ${snap.period} / ${config.periods}`}
+              {isBreak ? 'MI-TEMPS' : `Période ${snap.period} / ${config.periods}`}
             </div>
 
             {/* Progress bar */}
@@ -615,19 +602,19 @@ export default function RefView() {
             {!finished && (
               <button
                 onClick={isRunning ? pauseTimer : startOrResume}
-                disabled={isBreak || isFinishedTimer}
+                disabled={isFinishedTimer}
                 style={{
                   width: '100%', padding: '14px 0', borderRadius: 12, border: 'none',
-                  cursor: isBreak || isFinishedTimer ? 'default' : 'pointer',
+                  cursor: isFinishedTimer ? 'default' : 'pointer',
                   fontWeight: 900, fontSize: 16,
-                  background: isBreak ? '#374151' : isRunning ? '#f59e0b' : '#16a34a',
+                  background: isRunning ? '#f59e0b' : '#16a34a',
                   color: isRunning ? '#000' : '#fff',
                   marginTop: 8,
-                  boxShadow: isBreak ? 'none' : '0 4px 16px rgba(0,0,0,0.4)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
                 }}
               >
                 {isBreak
-                  ? '⏸ Mi-temps en cours'
+                  ? `▶ Lancer P${snap.period + 1}`
                   : isRunning
                     ? '⏸ Pause'
                     : snap.phase === 'paused'

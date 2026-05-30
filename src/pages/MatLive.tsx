@@ -152,13 +152,12 @@ export default function MatLive() {
           : '#ffffff';
 
   // What to display in the big clock
-  const timerDisplay = timerIsBreak
-    ? fmtTime(breakRemaining)
-    : fmtTime(timerRemaining);
+  // During break the period clock is at 00:00 (period just ended)
+  const timerDisplay = fmtTime(timerIsBreak ? 0 : timerRemaining);
 
   // Sub-label under the clock
   const timerLabel: string | null = timerIsBreak
-    ? `MI-TEMPS · P2 dans ${fmtTime(breakRemaining)}`
+    ? 'MI-TEMPS'
     : timerIsRunning && timerConfig.periods > 1
       ? `P${timerSnap!.period} / ${timerConfig.periods}`
       : timerIsPaused
