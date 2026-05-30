@@ -38,6 +38,7 @@ export default function Athletes() {
   const [showImport,   setShowImport]   = useState(false);
   const [showAddForm,  setShowAddForm]  = useState(false);
   const [csvText,      setCsvText]      = useState('');
+  const [importErrors, setImportErrors] = useState<{ license: string; name: string; error: string }[]>([]);
   const [formData,     setFormData]     = useState<FormData>({
     license_number: '', first_name: '', last_name: '', gender: 'M',
     nationality: 'France', birth_date: '', style: '', age_category_imported: '', default_weight_kg: '',
@@ -53,12 +54,29 @@ export default function Athletes() {
     mutationFn: (csv: string) => api.post('/api/import/athletes', { csv_data: csv }),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ['athletes'] });
-      toast.success(`${r.data.created} créés · ${r.data.updated} mis à jour`);
-      if (r.data.errors?.length) toast.error(`${r.data.errors.length} erreur(s)`);
-      setShowImport(false); setCsvText('');
+      const { created = 0, updated = 0, errors = [], total = 0 } = r.data;
+      if (created + updated > 0) {
+        toast.success(`${created} créés · ${updated} mis à jour` + (total ? ` / ${total} lignes` : ''));
+      }
+      if (errors.length) {
+        setImportErrors(errors);
+        toast.error(`${errors.length} erreur(s) — voir le détail ci-dessous`);
+      } else {
+        setShowImport(false); setCsvText('');
+      }
     },
     onError: () => toast.error('Erreur lors de l\'import'),
   });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setCsvText(ev.target?.result as string ?? '');
+    // Try UTF-8 first; FFLDA may export Windows-1252 — user can re-upload if garbled
+    reader.readAsText(file, 'utf-8');
+    e.target.value = '';
+  };
 
   const addAthlMutation = useMutation({
     mutationFn: (data: FormData) => api.post('/api/athletes', {
@@ -251,37 +269,70 @@ export default function Athletes() {
       {/* Import Modal */}
       {showImport && (
         <div style={{ position: 'fixed', inset: 0, background: 'var(--ovl)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-          <div style={{ background: 'var(--card)', border: '1px solid var(--b3)', borderRadius: 20, width: '100%', maxWidth: 640, boxShadow: '0 40px 120px rgba(0,0,0,0.4)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--b2)' }}>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--b3)', borderRadius: 20, width: '100%', maxWidth: 660, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 40px 120px rgba(0,0,0,0.4)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid var(--b2)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <FileText size={16} color="#f87171" />
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 15 }}>Importer licenciés FFLDA</div>
-                  <div style={{ fontSize: 12, color: 'var(--fg3)' }}>Format CSV point-virgule</div>
+                  <div style={{ fontSize: 12, color: 'var(--fg3)' }}>Fichier CSV point-virgule ou coller le texte</div>
                 </div>
               </div>
-              <button onClick={() => { setShowImport(false); setCsvText(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg3)', display: 'flex' }}><X size={18} /></button>
+              <button onClick={() => { setShowImport(false); setCsvText(''); setImportErrors([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg3)', display: 'flex' }}><X size={18} /></button>
             </div>
-            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* Body */}
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, overflowY: 'auto' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: 'var(--inp)', border: '1px solid var(--b2)', borderRadius: 10, padding: '12px 14px', fontSize: 12, color: 'var(--fg3)' }}>
                 <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>Les données sont mises à jour si le licencié existe déjà (via le numéro de licence).</span>
+                <span>Mise à jour si le licencié existe déjà (via numéro de licence). Colonnes reconnues : Style · Catégorie d'âge · N° Licence · Nom · Prénom · Sexe · Poids · Date de naissance · N° Club · Nom du Club…</span>
               </div>
+
+              {/* File upload */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--inp)', border: '2px dashed var(--b3)', borderRadius: 10, cursor: 'pointer', fontSize: 13, color: 'var(--fg2)' }}>
+                <Upload size={15} />
+                <span>{csvText ? `Fichier chargé (${csvText.split('\n').length} lignes)` : 'Cliquer pour charger un fichier .csv'}</span>
+                <input type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={handleFileUpload} />
+              </label>
+
+              <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--fg3)' }}>— ou coller le contenu CSV —</div>
+
               <textarea
-                style={{ width: '100%', height: 180, background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: 12, fontSize: 12, color: 'var(--fg)', fontFamily: 'monospace', resize: 'none', outline: 'none' }}
-                placeholder={`"Style";"Catégorie d'âge";"Statut";"N° Licence";"Nom";"Prénom"…`}
+                style={{ width: '100%', height: 150, background: 'var(--inp)', border: '1px solid var(--b3)', borderRadius: 10, padding: 12, fontSize: 12, color: 'var(--fg)', fontFamily: 'monospace', resize: 'vertical', outline: 'none' }}
+                placeholder={`"Style";"Categorie d'age";"Statut";"N Licence";"Nom";"Prenom";"Sexe"…`}
                 value={csvText}
                 onChange={e => setCsvText(e.target.value)}
               />
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button onClick={() => { setShowImport(false); setCsvText(''); }} style={{ padding: '8px 16px', borderRadius: 9, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg2)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Annuler</button>
-                <button onClick={() => importMutation.mutate(csvText)} disabled={!csvText.trim() || importMutation.isPending}
-                  style={{ padding: '8px 18px', borderRadius: 9, background: csvText.trim() ? '#dc2626' : '#7f1d1d', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: csvText.trim() ? 'pointer' : 'not-allowed' }}>
-                  {importMutation.isPending ? 'Import…' : 'Importer'}
-                </button>
-              </div>
+
+              {/* Error details */}
+              {importErrors.length > 0 && (
+                <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, padding: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#f87171', marginBottom: 8 }}>
+                    {importErrors.length} ligne(s) en erreur :
+                  </div>
+                  <div style={{ maxHeight: 160, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {importErrors.map((e, i) => (
+                      <div key={i} style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--fg2)', background: 'var(--inp)', borderRadius: 6, padding: '4px 8px' }}>
+                        <span style={{ color: '#fca5a5' }}>{e.license}</span>
+                        {e.name && <span style={{ color: 'var(--fg3)' }}> · {e.name}</span>}
+                        <span style={{ color: '#f87171' }}> → {e.error}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid var(--b2)', flexShrink: 0 }}>
+              <button onClick={() => { setShowImport(false); setCsvText(''); setImportErrors([]); }} style={{ padding: '8px 16px', borderRadius: 9, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg2)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Fermer</button>
+              <button onClick={() => { setImportErrors([]); importMutation.mutate(csvText); }} disabled={!csvText.trim() || importMutation.isPending}
+                style={{ padding: '8px 18px', borderRadius: 9, background: csvText.trim() ? '#dc2626' : '#7f1d1d', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: csvText.trim() ? 'pointer' : 'not-allowed' }}>
+                {importMutation.isPending ? 'Import…' : 'Importer'}
+              </button>
             </div>
           </div>
         </div>
