@@ -369,6 +369,8 @@ export default function MatManager() {
                         setDraggedId={setDraggedId}
                         setDragOverId={setDragOverId}
                         onDrop={(dId, tId) => handleDrop(dId, tId, matQueue)}
+                        now={now}
+                        minRestMs={minRestMs}
                       />
                     )}
                   </div>
@@ -666,12 +668,14 @@ function CurrentMatchCard({
 function MatQueueSection({
   items, onUnassign, onConfirm, isPending, isConfirming,
   draggedId, dragOverId, setDraggedId, setDragOverId, onDrop,
+  now, minRestMs,
 }: {
   items: any[]; onUnassign: (id: string) => void; onConfirm: (id: string) => void;
   isPending: boolean; isConfirming: boolean;
   draggedId: string | null; dragOverId: string | null;
   setDraggedId: (id: string | null) => void; setDragOverId: (id: string | null) => void;
   onDrop: (dragId: string, targetId: string) => void;
+  now: number; minRestMs: number;
 }) {
   return (
     <div>
@@ -684,6 +688,8 @@ function MatQueueSection({
       <div style={{ border: '1px solid var(--b2)', borderRadius: 10, overflow: 'hidden' }}>
         {items.map((q: any, i: number) => {
           const isConfirmed = q.confirmed === true;
+          const elapsedMs   = restElapsedMs(q, now);
+          const tooSoon     = elapsedMs !== null && elapsedMs < minRestMs;
           return (
             <div
               key={q.id}
@@ -696,8 +702,12 @@ function MatQueueSection({
               style={{
                 display: 'flex', alignItems: 'center', gap: 8,
                 padding: '7px 10px',
-                borderTop: i > 0 ? '1px solid var(--b1)' : 'none',
-                background: dragOverId === q.id ? 'rgba(96,165,250,0.08)' : (i % 2 === 0 ? 'var(--inp)' : 'transparent'),
+                borderTop: i > 0 ? `1px solid ${tooSoon ? 'rgba(251,191,36,0.15)' : 'var(--b1)'}` : 'none',
+                background: dragOverId === q.id
+                  ? 'rgba(96,165,250,0.08)'
+                  : tooSoon
+                  ? 'rgba(251,191,36,0.04)'
+                  : (i % 2 === 0 ? 'var(--inp)' : 'transparent'),
                 opacity: draggedId === q.id ? 0.4 : 1,
                 cursor: 'grab',
                 transition: 'background 0.1s',
@@ -726,6 +736,24 @@ function MatQueueSection({
               <div style={{ flexShrink: 0, textAlign: 'right' }}>
                 {roundLabel(q) && <div style={{ fontSize: 9, fontWeight: 700, color: '#92400e', background: 'rgba(251,191,36,0.1)', borderRadius: 3, padding: '1px 5px', marginBottom: 2 }}>{roundLabel(q)}</div>}
                 <div style={{ fontSize: 9, color: 'var(--dim)', whiteSpace: 'nowrap' }}>{q.age_category} · {q.weight_category}kg</div>
+              </div>
+
+              {/* Temps de repos */}
+              <div style={{ flexShrink: 0, width: 36, textAlign: 'center' }}>
+                {elapsedMs === null ? (
+                  <span style={{ fontSize: 9, color: 'var(--dim)' }}>—</span>
+                ) : (
+                  <span style={{
+                    fontSize: 9, fontWeight: 800,
+                    color: tooSoon ? '#fbbf24' : '#4ade80',
+                    background: tooSoon ? 'rgba(251,191,36,0.1)' : 'rgba(74,222,128,0.08)',
+                    border: `1px solid ${tooSoon ? 'rgba(251,191,36,0.3)' : 'rgba(74,222,128,0.2)'}`,
+                    borderRadius: 4, padding: '1px 4px',
+                    display: 'inline-block',
+                  }}>
+                    {formatElapsed(elapsedMs)}
+                  </span>
+                )}
               </div>
 
               {/* Confirmer / infirmer */}
