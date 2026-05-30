@@ -210,34 +210,112 @@ function FinalsMatchCard({ match, index }: { match: any; index?: number }) {
 
 function NordicView({ matches, pools }: { matches: any[]; pools: any[] }) {
   if (pools.length === 0) return <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucune poule générée</div>;
+
+  const poolRankings = pools.map((pool: any) => ({
+    pool,
+    ranking: computePoolRankings(
+      pool.id,
+      (pool.athletes ?? []).filter((a: any) => a?.id),
+      matches,
+    ),
+  }));
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {pools.map((pool: any) => {
-        const poolMatches = matches.filter((m: any) => m.pool_id === pool.id);
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {poolRankings.map(({ pool, ranking }) => {
+        const poolMatches = matches.filter((m: any) => m.pool_id === pool.id)
+          .sort((a: any, b: any) => (a.index_in_round ?? 0) - (b.index_in_round ?? 0));
+        const donePct = poolMatches.length
+          ? Math.round(poolMatches.filter((m: any) => m.status === 'finished').length / poolMatches.length * 100)
+          : 0;
         return (
-          <div key={pool.id} style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b2)', fontSize: 12, fontWeight: 700, color: 'var(--fg2)' }}>{pool.name}</div>
-            <div style={{ padding: '8px 0' }}>
-              {poolMatches.map((m: any, i: number) => (
-                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#f87171' }}>{m.red_name || '?'}</span>
-                  <span style={{ fontFamily: 'monospace', fontWeight: 900, color: m.status === 'finished' ? 'var(--fg)' : 'var(--dim)', fontSize: 14 }}>
-                    {m.status === 'finished' ? `${m.score_red} – ${m.score_blue}` : 'vs'}
+          <div key={pool.id} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+            {/* ── Combats ── */}
+            <div style={{ flex: 1, minWidth: 0, background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '9px 16px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg2)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                  Poule {pool.name}
+                </span>
+                {poolMatches.length > 0 && (
+                  <span style={{ marginLeft: 'auto', fontSize: 10, color: donePct === 100 ? '#22c55e' : 'var(--faint)', fontWeight: 600 }}>
+                    {poolMatches.filter((m: any) => m.status === 'finished').length}/{poolMatches.length} terminés
                   </span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#60a5fa', textAlign: 'right' }}>{m.blue_name || '?'}</span>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
-                  {m.id && (
-                    <Link to={`/ref/${m.id}`} target="_blank" style={{ color: 'var(--fg3)', display: 'flex', textDecoration: 'none' }}>
-                      <ChevronRight size={14} />
-                    </Link>
-                  )}
+                )}
+              </div>
+              <div>
+                {poolMatches.map((m: any, i: number) => {
+                  const isFinished = m.status === 'finished';
+                  const redWon  = isFinished && m.winner_id === m.red_athlete_id;
+                  const blueWon = isFinished && m.winner_id === m.blue_athlete_id;
+                  return (
+                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
+                      <div style={{ width: 18, flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--faint)', textAlign: 'center' }}>{i + 1}</div>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: redWon ? 700 : 500, color: redWon ? 'var(--fg)' : '#f87171', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.red_name || '?'}</div>
+                          {m.red_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 1 }}>{m.red_club}</div>}
+                        </div>
+                      </div>
+                      <div style={{ fontFamily: 'monospace', fontWeight: 900, color: isFinished ? 'var(--fg)' : 'var(--dim)', fontSize: 14, flexShrink: 0, minWidth: 52, textAlign: 'center' }}>
+                        {isFinished ? `${m.score_red} – ${m.score_blue}` : 'vs'}
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                        <div style={{ textAlign: 'right', minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: blueWon ? 700 : 500, color: blueWon ? 'var(--fg)' : '#60a5fa', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.blue_name || '?'}</div>
+                          {m.blue_club && <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>{m.blue_club}</div>}
+                        </div>
+                        <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                      </div>
+                      {m.id && (
+                        <Link to={`/ref/${m.id}`} target="_blank" style={{ color: 'var(--dim)', display: 'flex', textDecoration: 'none', marginLeft: 2, flexShrink: 0 }}>
+                          <ChevronRight size={14} />
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })}
+                {poolMatches.length === 0 && (
+                  <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Classement ── */}
+            <div style={{ width: 300, flexShrink: 0, background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ padding: '9px 14px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 7 }}>
+                <Trophy size={12} color="#fbbf24" />
+                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                  Classement Poule {pool.name}
+                </span>
+              </div>
+              {/* Légende */}
+              <div style={{ display: 'grid', gridTemplateColumns: '26px 1fr 48px 52px', gap: 4, padding: '5px 12px', borderBottom: '1px solid var(--b1)' }}>
+                {['#', 'Athlète', 'Cl.', 'Tech.'].map((h, i) => (
+                  <div key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: i > 1 ? 'right' : 'left' }}>{h}</div>
+                ))}
+              </div>
+              {ranking.length > 0 ? ranking.map((r, i) => {
+                const rs = RANK_STYLE(i);
+                return (
+                  <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '26px 1fr 48px 52px', gap: 4, padding: '9px 12px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none', alignItems: 'center' }}>
+                    <div style={{ width: 22, height: 22, borderRadius: 6, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                      {r.club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1 }}>{r.club}</div>}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg2)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.pts}</div>
+                    <div style={{ fontSize: 13, color: 'var(--fg3)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.tech}</div>
+                  </div>
+                );
+              }) : (
+                <div style={{ padding: '12px 14px', fontSize: 11, color: 'var(--dim)' }}>
+                  {poolMatches.length === 0 ? 'Aucun combat généré' : 'En attente des premiers combats'}
                 </div>
-              ))}
-              {poolMatches.length === 0 && (
-                <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
               )}
             </div>
+
           </div>
         );
       })}
@@ -1250,8 +1328,8 @@ export default function Brackets() {
                       <BracketView matches={bracketData?.matches || []} />
                     )}
 
-                    {/* Rankings — masqué pour pools_finals (intégré dans PoolsFinalsView) */}
-                    {rankings.length > 0 && comp.format_type !== 'pools_finals' && (
+                    {/* Rankings — masqué pour pools_finals et nordic (intégré dans leur View) */}
+                    {rankings.length > 0 && comp.format_type !== 'pools_finals' && comp.format_type !== 'nordic' && (
                       <div style={{ background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 18px', borderBottom: '1px solid var(--b2)' }}>
                           <Trophy size={14} color="#fbbf24" />
