@@ -151,6 +151,24 @@ export default function TournamentDetail() {
 
   const maxAgeCount = Math.max(1, ...athletesByAge.map(r => r.count));
 
+  // ── Tableau croisé pesée par club × catégorie d'âge ─────────────────────────
+  const weighRows: { club_name: string; age_category: string; count: number }[] =
+    stats?.weigh_by_club_age ?? [];
+  const wAgeCols: string[] = [...new Set(weighRows.map(r => r.age_category))]
+    .sort((a, b) => (AGE_ORDER[a] ?? 99) - (AGE_ORDER[b] ?? 99));
+  const wClubs: string[] = [...new Set(weighRows.map(r => r.club_name))].sort();
+  // matrix[club][age] = count
+  const wMatrix: Record<string, Record<string, number>> = {};
+  for (const r of weighRows) {
+    if (!wMatrix[r.club_name]) wMatrix[r.club_name] = {};
+    wMatrix[r.club_name][r.age_category] = r.count;
+  }
+  const wRowTotal = (club: string) =>
+    wAgeCols.reduce((s, a) => s + (wMatrix[club]?.[a] ?? 0), 0);
+  const wColTotal = (age: string) =>
+    wClubs.reduce((s, c) => s + (wMatrix[c]?.[age] ?? 0), 0);
+  const wGrandTotal = wClubs.reduce((s, c) => s + wRowTotal(c), 0);
+
   // Phase
   type Phase = 'inscription' | 'pesee' | 'competition' | 'termine';
   let phase: Phase = 'inscription';
@@ -471,6 +489,123 @@ export default function TournamentDetail() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Pesée par club × catégorie (tableau croisé) ── */}
+        {wGrandTotal > 0 && (
+          <div style={{ ...CARD, padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <Scale size={14} color="#fbbf24" strokeWidth={1.8} />
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Pesée — athlètes par club et catégorie
+              </span>
+              <span style={{ marginLeft: 'auto', fontSize: 20, fontWeight: 900, color: '#fbbf24', letterSpacing: '-0.5px' }}>
+                {wGrandTotal}
+              </span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg2)' }}>
+                    {/* Club header */}
+                    <th style={{
+                      padding: '7px 10px', textAlign: 'left',
+                      fontSize: 10, fontWeight: 700, color: 'var(--dim)',
+                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      borderBottom: '2px solid var(--b2)', position: 'sticky', left: 0,
+                      background: 'var(--bg2)', whiteSpace: 'nowrap',
+                    }}>Club</th>
+                    {/* Age category headers */}
+                    {wAgeCols.map(age => (
+                      <th key={age} style={{
+                        padding: '7px 8px', textAlign: 'center',
+                        fontSize: 10, fontWeight: 700, color: 'var(--dim)',
+                        textTransform: 'uppercase', letterSpacing: '0.06em',
+                        borderBottom: '2px solid var(--b2)', whiteSpace: 'nowrap',
+                      }}>{age}</th>
+                    ))}
+                    {/* Total header */}
+                    <th style={{
+                      padding: '7px 10px', textAlign: 'center',
+                      fontSize: 10, fontWeight: 700, color: '#fbbf24',
+                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      borderBottom: '2px solid var(--b2)',
+                      borderLeft: '1px solid var(--b2)', whiteSpace: 'nowrap',
+                    }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wClubs.map((club, idx) => {
+                    const rowTotal = wRowTotal(club);
+                    return (
+                      <tr key={club} style={{
+                        background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.025)',
+                        borderBottom: '1px solid var(--b1)',
+                      }}>
+                        {/* Club name */}
+                        <td style={{
+                          padding: '7px 10px', fontWeight: 600,
+                          color: 'var(--fg)', whiteSpace: 'nowrap',
+                          position: 'sticky', left: 0,
+                          background: idx % 2 === 0 ? 'var(--card)' : 'var(--bg2)',
+                        }}>{club}</td>
+                        {/* Counts per age */}
+                        {wAgeCols.map(age => {
+                          const v = wMatrix[club]?.[age] ?? 0;
+                          return (
+                            <td key={age} style={{
+                              padding: '7px 8px', textAlign: 'center',
+                              fontWeight: v > 0 ? 700 : 400,
+                              color: v > 0 ? 'var(--fg)' : 'var(--b4)',
+                              fontSize: 13,
+                            }}>
+                              {v > 0 ? v : '—'}
+                            </td>
+                          );
+                        })}
+                        {/* Row total */}
+                        <td style={{
+                          padding: '7px 10px', textAlign: 'center',
+                          fontWeight: 900, fontSize: 13,
+                          color: '#fbbf24',
+                          borderLeft: '1px solid var(--b2)',
+                          background: 'rgba(251,191,36,0.04)',
+                        }}>{rowTotal}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr style={{ borderTop: '2px solid var(--b2)', background: 'var(--bg2)' }}>
+                    {/* "Total" label */}
+                    <td style={{
+                      padding: '7px 10px', fontWeight: 800,
+                      color: '#fbbf24', fontSize: 11,
+                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      position: 'sticky', left: 0, background: 'var(--bg2)',
+                    }}>Total</td>
+                    {/* Column totals */}
+                    {wAgeCols.map(age => {
+                      const v = wColTotal(age);
+                      return (
+                        <td key={age} style={{
+                          padding: '7px 8px', textAlign: 'center',
+                          fontWeight: 800, fontSize: 13, color: '#fbbf24',
+                        }}>{v}</td>
+                      );
+                    })}
+                    {/* Grand total */}
+                    <td style={{
+                      padding: '7px 10px', textAlign: 'center',
+                      fontWeight: 900, fontSize: 15, color: '#fbbf24',
+                      borderLeft: '1px solid var(--b2)',
+                      background: 'rgba(251,191,36,0.08)',
+                    }}>{wGrandTotal}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         )}
 
