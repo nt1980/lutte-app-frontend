@@ -152,22 +152,25 @@ export default function TournamentDetail() {
   const maxAgeCount = Math.max(1, ...athletesByAge.map(r => r.count));
 
   // ── Tableau croisé pesée par club × catégorie d'âge ─────────────────────────
-  const weighRows: { club_name: string; age_category: string; count: number }[] =
-    stats?.weigh_by_club_age ?? [];
+  type WeighRow = { club_name: string; age_category: string; total: number; weighed: number };
+  const weighRows: WeighRow[] = stats?.weigh_by_club_age ?? [];
   const wAgeCols: string[] = [...new Set(weighRows.map(r => r.age_category))]
     .sort((a, b) => (AGE_ORDER[a] ?? 99) - (AGE_ORDER[b] ?? 99));
   const wClubs: string[] = [...new Set(weighRows.map(r => r.club_name))].sort();
-  // matrix[club][age] = count
-  const wMatrix: Record<string, Record<string, number>> = {};
+  // matrix[club][age] = { total, weighed }
+  const wMatrix: Record<string, Record<string, { total: number; weighed: number }>> = {};
   for (const r of weighRows) {
     if (!wMatrix[r.club_name]) wMatrix[r.club_name] = {};
-    wMatrix[r.club_name][r.age_category] = r.count;
+    wMatrix[r.club_name][r.age_category] = { total: r.total, weighed: r.weighed };
   }
-  const wRowTotal = (club: string) =>
-    wAgeCols.reduce((s, a) => s + (wMatrix[club]?.[a] ?? 0), 0);
-  const wColTotal = (age: string) =>
-    wClubs.reduce((s, c) => s + (wMatrix[c]?.[age] ?? 0), 0);
-  const wGrandTotal = wClubs.reduce((s, c) => s + wRowTotal(c), 0);
+  const wWeighed  = (c: string, a: string) => wMatrix[c]?.[a]?.weighed  ?? 0;
+  const wTotal    = (c: string, a: string) => wMatrix[c]?.[a]?.total    ?? 0;
+  const wRowWeighed   = (club: string) => wAgeCols.reduce((s, a) => s + wWeighed(club, a), 0);
+  const wRowRegistered= (club: string) => wAgeCols.reduce((s, a) => s + wTotal(club, a), 0);
+  const wColWeighed   = (age: string)  => wClubs.reduce((s, c)  => s + wWeighed(c, age), 0);
+  const wColRegistered= (age: string)  => wClubs.reduce((s, c)  => s + wTotal(c, age), 0);
+  const wGrandWeighed   = wClubs.reduce((s, c) => s + wRowWeighed(c), 0);
+  const wGrandRegistered= wClubs.reduce((s, c) => s + wRowRegistered(c), 0);
 
   // Phase
   type Phase = 'inscription' | 'pesee' | 'competition' | 'termine';
@@ -493,22 +496,22 @@ export default function TournamentDetail() {
         )}
 
         {/* ── Pesée par club × catégorie (tableau croisé) ── */}
-        {wGrandTotal > 0 && (
+        {wClubs.length > 0 && (
           <div style={{ ...CARD, padding: '16px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <Scale size={14} color="#fbbf24" strokeWidth={1.8} />
               <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--fg)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 Pesée — athlètes par club et catégorie
               </span>
-              <span style={{ marginLeft: 'auto', fontSize: 20, fontWeight: 900, color: '#fbbf24', letterSpacing: '-0.5px' }}>
-                {wGrandTotal}
+              <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg3)' }}>
+                <span style={{ fontWeight: 900, fontSize: 18, color: '#fbbf24' }}>{wGrandWeighed}</span>
+                <span style={{ color: 'var(--faint)', marginLeft: 4 }}>/ {wGrandRegistered} pesés</span>
               </span>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: 'var(--bg2)' }}>
-                    {/* Club header */}
                     <th style={{
                       padding: '7px 10px', textAlign: 'left',
                       fontSize: 10, fontWeight: 700, color: 'var(--dim)',
@@ -516,7 +519,6 @@ export default function TournamentDetail() {
                       borderBottom: '2px solid var(--b2)', position: 'sticky', left: 0,
                       background: 'var(--bg2)', whiteSpace: 'nowrap',
                     }}>Club</th>
-                    {/* Age category headers */}
                     {wAgeCols.map(age => (
                       <th key={age} style={{
                         padding: '7px 8px', textAlign: 'center',
@@ -525,7 +527,6 @@ export default function TournamentDetail() {
                         borderBottom: '2px solid var(--b2)', whiteSpace: 'nowrap',
                       }}>{age}</th>
                     ))}
-                    {/* Total header */}
                     <th style={{
                       padding: '7px 10px', textAlign: 'center',
                       fontSize: 10, fontWeight: 700, color: '#fbbf24',
@@ -537,71 +538,84 @@ export default function TournamentDetail() {
                 </thead>
                 <tbody>
                   {wClubs.map((club, idx) => {
-                    const rowTotal = wRowTotal(club);
+                    const rowW = wRowWeighed(club);
+                    const rowR = wRowRegistered(club);
+                    const rowDone = rowR > 0 && rowW === rowR;
                     return (
                       <tr key={club} style={{
                         background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.025)',
                         borderBottom: '1px solid var(--b1)',
+                        opacity: rowR === 0 ? 0.45 : 1,
                       }}>
-                        {/* Club name */}
                         <td style={{
-                          padding: '7px 10px', fontWeight: 600,
-                          color: 'var(--fg)', whiteSpace: 'nowrap',
-                          position: 'sticky', left: 0,
+                          padding: '7px 10px', fontWeight: 600, color: 'var(--fg)',
+                          whiteSpace: 'nowrap', position: 'sticky', left: 0,
                           background: idx % 2 === 0 ? 'var(--card)' : 'var(--bg2)',
                         }}>{club}</td>
-                        {/* Counts per age */}
                         {wAgeCols.map(age => {
-                          const v = wMatrix[club]?.[age] ?? 0;
+                          const w = wWeighed(club, age);
+                          const t = wTotal(club, age);
+                          const done = t > 0 && w === t;
                           return (
                             <td key={age} style={{
                               padding: '7px 8px', textAlign: 'center',
-                              fontWeight: v > 0 ? 700 : 400,
-                              color: v > 0 ? 'var(--fg)' : 'var(--b4)',
                               fontSize: 13,
                             }}>
-                              {v > 0 ? v : '—'}
+                              {t === 0 ? (
+                                <span style={{ color: 'var(--b4)' }}>—</span>
+                              ) : (
+                                <span style={{
+                                  fontWeight: 700,
+                                  color: done ? '#22c55e' : w > 0 ? '#fbbf24' : 'var(--fg3)',
+                                }}>
+                                  {w}<span style={{ fontSize: 10, fontWeight: 400, color: 'var(--faint)' }}>/{t}</span>
+                                </span>
+                              )}
                             </td>
                           );
                         })}
-                        {/* Row total */}
                         <td style={{
                           padding: '7px 10px', textAlign: 'center',
                           fontWeight: 900, fontSize: 13,
-                          color: '#fbbf24',
+                          color: rowDone ? '#22c55e' : '#fbbf24',
                           borderLeft: '1px solid var(--b2)',
                           background: 'rgba(251,191,36,0.04)',
-                        }}>{rowTotal}</td>
+                        }}>
+                          {rowW}<span style={{ fontSize: 10, fontWeight: 400, color: 'var(--faint)' }}>/{rowR}</span>
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot>
                   <tr style={{ borderTop: '2px solid var(--b2)', background: 'var(--bg2)' }}>
-                    {/* "Total" label */}
                     <td style={{
-                      padding: '7px 10px', fontWeight: 800,
-                      color: '#fbbf24', fontSize: 11,
-                      textTransform: 'uppercase', letterSpacing: '0.06em',
+                      padding: '7px 10px', fontWeight: 800, color: '#fbbf24',
+                      fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em',
                       position: 'sticky', left: 0, background: 'var(--bg2)',
                     }}>Total</td>
-                    {/* Column totals */}
                     {wAgeCols.map(age => {
-                      const v = wColTotal(age);
+                      const w = wColWeighed(age);
+                      const t = wColRegistered(age);
+                      const done = t > 0 && w === t;
                       return (
                         <td key={age} style={{
                           padding: '7px 8px', textAlign: 'center',
-                          fontWeight: 800, fontSize: 13, color: '#fbbf24',
-                        }}>{v}</td>
+                          fontWeight: 800, fontSize: 13,
+                          color: done ? '#22c55e' : '#fbbf24',
+                        }}>
+                          {w}<span style={{ fontSize: 10, fontWeight: 400, color: 'var(--faint)' }}>/{t}</span>
+                        </td>
                       );
                     })}
-                    {/* Grand total */}
                     <td style={{
-                      padding: '7px 10px', textAlign: 'center',
-                      fontWeight: 900, fontSize: 15, color: '#fbbf24',
-                      borderLeft: '1px solid var(--b2)',
+                      padding: '7px 10px', textAlign: 'center', fontWeight: 900,
+                      fontSize: 15, borderLeft: '1px solid var(--b2)',
                       background: 'rgba(251,191,36,0.08)',
-                    }}>{wGrandTotal}</td>
+                      color: wGrandWeighed === wGrandRegistered && wGrandRegistered > 0 ? '#22c55e' : '#fbbf24',
+                    }}>
+                      {wGrandWeighed}<span style={{ fontSize: 11, fontWeight: 400, color: 'var(--faint)' }}>/{wGrandRegistered}</span>
+                    </td>
                   </tr>
                 </tfoot>
               </table>
