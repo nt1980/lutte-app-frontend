@@ -4,10 +4,11 @@ import { useParams, Link } from 'react-router-dom';
 import {
   Users, Grid3X3, CheckCircle, Activity, Scale, Settings,
   Swords, Clock, AlertTriangle, Building2,
-  Trophy, Timer, ChevronRight,
+  Trophy, Timer, ChevronRight, Download,
 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 
 // ── Age ordering ────────────────────────────────────────────────────────────
 const AGE_ORDER: Record<string, number> = {
@@ -80,6 +81,29 @@ const shortcuts = (id: string) => [
 export default function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
   const isMobile = useIsMobile();
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExportExcel = async () => {
+    if (!id) return;
+    setExportLoading(true);
+    try {
+      const response = await api.get(`/api/tournaments/${id}/export/rankings`, {
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(response.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `classements-${tournament?.name || id}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Erreur lors de l\'export Excel');
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const { data: tournament, isPending: tournamentPending, isError: tournamentError } = useQuery({
     queryKey: ['tournament', id],
@@ -196,9 +220,27 @@ export default function TournamentDetail() {
         title={tournament.name}
         subtitle={`${dateStr} · ${tournament.city}`}
         actions={
-          <Link to={`/t/${id}/settings`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg2)', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
-            <Settings size={14} color="var(--faint)" /> Paramètres
-          </Link>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              onClick={handleExportExcel}
+              disabled={exportLoading}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', borderRadius: 8,
+                background: exportLoading ? 'rgba(74,222,128,0.07)' : 'rgba(74,222,128,0.1)',
+                border: '1px solid rgba(74,222,128,0.25)',
+                color: exportLoading ? '#6b7280' : '#4ade80',
+                fontSize: 13, fontWeight: 600, cursor: exportLoading ? 'default' : 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Download size={14} />
+              {exportLoading ? 'Génération…' : 'Export classements'}
+            </button>
+            <Link to={`/t/${id}/settings`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg2)', fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+              <Settings size={14} color="var(--faint)" /> Paramètres
+            </Link>
+          </div>
         }
       />
 
