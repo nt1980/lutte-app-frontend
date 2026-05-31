@@ -115,7 +115,12 @@ export default function TournamentSettings() {
 
   const toggle = (key: string) => ({
     checked: form[key] === true,
-    onChange: (e: any) => setForm((p: any) => ({ ...p, [key]: e.target.checked })),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newForm = { ...form, [key]: e.target.checked };
+      setForm(newForm);
+      // Auto-save immédiat pour les toggles de visibilité publique
+      update.mutate({ [key]: e.target.checked });
+    },
   });
 
   // Formater la date pour l'input (YYYY-MM-DD)

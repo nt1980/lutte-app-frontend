@@ -46,7 +46,8 @@ export default function PublicProgramme() {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['public-programme', slug],
     queryFn: () => api.get(`/api/tournaments/${slug}/programme`).then(r => r.data),
-    enabled: !!tournament?.public_page_enabled,
+    // Déclenche si la page publique OU le programme sont activés
+    enabled: !!(tournament?.public_page_enabled || tournament?.public_program_enabled),
     refetchInterval: 30000,
     retry: false,
   });
