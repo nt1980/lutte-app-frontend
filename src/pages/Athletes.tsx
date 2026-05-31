@@ -4,6 +4,7 @@ import { Upload, Search, Users, X, FileText, AlertCircle, Plus, Trash2 } from 'l
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { formatName } from '../lib/formatName';
 
 import React from 'react';
 
@@ -187,7 +188,7 @@ export default function Athletes() {
                 <tr key={a.id}>
                   <td style={{ ...TD, textAlign: 'center', width: 52 }}><GBadge g={a.gender} /></td>
                   <td style={TD}>
-                    <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{a.last_name} {a.first_name}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{formatName(a.first_name, a.last_name)}</span>
                     {a.nationality && <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 2 }}>{a.nationality}</div>}
                   </td>
                   <td style={TD}><span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--fg3)', background: 'var(--inp)', padding: '2px 6px', borderRadius: 5 }}>{a.license_number || '—'}</span></td>

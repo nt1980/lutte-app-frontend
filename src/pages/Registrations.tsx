@@ -5,6 +5,7 @@ import { Upload, Search, Users, X, FileText, AlertCircle, Plus, Trash2, Pencil }
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { formatName } from '../lib/formatName';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -482,7 +483,7 @@ export default function Registrations() {
                   <tr key={r.id} style={{ transition: 'background 0.15s' }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={TD}><span style={{ fontWeight: 600 }}>{r.last_name} {r.first_name}</span></td>
+                    <td style={TD}><span style={{ fontWeight: 600 }}>{formatName(r.first_name, r.last_name)}</span></td>
                     <td style={{ ...TD, textAlign: 'center', width: 52 }}><GBadge g={r.gender} /></td>
                     <td style={TD}>
                       <span style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--fg3)', background: 'var(--inp)', padding: '2px 6px', borderRadius: 5 }}>
@@ -507,7 +508,7 @@ export default function Registrations() {
                           style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)', color: '#60a5fa', padding: '5px 10px', borderRadius: 7, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500 }}>
                           <Pencil size={11} /> Modifier
                         </button>
-                        <button onClick={() => { if (confirm(`Supprimer ${r.last_name} ${r.first_name} ?`)) deleteRegMutation.mutate(r.id); }}
+                        <button onClick={() => { if (confirm(`Supprimer ${formatName(r.first_name, r.last_name)} ?`)) deleteRegMutation.mutate(r.id); }}
                           style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', padding: '5px 10px', borderRadius: 7, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 500 }}>
                           <Trash2 size={11} /> Supprimer
                         </button>
@@ -558,7 +559,7 @@ export default function Registrations() {
                   <option value="">— Sélectionner un athlète —</option>
                   {athletes.map((a: any) => (
                     <option key={a.id} value={a.id}>
-                      {a.last_name} {a.first_name} · {a.license_number || 'sans licence'}
+                      {formatName(a.first_name, a.last_name)} · {a.license_number || 'sans licence'}
                     </option>
                   ))}
                 </select>
@@ -580,7 +581,7 @@ export default function Registrations() {
       {/* ── Edit Modal ────────────────────────────────────────────────────────── */}
       {showEditForm && editForm && (
         <Modal
-          title={`Modifier · ${editForm.last_name} ${editForm.first_name}`}
+          title={`Modifier · ${formatName(editForm.first_name, editForm.last_name)}`}
           subtitle="Informations du combattant et de l'inscription"
           icon={<Pencil size={16} color="#60a5fa" />}
           iconBg="rgba(96,165,250,0.1)" iconBorder="rgba(96,165,250,0.2)"

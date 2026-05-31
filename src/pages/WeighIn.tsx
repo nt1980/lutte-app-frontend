@@ -7,6 +7,7 @@ import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { sortAgeCategories } from '../lib/ageSort';
 import { getWeightCategory, hasWeightCategories } from '../lib/weightCategories';
+import { formatName } from '../lib/formatName';
 import QrScannerModal from '../components/QrScannerModal';
 import { generateLabelsPdf } from '../lib/labelPdf';
 
@@ -136,7 +137,7 @@ export default function WeighIn() {
     const reg = (regs as any[]).find((r: any) => r.id === text.trim());
     if (reg) {
       openSelected(reg);
-      toast.success(`${reg.last_name} ${reg.first_name} détecté`);
+      toast.success(`${formatName(reg.first_name, reg.last_name)} détecté`);
     } else {
       toast.error('QR code non reconnu pour ce tournoi');
     }
@@ -175,7 +176,7 @@ export default function WeighIn() {
       {/* Athlete info */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: isMobile ? 17 : 15, fontWeight: 800, color: 'var(--fg)' }}>{selected.last_name} {selected.first_name}</div>
+          <div style={{ fontSize: isMobile ? 17 : 15, fontWeight: 800, color: 'var(--fg)' }}>{formatName(selected.first_name, selected.last_name)}</div>
           <div style={{ fontSize: 11, color: 'var(--fg3)', fontFamily: 'monospace', marginTop: 3 }}>{selected.license_number}</div>
           <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 2 }}>{selected.club_name}</div>
         </div>
@@ -476,7 +477,7 @@ export default function WeighIn() {
                 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 14 }}>{reg.last_name} <span style={{ fontWeight: 400 }}>{reg.first_name}</span></div>
+                    <div style={{ fontWeight: 700, color: 'var(--fg)', fontSize: 14 }}>{formatName(reg.first_name, reg.last_name)}</div>
                     <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>
                       <span style={{ fontFamily: 'monospace' }}>{reg.license_number}</span>
                       {(reg.club_short || reg.club_name) && <> · {reg.club_short || reg.club_name}</>}
@@ -515,7 +516,7 @@ export default function WeighIn() {
                     }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 13 }}>{reg.last_name} <span style={{ fontWeight: 400 }}>{reg.first_name}</span></div>
+                        <div style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 13 }}>{formatName(reg.first_name, reg.last_name)}</div>
                         <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>
                           <span style={{ fontFamily: 'monospace' }}>{reg.license_number}</span>
                           {(reg.club_short || reg.club_name) && <> · {reg.club_short || reg.club_name}</>}
