@@ -26,6 +26,7 @@ import JeunesMats from './pages/JeunesMats';
 import PublicTournament from './pages/public/PublicTournament';
 import PublicProgramme from './pages/public/PublicProgramme';
 import PublicResultats from './pages/public/PublicResultats';
+import PublicClassements from './pages/public/PublicClassements';
 import LandingPage from './pages/public/LandingPage';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 30000, retry: 1 } } });
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/tournoi/:slug" element={<PublicRoute><PublicTournament /></PublicRoute>} />
           <Route path="/tournoi/:slug/programme" element={<PublicRoute><PublicProgramme /></PublicRoute>} />
           <Route path="/tournoi/:slug/resultats" element={<PublicRoute><PublicResultats /></PublicRoute>} />
+          <Route path="/tournoi/:slug/classements" element={<PublicRoute><PublicClassements /></PublicRoute>} />
 
           {/* ── Pages privées (thème utilisateur) ── */}
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

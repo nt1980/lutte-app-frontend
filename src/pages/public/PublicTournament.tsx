@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Trophy, Tv, ClipboardList, BarChart3, LogIn } from 'lucide-react';
+import { Calendar, MapPin, Trophy, Tv, ClipboardList, BarChart3, BarChart2, LogIn } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function PublicTournament() {
@@ -38,9 +38,10 @@ export default function PublicTournament() {
     </div>
   );
 
-  const activeMats = mats.filter((m: any) => m.is_active);
-  const showProgramme = tournament.public_program_enabled;
-  const showResults   = tournament.public_results_enabled;
+  const activeMats    = mats.filter((m: any) => m.is_active);
+  const showProgramme  = tournament.public_program_enabled;
+  const showResults    = tournament.public_results_enabled;
+  const showRankings   = tournament.public_rankings_enabled;
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -122,6 +123,24 @@ export default function PublicTournament() {
                 </div>
                 <div style={{ color: 'var(--fg)', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>Résultats</div>
                 <div style={{ color: 'var(--fg3)', fontSize: '0.8rem' }}>Palmarès et scores des combats</div>
+              </div>
+            </Link>
+          )}
+
+          {showRankings && (
+            <Link to={`/tournoi/${slug}/classements`} style={{ textDecoration: 'none' }}>
+              <div style={{
+                background: 'var(--card)', border: '1px solid var(--b3)',
+                borderRadius: 20, padding: '2rem 1.5rem', cursor: 'pointer', textAlign: 'center',
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(124,58,237,0.4)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = ''; }}
+              >
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                  <BarChart2 size={24} color="#a78bfa" />
+                </div>
+                <div style={{ color: 'var(--fg)', fontWeight: 800, fontSize: '1.05rem', marginBottom: '0.4rem' }}>Classements</div>
+                <div style={{ color: 'var(--fg3)', fontSize: '0.8rem' }}>Classements complets par catégorie</div>
               </div>
             </Link>
           )}

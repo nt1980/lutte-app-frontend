@@ -15,7 +15,7 @@ const publicToggles = [
   { key: 'public_program_enabled',      label: 'Programme',       desc: 'Programme des combats par catégorie',            path: (slug: string) => `/tournoi/${slug}/programme` },
   { key: 'public_results_enabled',      label: 'Résultats',       desc: 'Résultats en direct par catégorie',              path: (slug: string) => `/tournoi/${slug}/resultats` },
   { key: 'public_live_matches_enabled', label: 'Combats live',    desc: 'Liens vers les tapis en direct',                 path: (_slug: string) => null },
-  { key: 'public_rankings_enabled',     label: 'Classements',     desc: 'Classements finaux par catégorie',               path: (_slug: string) => null },
+  { key: 'public_rankings_enabled',     label: 'Classements',     desc: 'Classements finaux par catégorie',               path: (slug: string) => `/tournoi/${slug}/classements` },
 ];
 
 function CopyButton({ text }: { text: string }) {
