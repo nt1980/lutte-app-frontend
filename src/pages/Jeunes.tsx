@@ -1395,19 +1395,21 @@ function PoolRankingCard({ ranking }: { ranking: any }) {
             ) : allAthletes.map((r, i) => {
               const rankColor = i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#cd7c3d' : 'var(--fg3)';
               const hasPlayed = (r.wins + (r.draws ?? 0) + r.losses) > 0;
+              // Solo athlete (r.rank !== null = ranked by backend even with 0 matches)
+              const isRanked = hasPlayed || r.rank !== null;
               const goalAvg = (r.tech_pts ?? 0) - (r.tech_pts_against ?? 0);
               return (
                 <tr key={r.athlete_id} style={{
                   background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.03)',
                   borderBottom: '1px solid var(--b1)',
-                  opacity: hasPlayed ? 1 : 0.55,
+                  opacity: isRanked ? 1 : 0.55,
                 }}>
                   <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 800, color: rankColor, fontSize: 13 }}>
-                    {hasPlayed ? i + 1 : '—'}
+                    {isRanked ? i + 1 : '—'}
                   </td>
                   <td style={{ padding: '7px 10px', fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap' }}>{r.name}</td>
                   <td style={{ padding: '7px 10px', color: 'var(--faint)', whiteSpace: 'nowrap' }}>{r.club ?? '—'}</td>
-                  <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 800, color: hasPlayed ? 'var(--fg)' : 'var(--dim)', fontSize: 13 }}>{r.pts}</td>
+                  <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 800, color: isRanked ? 'var(--fg)' : 'var(--dim)', fontSize: 13 }}>{r.pts}</td>
                   <td style={{ padding: '7px 10px', textAlign: 'center', fontWeight: 600, color: goalAvg > 0 ? '#22c55e' : goalAvg < 0 ? '#ef4444' : 'var(--fg3)' }}>
                     {hasPlayed ? (goalAvg > 0 ? `+${goalAvg}` : `${goalAvg}`) : '—'}
                   </td>
