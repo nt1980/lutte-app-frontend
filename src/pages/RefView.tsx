@@ -130,11 +130,11 @@ export default function RefView() {
           syncTimer(ns);
           playBeeps(5, 660); // 5 bips — fin du match
         } else {
-          // Fin de la 1ère mi-temps → mi-temps figée, P2 lancé par l'arbitre
+          // Fin de la 1ère mi-temps → décompte de mi-temps démarre automatiquement
           const ns: TimerSnapshot = {
             ...snap, phase: 'break',
             elapsed: config.periodDuration, periodStartMs: null,
-            breakStartMs: null, breakElapsed: 0,
+            breakStartMs: Date.now(), breakElapsed: 0,
           };
           setSnap(ns);
           syncTimer(ns);
@@ -145,10 +145,32 @@ export default function RefView() {
     return () => clearInterval(iv);
   }, [snap, config, syncTimer]);
 
+  // ── Auto-transition mi-temps → P2 ────────────────────────────────────────
+  useEffect(() => {
+    if (snap.phase !== 'break' || !snap.breakStartMs) return;
+    const iv = setInterval(() => {
+      const breakEl = snap.breakElapsed + (Date.now() - (snap.breakStartMs as number)) / 1000;
+      if (breakEl >= config.breakDuration) {
+        if (transitionKey.current === 'break-end') return;
+        transitionKey.current = 'break-end';
+        const ns: TimerSnapshot = {
+          ...snap, phase: 'running',
+          period: snap.period + 1,
+          elapsed: 0, periodStartMs: Date.now(),
+          breakElapsed: 0, breakStartMs: null,
+        };
+        setSnap(ns);
+        syncTimer(ns);
+        playBeeps(3); // 3 bips — début P2
+      }
+    }, 200);
+    return () => clearInterval(iv);
+  }, [snap, config, syncTimer]);
+
   // ── Timer controls ────────────────────────────────────────────────────────
   const startOrResume = useCallback(() => {
     if (snap.phase === 'break') {
-      // L'arbitre lance manuellement la 2e mi-temps
+      // L'arbitre peut passer la mi-temps manuellement (démarrage anticipé de P2)
       const ns: TimerSnapshot = {
         ...snap, phase: 'running',
         period: snap.period + 1,
@@ -427,7 +449,7 @@ export default function RefView() {
               }}
             >
               {isBreak
-                ? `▶ Lancer P${snap.period + 1}`
+                ? `⏭ Passer la mi-temps`
                 : isRunning
                   ? '⏸ Pause'
                   : snap.phase === 'paused'
@@ -683,7 +705,7 @@ export default function RefView() {
                 }}
               >
                 {isBreak
-                  ? `▶ Lancer P${snap.period + 1}`
+                  ? `⏭ Passer la mi-temps`
                   : isRunning
                     ? '⏸ Pause'
                     : snap.phase === 'paused'
