@@ -194,8 +194,9 @@ export default function TournamentSettings() {
               <div>
                 <label style={LABEL}>Mode repêchage</label>
                 <select style={SELECT} {...f('repechage_mode')}>
-                  <option value="official_uww">Officiel UWW (2 bronzes)</option>
+                  <option value="official_uww">Double Élimination</option>
                   <option value="simplified_bronze">Petite finale unique</option>
+                  <option value="uww_repechage">Repêchage UWW Officiel</option>
                 </select>
               </div>
             </div>
