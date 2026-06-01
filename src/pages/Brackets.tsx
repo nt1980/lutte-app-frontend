@@ -1396,7 +1396,9 @@ export default function Brackets() {
                         </div>
                         <div style={{ padding: '8px 0' }}>
                           {rankings.map((r: any, i: number) => {
-                            const rs = RANK_STYLE(i);
+                            // Utiliser r.rank-1 pour le style afin qu'un 2e athlète 3e place
+                            // ait le même style bronze que le 1er (et non le style gris 4e)
+                            const rs = RANK_STYLE(r.rank != null ? r.rank - 1 : i);
                             return (
                               <div key={r.athlete_id || i} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '10px 18px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
                                 <div style={{ width: 26, height: 26, borderRadius: 8, background: rs.bg, color: rs.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
