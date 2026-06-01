@@ -195,8 +195,13 @@ export default function MatManager() {
 
   // Un arbitre ne voit que la file de son tapis, pas la file globale
   const unassigned: any[] = isReferee ? [] : standardQueue
-    .filter((q: any) => !q.mat_id && q.status === 'ready')
-    .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
+    .filter((q: any) => !q.mat_id && (q.status === 'ready' || q.status === 'blocked'))
+    .sort((a: any, b: any) => {
+      // 'ready' avant 'blocked'
+      if (a.status === 'ready' && b.status !== 'ready') return -1;
+      if (a.status !== 'ready' && b.status === 'ready') return 1;
+      return (a.position ?? 999) - (b.position ?? 999);
+    });
 
   const activeCount = standardQueue.filter((q: any) => q.status === 'on_mat').length;
 
@@ -415,15 +420,18 @@ export default function MatManager() {
             {/* Rows */}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {sortedUnassigned.map((q: any, idx: number) => {
+                const isBlocked  = q.status === 'blocked';
                 const elapsedMs  = restElapsedMs(q, now);
-                const tooSoon    = elapsedMs !== null && elapsedMs < minRestMs;
-                const dragActive = !sortCol && !tooSoon;
-                const rowBg      = dragOverId === q.id
+                const tooSoon    = !isBlocked && elapsedMs !== null && elapsedMs < minRestMs;
+                const dragActive = !sortCol && !tooSoon && !isBlocked;
+                const rowBg      = isBlocked
+                  ? 'rgba(55,65,81,0.04)'
+                  : dragOverId === q.id
                   ? 'rgba(96,165,250,0.06)'
                   : tooSoon
                   ? 'rgba(251,191,36,0.06)'
                   : (idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)');
-                const borderColor = tooSoon ? 'rgba(251,191,36,0.2)' : 'var(--b1)';
+                const borderColor = isBlocked ? 'var(--b1)' : tooSoon ? 'rgba(251,191,36,0.2)' : 'var(--b1)';
 
                 return (
                   <div
@@ -442,8 +450,8 @@ export default function MatManager() {
                       padding: '7px 14px',
                       borderTop: idx > 0 ? `1px solid ${borderColor}` : 'none',
                       background: rowBg,
-                      opacity: draggedId === q.id ? 0.4 : 1,
-                      cursor: tooSoon ? 'not-allowed' : sortCol ? 'default' : 'grab',
+                      opacity: isBlocked ? 0.5 : draggedId === q.id ? 0.4 : 1,
+                      cursor: isBlocked ? 'default' : tooSoon ? 'not-allowed' : sortCol ? 'default' : 'grab',
                       transition: 'background 0.15s',
                     }}
                   >
@@ -456,10 +464,12 @@ export default function MatManager() {
                     {/* Rouge */}
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_name || '?'}</span>
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: isBlocked ? 'var(--dim)' : '#ef4444', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, fontWeight: isBlocked ? 400 : 700, color: isBlocked ? 'var(--fg3)' : '#f87171', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: isBlocked ? 'italic' : 'normal' }}>
+                          {isBlocked ? (q.red_name || 'À déterminer') : (q.red_name || '?')}
+                        </span>
                       </div>
-                      {q.red_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
+                      {!isBlocked && q.red_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1, paddingLeft: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.red_club}</div>}
                     </div>
 
                     {/* vs */}
@@ -468,10 +478,12 @@ export default function MatManager() {
                     {/* Bleu */}
                     <div style={{ minWidth: 0, textAlign: 'right' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_name || '?'}</span>
-                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3b82f6', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, fontWeight: isBlocked ? 400 : 700, color: isBlocked ? 'var(--fg3)' : '#60a5fa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: isBlocked ? 'italic' : 'normal' }}>
+                          {isBlocked ? (q.blue_name || 'À déterminer') : (q.blue_name || '?')}
+                        </span>
+                        <div style={{ width: 5, height: 5, borderRadius: '50%', background: isBlocked ? 'var(--dim)' : '#3b82f6', flexShrink: 0 }} />
                       </div>
-                      {q.blue_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
+                      {!isBlocked && q.blue_club && <div style={{ fontSize: 10, color: 'var(--fg3)', marginTop: 1, paddingRight: 9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.blue_club}</div>}
                     </div>
 
                     {/* Tour */}
@@ -511,7 +523,9 @@ export default function MatManager() {
 
                     {/* Boutons tapis */}
                     <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                      {mats.map((mat: any) => (
+                      {isBlocked ? (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', fontStyle: 'italic', whiteSpace: 'nowrap' as const }}>En attente</span>
+                      ) : mats.map((mat: any) => (
                         <button
                           key={mat.id}
                           onClick={() => !tooSoon && assign.mutate({ queueId: q.id, matId: mat.id })}
