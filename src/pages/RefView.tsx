@@ -209,12 +209,17 @@ export default function RefView() {
     }
   }, []);
 
-  // ── Result mutation (unchanged) ───────────────────────────────────────────
+  // ── Result mutation ───────────────────────────────────────────────────────
+  const JCAT = new Set(['U9', 'U11']);
+  const isJeunes = !!(match?.age_category && JCAT.has(match.age_category));
+
   const mutation = useMutation({
-    mutationFn: ({ winner_id, loser_id }: any) =>
+    mutationFn: ({ winner_id, loser_id, win_type: wt }: any) =>
       api.put(`/api/matches/${matchId}/result`, {
-        winner_id, loser_id,
-        score_red: scoreRed, score_blue: scoreBlue, win_type: winType,
+        winner_id: winner_id ?? null,
+        loser_id:  loser_id  ?? null,
+        score_red: scoreRed, score_blue: scoreBlue,
+        win_type: wt ?? winType,
       }),
     onSuccess: () => {
       toast.success('Résultat enregistré');
@@ -227,6 +232,10 @@ export default function RefView() {
   const finish = (winnerId: string, loserId: string) => {
     if (!winnerId) return toast.error('Athlete introuvable');
     mutation.mutate({ winner_id: winnerId, loser_id: loserId });
+  };
+
+  const finishDraw = () => {
+    mutation.mutate({ winner_id: null, loser_id: null, win_type: 'draw' });
   };
 
   // ── Alert mutation ─────────────────────────────────────────────────────────
@@ -457,7 +466,7 @@ export default function RefView() {
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>✓</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>Combat terminé</div>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>{match.winner_name} gagne</div>
+            <div style={{ fontSize: 13, color: '#6b7280' }}>{match.winner_name ? `${match.winner_name} gagne` : '🤝 Match nul'}</div>
             <button
               onClick={() => setShowAlertModal(true)}
               style={{ marginTop: 8, padding: '10px 20px', borderRadius: 10, border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.07)', color: '#fbbf24', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
@@ -505,7 +514,9 @@ export default function RefView() {
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
                 <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.15)' }} />
               </div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 16, textAlign: 'center' }}>🏁 Déclarer la victoire</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#fff', marginBottom: 16, textAlign: 'center' }}>
+                🏁 {isJeunes ? 'Terminer le combat' : 'Déclarer la victoire'}
+              </div>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Victoire par</div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -526,6 +537,12 @@ export default function RefView() {
                   🏆 BLEU gagne
                 </button>
               </div>
+              {isJeunes && (
+                <button onClick={finishDraw} disabled={mutation.isPending}
+                  style={{ marginTop: 10, width: '100%', padding: '14px', borderRadius: 14, background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', color: '#fbbf24', fontWeight: 900, fontSize: 15, cursor: 'pointer' }}>
+                  🤝 Match nul (1 pt chacun)
+                </button>
+              )}
             </div>
           </>
         )}
@@ -694,6 +711,12 @@ export default function RefView() {
                 <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#4b5563', marginRight: 6 }}>{w.short}</span>{w.label}
               </button>
             ))}
+            {isJeunes && !finished && (
+              <button onClick={finishDraw} disabled={mutation.isPending}
+                style={{ display: 'block', width: '100%', marginTop: 8, padding: '10px', borderRadius: 10, border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.08)', color: '#fbbf24', fontWeight: 800, fontSize: 13, cursor: 'pointer', textAlign: 'center' }}>
+                🤝 Match nul
+              </button>
+            )}
           </div>
 
           {finished && (
