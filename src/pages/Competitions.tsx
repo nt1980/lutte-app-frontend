@@ -9,8 +9,8 @@ import { sortAgeCategories, sortGroupEntries } from '../lib/ageSort';
 
 const FORMAT: Record<string, { label: string; color: string; bg: string }> = {
   nordic:             { label: 'Nordique (≤5)',          color: '#60a5fa', bg: 'rgba(96,165,250,0.1)'  },
-  pools_finals:       { label: 'Poules + Finales (6-8)', color: '#c084fc', bg: 'rgba(192,132,252,0.1)' },
-  bracket_repechage:  { label: 'Tableau + Repêchage',    color: '#f87171', bg: 'rgba(248,113,113,0.1)' },
+  pools_finals:       { label: 'Poules + Finales (6-7)', color: '#c084fc', bg: 'rgba(192,132,252,0.1)' },
+  bracket_repechage:  { label: 'Tableau + Repêchage (≥8)', color: '#f87171', bg: 'rgba(248,113,113,0.1)' },
 };
 
 const STYLE_LABELS: Record<string, string> = {
