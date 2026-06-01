@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
 import { Zap, Trophy, RefreshCw, Medal, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
@@ -49,23 +49,28 @@ function MatchCard({ match }: { match: any }) {
   const winnerIsRed = match.winner_color === 'red'
     || (!match.winner_color && match.winner_id != null && match.winner_id === match.red_athlete_id);
 
-  const redName  = match.red_name  || (match.red_athlete_id  == null && isBye ? 'BYE' : '?');
-  const blueName = match.blue_name || (match.blue_athlete_id == null && isBye ? 'BYE' : '?');
-  const redIsBye  = redName  === 'BYE';
-  const blueIsBye = blueName === 'BYE';
+  const isBlocked = match.status === 'blocked';
+  const TBD = 'À déterminer';
+  const redName  = match.red_name  || (isBye ? 'BYE' : isBlocked ? TBD : '?');
+  const blueName = match.blue_name || (isBye ? 'BYE' : isBlocked ? TBD : '?');
+  const redIsBye   = redName  === 'BYE';
+  const blueIsBye  = blueName === 'BYE';
+  const redIsTBD   = redName  === TBD;
+  const blueIsTBD  = blueName === TBD;
 
   return (
     <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10, padding: '9px 11px', fontSize: 12 }}>
       {/* Red row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 6 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: redIsBye ? 'var(--dim)' : '#ef4444', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: redIsBye || redIsTBD ? 'var(--dim)' : '#ef4444', flexShrink: 0, marginTop: 4 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3,
-            color: redIsBye ? 'var(--dim)' : (isFinished && winnerIsRed ? 'var(--fg)' : '#f87171'),
-            fontWeight: isFinished && winnerIsRed ? 700 : 500 }}>
+            color: redIsBye || redIsTBD ? 'var(--dim)' : (isFinished && winnerIsRed ? 'var(--fg)' : '#f87171'),
+            fontWeight: isFinished && winnerIsRed ? 700 : 500,
+            fontStyle: redIsTBD ? 'italic' : 'normal' }}>
             {redName}
           </div>
-          {!redIsBye && match.red_club && (
+          {!redIsBye && !redIsTBD && match.red_club && (
             <div style={{ fontSize: 10, color: 'var(--fg3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
               {match.red_club}
             </div>
@@ -79,14 +84,15 @@ function MatchCard({ match }: { match: any }) {
       </div>
       {/* Blue row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7 }}>
-        <div style={{ width: 7, height: 7, borderRadius: '50%', background: blueIsBye ? 'var(--dim)' : '#3b82f6', flexShrink: 0, marginTop: 4 }} />
+        <div style={{ width: 7, height: 7, borderRadius: '50%', background: blueIsBye || blueIsTBD ? 'var(--dim)' : '#3b82f6', flexShrink: 0, marginTop: 4 }} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3,
-            color: blueIsBye ? 'var(--dim)' : (isFinished && !winnerIsRed ? 'var(--fg)' : '#60a5fa'),
-            fontWeight: isFinished && !winnerIsRed ? 700 : 500 }}>
+            color: blueIsBye || blueIsTBD ? 'var(--dim)' : (isFinished && !winnerIsRed ? 'var(--fg)' : '#60a5fa'),
+            fontWeight: isFinished && !winnerIsRed ? 700 : 500,
+            fontStyle: blueIsTBD ? 'italic' : 'normal' }}>
             {blueName}
           </div>
-          {!blueIsBye && match.blue_club && (
+          {!blueIsBye && !blueIsTBD && match.blue_club && (
             <div style={{ fontSize: 10, color: 'var(--fg3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
               {match.blue_club}
             </div>
@@ -112,7 +118,7 @@ function MatchCard({ match }: { match: any }) {
         </div>
       )}
       {/* Arbitrer / Vainqueur */}
-      {match.id && !isBye && (
+      {match.id && !isBye && !isBlocked && (
         isFinished ? (
           <div style={{
             display: 'block', marginTop: 7, textAlign: 'center', fontSize: 10, fontWeight: 700,
@@ -1206,6 +1212,39 @@ export default function Brackets() {
     queryFn: () => api.get(`/api/competitions/${compId}/rankings`).then(r => r.data).catch(() => []),
     enabled: !!compId,
   });
+
+  // ── WebSocket — mise à jour en temps réel du tableau ──────────────────────
+  // compIdRef évite de recréer la socket quand la compétition sélectionnée change
+  const compIdRef = useRef(compId);
+  useEffect(() => { compIdRef.current = compId; }, [compId]);
+
+  useEffect(() => {
+    if (!id) return;
+    const base = (import.meta.env.VITE_API_URL || 'https://lutte.up.railway.app')
+      .replace(/^http/, 'ws');
+    const ws = new WebSocket(`${base}?tournament=${id}`);
+
+    ws.onmessage = (evt) => {
+      try {
+        const data = JSON.parse(evt.data);
+        const REFRESH = ['match_finished', 'match_corrected', 'bracket_generated', 'bracket_deleted'];
+        if (REFRESH.includes(data.type)) {
+          qc.invalidateQueries({ queryKey: ['bracket', compIdRef.current] });
+          qc.invalidateQueries({ queryKey: ['rankings', compIdRef.current] });
+          if (data.type === 'bracket_generated' || data.type === 'bracket_deleted') {
+            qc.invalidateQueries({ queryKey: ['competitions', id] });
+          }
+        }
+      } catch {}
+    };
+
+    // Keep-alive toutes les 25 s
+    const ping = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+    }, 25000);
+
+    return () => { clearInterval(ping); ws.close(); };
+  }, [id, qc]);
 
   const generateBracket = useMutation({
     mutationFn: (cid: string) => api.post(`/api/competitions/${cid}/generate-bracket`),
