@@ -277,7 +277,11 @@ function NordicView({ matches, pools }: { matches: any[]; pools: any[] }) {
                   );
                 })}
                 {poolMatches.length === 0 && (
-                  <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
+                  <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>
+                    {(pool.athletes ?? []).length === 1
+                      ? 'Athlète seul dans cette poule — classé 1er'
+                      : 'Tableau non généré'}
+                  </div>
                 )}
               </div>
             </div>
@@ -961,7 +965,11 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
                       );
                     })}
                     {pMatches.length === 0 && (
-                      <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>Tableau non généré</div>
+                      <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>
+                        {(pool.athletes ?? []).length === 1
+                          ? 'Athlète seul dans cette poule — classé 1er'
+                          : 'Tableau non généré'}
+                      </div>
                     )}
                   </div>
                 </div>
