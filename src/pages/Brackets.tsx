@@ -962,22 +962,51 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
 
           {/* Chaque poule = sa propre ligne horizontale → matchs + classement toujours alignés */}
           {poolRankings.map(({ pool, ranking }) => {
-            const pMatches = poolMatches.filter((m: any) => m.pool_id === pool.id);
+            const pMatches = poolMatches.filter((m: any) => m.pool_id === pool.id)
+              .sort((a: any, b: any) => (a.round ?? 0) - (b.round ?? 0) || (a.index_in_round ?? 0) - (b.index_in_round ?? 0));
+            const totalWaves = pMatches.length ? Math.max(...pMatches.map((m: any) => m.round ?? 0)) + 1 : 0;
+
+            // Grouper par vague
+            const byWave: Record<number, any[]> = {};
+            for (const m of pMatches) {
+              const w = (m.round ?? 0) + 1;
+              if (!byWave[w]) byWave[w] = [];
+              byWave[w].push(m);
+            }
+            const waveEntries = Object.entries(byWave).sort(([a], [b]) => Number(a) - Number(b));
+            let matchCounter = 0;
+
             return (
               <div key={pool.id} style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
                 {/* Matchs */}
                 <div style={{ flex: 1, minWidth: 0, background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 14, overflow: 'hidden' }}>
-                  <div style={{ padding: '9px 16px', borderBottom: '1px solid var(--b2)', fontSize: 11, fontWeight: 800, color: 'var(--fg2)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                    Poule {pool.name}
+                  <div style={{ padding: '9px 16px', borderBottom: '1px solid var(--b2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--fg2)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                      Poule {pool.name}
+                    </span>
+                    {totalWaves > 0 && (
+                      <span style={{ fontSize: 9, fontWeight: 700, color: '#a78bfa', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 4, padding: '1px 7px' }}>
+                        {totalWaves} vague{totalWaves > 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
                   <div>
-                    {pMatches.map((m: any, i: number) => {
+                    {waveEntries.map(([wave, waveMatches]) => (
+                      <div key={wave}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 14px', background: 'rgba(167,139,250,0.05)', borderTop: '1px solid var(--b1)' }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                            Vague {wave}/{totalWaves}
+                          </span>
+                        </div>
+                        {waveMatches.map((m: any) => {
+                      matchCounter++;
+                      const i = matchCounter - 1;
                       const isFinished = m.status === 'finished';
                       const redWon  = isFinished && m.winner_id === m.red_athlete_id;
                       const blueWon = isFinished && m.winner_id === m.blue_athlete_id;
                       return (
-                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: i > 0 ? '1px solid var(--b1)' : 'none' }}>
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: '1px solid var(--b1)' }}>
                           <div style={{ width: 18, flexShrink: 0, fontSize: 11, fontWeight: 700, color: 'var(--faint)', textAlign: 'center' }}>{i + 1}</div>
                           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
@@ -1002,6 +1031,8 @@ function PoolsFinalsView({ matches, pools, rankings }: { matches: any[]; pools: 
                         </div>
                       );
                     })}
+                      </div>
+                    ))}
                     {pMatches.length === 0 && (
                       <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--dim)' }}>
                         {(pool.athletes ?? []).length === 1
