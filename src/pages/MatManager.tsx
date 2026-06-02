@@ -248,6 +248,27 @@ export default function MatManager() {
     });
   }, [unassigned, sortCol, sortDir, now]);
 
+  /* ── Détection des violations d'écart (min_match_gap) ── */
+  const minGap = (tournament?.min_match_gap ?? 2) as number;
+  const gapViolations: Set<string> = useMemo(() => {
+    const violations = new Set<string>();
+    const readyOnly = sortedUnassigned.filter((q: any) => q.status === 'ready');
+    for (let i = 0; i < readyOnly.length; i++) {
+      const q = readyOnly[i];
+      const athletes = [q.red_athlete_id, q.blue_athlete_id].filter(Boolean);
+      // Regarder les N matchs précédents
+      for (let j = Math.max(0, i - minGap); j < i; j++) {
+        const prev = readyOnly[j];
+        const prevAthletes = [prev.red_athlete_id, prev.blue_athlete_id].filter(Boolean);
+        if (athletes.some((a: string) => prevAthletes.includes(a))) {
+          violations.add(q.id);
+          break;
+        }
+      }
+    }
+    return violations;
+  }, [sortedUnassigned, minGap]);
+
   /* ── Drag helpers ── */
   const handleDrop = useCallback((dragId: string, targetId: string, list: any[]) => {
     if (!dragId || dragId === targetId) return;
@@ -447,6 +468,7 @@ export default function MatManager() {
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {sortedUnassigned.map((q: any, idx: number) => {
                 const isBlocked  = q.status === 'blocked';
+                const hasGapViolation = gapViolations.has(q.id);
                 const elapsedMs  = restElapsedMs(q, now);
                 const tooSoon    = !isBlocked && elapsedMs !== null && elapsedMs < minRestMs;
                 const dragActive = !sortCol && !tooSoon && !isBlocked;
@@ -454,10 +476,12 @@ export default function MatManager() {
                   ? 'rgba(55,65,81,0.04)'
                   : dragOverId === q.id
                   ? 'rgba(96,165,250,0.06)'
+                  : hasGapViolation
+                  ? 'rgba(249,115,22,0.06)'
                   : tooSoon
                   ? 'rgba(251,191,36,0.06)'
                   : (idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)');
-                const borderColor = isBlocked ? 'var(--b1)' : tooSoon ? 'rgba(251,191,36,0.2)' : 'var(--b1)';
+                const borderColor = isBlocked ? 'var(--b1)' : hasGapViolation ? 'rgba(249,115,22,0.25)' : tooSoon ? 'rgba(251,191,36,0.2)' : 'var(--b1)';
 
                 return (
                   <div
@@ -483,8 +507,9 @@ export default function MatManager() {
                   >
                     {/* # position */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <GripVertical size={10} color={tooSoon ? '#92400e' : dragActive ? 'var(--b4)' : 'var(--b2)'} />
-                      <span style={{ fontSize: 10, fontWeight: 700, color: tooSoon ? '#92400e' : 'var(--dim)' }}>{q.position ?? idx + 1}</span>
+                      <GripVertical size={10} color={hasGapViolation ? '#f97316' : tooSoon ? '#92400e' : dragActive ? 'var(--b4)' : 'var(--b2)'} />
+                      <span style={{ fontSize: 10, fontWeight: 700, color: hasGapViolation ? '#f97316' : tooSoon ? '#92400e' : 'var(--dim)' }}>{q.position ?? idx + 1}</span>
+                      {hasGapViolation && <span title={`Écart insuffisant (min ${minGap} combats)`} style={{ fontSize: 8, color: '#f97316', fontWeight: 900 }}>⚠</span>}
                     </div>
 
                     {/* Rouge */}
