@@ -477,6 +477,20 @@ export default function TournamentSettings() {
               </div>
             </div>
             <div>
+              <label style={LABEL}>Écart minimum entre 2 combats d'un même athlète (nb de combats)</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  type="number" min="0" max="20" step="1"
+                  style={{ ...INPUT, maxWidth: 100 }}
+                  value={form.min_match_gap ?? 2}
+                  onChange={e => setForm((p: any) => ({ ...p, min_match_gap: parseInt(e.target.value) || 0 }))}
+                />
+                <span style={{ fontSize: 12, color: 'var(--fg3)' }}>
+                  Utilisé par l'algorithme d'ordonnancement automatique de la file d'attente.
+                </span>
+              </div>
+            </div>
+            <div>
               <label style={LABEL}>Tolérance de poids Jeunes U9/U11 (%)</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <input

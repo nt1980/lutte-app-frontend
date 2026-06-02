@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, Link } from 'react-router-dom';
-import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical, UserCheck, RefreshCw } from 'lucide-react';
+import { Activity, Tv, AlertCircle, Clock, CornerDownLeft, Check, GripVertical, UserCheck, RefreshCw, Wand2 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import { useAuth } from '../store/auth';
 import api from '../lib/api';
@@ -173,6 +173,15 @@ export default function MatManager() {
       api.put(`/api/tournaments/${id}/queue/reorder`, { items }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['queue', id] }),
     onError: () => toast.error('Erreur réordonnancement'),
+  });
+
+  const autoOrder = useMutation({
+    mutationFn: () => api.post(`/api/tournaments/${id}/queue/auto-order`),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ['queue', id] });
+      toast.success(`File réordonnée (${res.data?.reordered ?? 0} combats)`);
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur auto-ordonnancement'),
   });
 
   const assignReferee = useMutation({
@@ -400,6 +409,21 @@ export default function MatManager() {
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--inp)', border: '1px solid var(--b3)', color: 'var(--fg3)', borderRadius: 7, padding: '3px 9px', fontSize: 11, cursor: 'pointer' }}
               >
                 <RefreshCw size={11} /> Actualiser
+              </button>
+              <button
+                onClick={() => autoOrder.mutate()}
+                disabled={autoOrder.isPending}
+                title="Ordonnancer automatiquement : vagues prioritaires d'abord, écart entre combats d'un même athlète"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  background: autoOrder.isPending ? 'rgba(167,139,250,0.05)' : 'rgba(167,139,250,0.1)',
+                  border: '1px solid rgba(167,139,250,0.3)', color: '#a78bfa',
+                  borderRadius: 7, padding: '3px 9px', fontSize: 11, fontWeight: 700,
+                  cursor: autoOrder.isPending ? 'default' : 'pointer',
+                  opacity: autoOrder.isPending ? 0.6 : 1,
+                }}
+              >
+                <Wand2 size={11} /> {autoOrder.isPending ? 'Tri…' : 'Auto-ordre'}
               </button>
               <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--dim)' }}>Affecter à un tapis →</span>
             </div>
