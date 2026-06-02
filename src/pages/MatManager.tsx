@@ -404,12 +404,13 @@ export default function MatManager() {
             </div>
 
             {/* Colonnes header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,224px) 28px minmax(0,224px) 70px 50px 40px 28px 60px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid var(--b1)', background: 'var(--inp)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '28px minmax(0,224px) 28px minmax(0,224px) 70px 44px 50px 40px 28px 60px auto', alignItems: 'center', gap: 0, padding: '5px 14px', borderBottom: '1px solid var(--b1)', background: 'var(--inp)' }}>
               <ColH>#</ColH>
               <ColH>Rouge</ColH>
               <div />
               <ColH right>Bleu</ColH>
               <SortColH label="Tour"  col="tour"  sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+              <ColH>Vague</ColH>
               <SortColH label="Âge"   col="age"   sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <SortColH label="Poids" col="poids" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <SortColH label="S"     col="genre" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
@@ -444,7 +445,7 @@ export default function MatManager() {
                     onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '28px minmax(0,224px) 28px minmax(0,224px) 70px 50px 40px 28px 60px auto',
+                      gridTemplateColumns: '28px minmax(0,224px) 28px minmax(0,224px) 70px 44px 50px 40px 28px 60px auto',
                       alignItems: 'center',
                       gap: 0,
                       padding: '7px 14px',
@@ -493,6 +494,15 @@ export default function MatManager() {
                           {roundLabel(q)}
                         </span>
                       )}
+                    </div>
+
+                    {/* Vague */}
+                    <div style={{ textAlign: 'center' }}>
+                      {q.wave != null ? (
+                        <span style={{ fontSize: 9, fontWeight: 800, color: '#a78bfa', background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.25)', borderRadius: 4, padding: '1px 5px', whiteSpace: 'nowrap' as const }}>
+                          {q.wave}/{q.total_waves ?? '?'}
+                        </span>
+                      ) : <span style={{ fontSize: 10, color: 'var(--dim)' }}>—</span>}
                     </div>
 
                     {/* Âge */}
