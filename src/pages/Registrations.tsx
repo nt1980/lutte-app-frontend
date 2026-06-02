@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Upload, Search, Users, X, FileText, AlertCircle, Plus, Trash2, Pencil } from 'lucide-react';
@@ -252,6 +252,18 @@ export default function Registrations() {
   const qc = useQueryClient();
 
   const [search,       setSearch]       = useState('');
+  const [sortCol,      setSortCol]      = useState<string | null>(null);
+  const [sortDir,      setSortDir]      = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((col: string) => {
+    setSortCol(prev => {
+      if (prev === col) {
+        if (sortDir === 'asc') { setSortDir('desc'); return col; }
+        setSortDir('asc'); return null;
+      }
+      setSortDir('asc'); return col;
+    });
+  }, [sortDir]);
   const [showImport,   setShowImport]   = useState(false);
   const [showAddForm,  setShowAddForm]  = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -388,9 +400,30 @@ export default function Registrations() {
 
   // ── Derived ─────────────────────────────────────────────────────────────────
 
-  const filtered = regs.filter((r: any) =>
-    !search || `${r.last_name} ${r.first_name} ${r.license_number} ${r.club_name}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = useMemo(() => {
+    const base = regs.filter((r: any) =>
+      !search || `${r.last_name} ${r.first_name} ${r.license_number} ${r.club_name}`.toLowerCase().includes(search.toLowerCase())
+    );
+    if (!sortCol) return base;
+    const WEIGH_ORDER: Record<string, number> = { done: 0, overweight: 1, no_show: 2, pending: 3 };
+    const AGE_ORD: Record<string, number> = { U7:0,U9:1,U11:2,U13:3,U15:4,U17:5,U20:6,U23:7,Senior:8,Vétéran:9 };
+    return [...base].sort((a, b) => {
+      let va: string | number, vb: string | number;
+      switch (sortCol) {
+        case 'nom':    va = `${a.last_name} ${a.first_name}`.toLowerCase(); vb = `${b.last_name} ${b.first_name}`.toLowerCase(); break;
+        case 'sexe':   va = a.gender ?? ''; vb = b.gender ?? ''; break;
+        case 'licence':va = a.license_number ?? ''; vb = b.license_number ?? ''; break;
+        case 'club':   va = (a.club_short || a.club_name || '').toLowerCase(); vb = (b.club_short || b.club_name || '').toLowerCase(); break;
+        case 'cat':    va = AGE_ORD[a.final_age_category] ?? 999; vb = AGE_ORD[b.final_age_category] ?? 999; break;
+        case 'style':  va = a.final_style ?? ''; vb = b.final_style ?? ''; break;
+        case 'pesee':  va = WEIGH_ORDER[a.weigh_in_status] ?? 9; vb = WEIGH_ORDER[b.weigh_in_status] ?? 9; break;
+        default: return 0;
+      }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ?  1 : -1;
+      return 0;
+    });
+  }, [regs, search, sortCol, sortDir]);
 
   const byCategory = regs.reduce((acc: any, r: any) => {
     const k = r.final_age_category || 'N/A'; acc[k] = (acc[k] || 0) + 1; return acc;
@@ -457,8 +490,28 @@ export default function Registrations() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Combattant', 'Sexe', 'Licence', 'Club', 'Catégorie', 'Style', 'Pesée', 'Actions'].map(h => (
-                  <th key={h} style={TH}>{h}</th>
+                {([
+                  { label: 'Combattant', col: 'nom'     },
+                  { label: 'Sexe',       col: 'sexe'    },
+                  { label: 'Licence',    col: 'licence'  },
+                  { label: 'Club',       col: 'club'    },
+                  { label: 'Catégorie',  col: 'cat'     },
+                  { label: 'Style',      col: 'style'   },
+                  { label: 'Pesée',      col: 'pesee'   },
+                  { label: 'Actions',    col: null      },
+                ] as { label: string; col: string | null }[]).map(({ label, col }) => (
+                  <th key={label} style={{ ...TH, cursor: col ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' as const }}
+                    onClick={col ? () => handleSort(col) : undefined}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {label}
+                      {col && (
+                        <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 1, opacity: sortCol === col ? 1 : 0.35 }}>
+                          <span style={{ fontSize: 6, lineHeight: '7px', color: sortCol === col && sortDir === 'asc' ? '#60a5fa' : 'var(--fg3)' }}>▲</span>
+                          <span style={{ fontSize: 6, lineHeight: '7px', color: sortCol === col && sortDir === 'desc' ? '#60a5fa' : 'var(--fg3)' }}>▼</span>
+                        </span>
+                      )}
+                    </span>
+                  </th>
                 ))}
               </tr>
             </thead>

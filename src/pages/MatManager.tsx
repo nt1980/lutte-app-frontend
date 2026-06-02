@@ -226,6 +226,7 @@ export default function MatManager() {
       let va: number | string, vb: number | string;
       switch (sortCol) {
         case 'tour':  va = ROUND_PRIORITY[roundLabel(a)] ?? -1; vb = ROUND_PRIORITY[roundLabel(b)] ?? -1; break;
+        case 'vague': va = a.wave ?? 999;                       vb = b.wave ?? 999;                       break;
         case 'age':   va = AGE_ORDER[a.age_category] ?? 999;   vb = AGE_ORDER[b.age_category] ?? 999;   break;
         case 'poids': va = Number(a.weight_category) || 0;      vb = Number(b.weight_category) || 0;     break;
         case 'genre': va = a.gender ?? '';                       vb = b.gender ?? '';                      break;
@@ -410,7 +411,7 @@ export default function MatManager() {
               <div />
               <ColH right>Bleu</ColH>
               <SortColH label="Tour"  col="tour"  sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
-              <ColH>Vague</ColH>
+              <SortColH label="Vague" col="vague" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <SortColH label="Âge"   col="age"   sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <SortColH label="Poids" col="poids" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
               <SortColH label="S"     col="genre" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
