@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Users, Grid3X3, CheckCircle, Activity, Scale, Settings,
   Swords, Clock, AlertTriangle, Building2,
-  Trophy, Timer, ChevronRight, Download,
+  Trophy, Timer, ChevronRight, Download, Copy,
 } from 'lucide-react';
 import Layout, { PageHeader } from '../components/Layout';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../store/auth';
 
 // ── Age ordering ────────────────────────────────────────────────────────────
 const AGE_ORDER: Record<string, number> = {
@@ -80,8 +81,27 @@ const shortcuts = (id: string) => [
 
 export default function TournamentDetail() {
   const { id } = useParams<{ id: string }>();
-  const isMobile = useIsMobile();
+  const navigate   = useNavigate();
+  const { user }   = useAuth();
+  const isMobile   = useIsMobile();
+  const isSuperAdmin = (user?.globalRoles || []).includes('super_admin');
   const [exportLoading, setExportLoading] = useState(false);
+  const [dupLoading,    setDupLoading]    = useState(false);
+
+  const handleDuplicate = async () => {
+    if (!id) return;
+    if (!confirm('Dupliquer ce tournoi avec tous ses athlètes, pesées et combats ?')) return;
+    setDupLoading(true);
+    try {
+      const { data } = await api.post(`/api/tournaments/${id}/duplicate`);
+      toast.success('Tournoi dupliqué avec succès');
+      navigate(`/t/${data.id}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Erreur lors de la duplication');
+    } finally {
+      setDupLoading(false);
+    }
+  };
 
   const handleExportExcel = async () => {
     if (!id) return;
@@ -221,6 +241,25 @@ export default function TournamentDetail() {
         subtitle={`${dateStr} · ${tournament.city}`}
         actions={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {isSuperAdmin && (
+              <button
+                onClick={handleDuplicate}
+                disabled={dupLoading}
+                title="Dupliquer ce tournoi avec athlètes, pesées et combats (super admin)"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '7px 14px', borderRadius: 8,
+                  background: dupLoading ? 'rgba(251,191,36,0.05)' : 'rgba(251,191,36,0.08)',
+                  border: '1px solid rgba(251,191,36,0.25)',
+                  color: dupLoading ? '#6b7280' : '#fbbf24',
+                  fontSize: 13, fontWeight: 600, cursor: dupLoading ? 'default' : 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                <Copy size={14} />
+                {dupLoading ? 'Duplication…' : 'Dupliquer'}
+              </button>
+            )}
             <button
               onClick={handleExportExcel}
               disabled={exportLoading}
