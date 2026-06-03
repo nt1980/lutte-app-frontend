@@ -1333,6 +1333,19 @@ export default function Brackets() {
     },
   });
 
+  const generateBulk = useMutation({
+    mutationFn: (ageCategory: string) =>
+      api.post(`/api/tournaments/${id}/generate-brackets-bulk`, null, { params: { age_category: ageCategory } }),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ['bracket'] });
+      qc.invalidateQueries({ queryKey: ['competitions', id] });
+      const { generated, skipped, errors } = res.data;
+      toast.success(`${generated} tableau${generated > 1 ? 'x' : ''} généré${generated > 1 ? 's' : ''}${skipped ? ` · ${skipped} ignoré${skipped > 1 ? 's' : ''}` : ''}`);
+      if (errors?.length) errors.forEach((e: string) => toast.error(e, { duration: 6000 }));
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.error || 'Erreur génération en masse', { duration: 6000 }),
+  });
+
   const deleteBulk = useMutation({
     mutationFn: ({ ageCategory, force }: { ageCategory: string; force: boolean }) =>
       api.delete(`/api/tournaments/${id}/brackets`, { params: { age_category: ageCategory, ...(force ? { force: 'true' } : {}) } }),
@@ -1374,6 +1387,28 @@ export default function Brackets() {
               >
                 <Trash2 size={14} />
                 Supprimer
+              </button>
+            )}
+            {isTournamentAdmin && comp && sameAgeComps.length > 1 && (
+              <button
+                onClick={() => {
+                  if (confirm(`Générer les tableaux de TOUTES les ${sameAgeComps.length} compétitions ${comp.age_category} ?`))
+                    generateBulk.mutate(comp.age_category);
+                }}
+                disabled={generateBulk.isPending}
+                title={`Générer tous les tableaux ${comp.age_category} (${sameAgeComps.length} compétitions)`}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  background: generateBulk.isPending ? 'rgba(167,139,250,0.08)' : 'rgba(167,139,250,0.12)',
+                  color: '#a78bfa', padding: '8px 14px', borderRadius: 9,
+                  fontSize: 13, fontWeight: 600,
+                  border: '1px solid rgba(167,139,250,0.3)',
+                  cursor: generateBulk.isPending ? 'not-allowed' : 'pointer',
+                  opacity: generateBulk.isPending ? 0.6 : 1,
+                }}
+              >
+                <Zap size={14} style={{ animation: generateBulk.isPending ? 'spin 1s linear infinite' : 'none' }} />
+                {generateBulk.isPending ? 'Génération…' : `Générer tous les ${comp.age_category}`}
               </button>
             )}
             <button
