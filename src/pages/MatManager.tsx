@@ -205,12 +205,7 @@ export default function MatManager() {
   // Un arbitre ne voit que la file de son tapis, pas la file globale
   const unassigned: any[] = isReferee ? [] : standardQueue
     .filter((q: any) => !q.mat_id && (q.status === 'ready' || q.status === 'blocked'))
-    .sort((a: any, b: any) => {
-      // 'ready' avant 'blocked'
-      if (a.status === 'ready' && b.status !== 'ready') return -1;
-      if (a.status !== 'ready' && b.status === 'ready') return 1;
-      return (a.position ?? 999) - (b.position ?? 999);
-    });
+    .sort((a: any, b: any) => (a.position ?? 999) - (b.position ?? 999));
 
   const activeCount = standardQueue.filter((q: any) => q.status === 'on_mat').length;
 
