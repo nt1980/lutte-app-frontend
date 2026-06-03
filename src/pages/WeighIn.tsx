@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Search, X, Scale, Mail, Camera, Tag } from 'lucide-react';
@@ -45,6 +45,18 @@ export default function WeighIn() {
   const [showLabelModal,setShowLabelModal] = useState(false);
   const [selectedCats,  setSelectedCats] = useState<string[]>([]);
   const [labelLoading,  setLabelLoading] = useState(false);
+  const [sortCol,       setSortCol]      = useState<string | null>(null);
+  const [sortDir,       setSortDir]      = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = useCallback((col: string) => {
+    setSortCol(prev => {
+      if (prev === col) {
+        if (sortDir === 'asc') { setSortDir('desc'); return col; }
+        setSortDir('asc'); return null;
+      }
+      setSortDir('asc'); return col;
+    });
+  }, [sortDir]);
 
   // Auto-calcul de la catégorie de poids dès que le poids change
   useEffect(() => {
@@ -114,13 +126,34 @@ export default function WeighIn() {
   const ageOptions: string[]  = sortAgeCategories([...new Set((regs as any[]).map((r: any) => r.final_age_category).filter(Boolean))] as string[]);
   const clubOptions: string[] = [...new Set((regs as any[]).map((r: any) => r.club_name).filter(Boolean))].sort() as string[];
 
-  const filtered = regs.filter((r: any) => {
-    const matchSearch = !search || `${r.last_name} ${r.first_name} ${r.license_number}`.toLowerCase().includes(search.toLowerCase());
-    const matchFilter    = filter      === 'all' || r.weigh_in_status === filter;
-    const matchAge       = filterAge   === 'all' || r.final_age_category === filterAge;
-    const matchClub      = filterClub  === 'all' || r.club_name === filterClub;
-    return matchSearch && matchFilter && matchAge && matchClub;
-  });
+  const filtered = useMemo(() => {
+    const AGE_ORD: Record<string, number> = { U7:0,U9:1,U11:2,U13:3,U15:4,U17:5,U20:6,U23:7,Senior:8,Vétéran:9 };
+    const WEIGH_ORD: Record<string, number> = { done:0, overweight:1, no_show:2, pending:3 };
+    const base = regs.filter((r: any) => {
+      const matchSearch = !search || `${r.last_name} ${r.first_name} ${r.license_number}`.toLowerCase().includes(search.toLowerCase());
+      const matchFilter    = filter      === 'all' || r.weigh_in_status === filter;
+      const matchAge       = filterAge   === 'all' || r.final_age_category === filterAge;
+      const matchClub      = filterClub  === 'all' || r.club_name === filterClub;
+      return matchSearch && matchFilter && matchAge && matchClub;
+    });
+    if (!sortCol) return base;
+    return [...base].sort((a, b) => {
+      let va: string | number, vb: string | number;
+      switch (sortCol) {
+        case 'nom':    va = `${a.last_name} ${a.first_name}`.toLowerCase(); vb = `${b.last_name} ${b.first_name}`.toLowerCase(); break;
+        case 'licence':va = a.license_number ?? ''; vb = b.license_number ?? ''; break;
+        case 'club':   va = (a.club_short || a.club_name || '').toLowerCase(); vb = (b.club_short || b.club_name || '').toLowerCase(); break;
+        case 'cat':    va = AGE_ORD[a.final_age_category] ?? 999; vb = AGE_ORD[b.final_age_category] ?? 999; break;
+        case 'poids':  va = Number(a.weigh_in_weight_kg) || 0; vb = Number(b.weigh_in_weight_kg) || 0; break;
+        case 'catpoids': va = Number(a.final_weight_category) || 0; vb = Number(b.final_weight_category) || 0; break;
+        case 'statut': va = WEIGH_ORD[a.weigh_in_status] ?? 9; vb = WEIGH_ORD[b.weigh_in_status] ?? 9; break;
+        default: return 0;
+      }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ?  1 : -1;
+      return 0;
+    });
+  }, [regs, search, filter, filterAge, filterClub, sortCol, sortDir]);
 
   const openSelected = (reg: any) => {
     setSelected(reg);
@@ -493,48 +526,93 @@ export default function WeighIn() {
             })}
           </div>
         ) : (
-          /* ── Desktop : split layout ── */
+          /* ── Desktop : table + panel ── */
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
-                {filtered.length === 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '48px 16px', textAlign: 'center' }}>
-                    <Scale size={28} color="var(--dim)" style={{ marginBottom: 10 }} />
-                    <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucun résultat</div>
-                  </div>
-                )}
-                {filtered.map((reg: any) => {
-                  const s = STATUS_INFO[reg.weigh_in_status] || STATUS_INFO.pending;
-                  const isSel = selected?.id === reg.id;
-                  const missingCat = reg.weigh_in_status === 'done' && !reg.final_weight_category && hasWeightCategories(reg.final_age_category || '');
-                  return (
-                    <button key={reg.id} onClick={() => openSelected(reg)} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 10,
-                      background: isSel ? 'rgba(220,38,38,0.08)' : missingCat ? 'rgba(239,68,68,0.04)' : 'var(--inp)',
-                      border: `1px solid ${isSel ? 'rgba(220,38,38,0.35)' : missingCat ? 'rgba(239,68,68,0.2)' : 'var(--b2)'}`,
-                      cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.1s',
-                    }}>
-                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, color: 'var(--fg)', fontSize: 13 }}>{formatName(reg.first_name, reg.last_name)}</div>
-                        <div style={{ fontSize: 11, color: 'var(--fg3)', marginTop: 2 }}>
-                          <span style={{ fontFamily: 'monospace' }}>{reg.license_number}</span>
-                          {(reg.club_short || reg.club_name) && <> · {reg.club_short || reg.club_name}</>}
-                          {reg.final_age_category && <> · <span style={{ color: 'var(--fg3)' }}>{reg.final_age_category}</span></>}
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                        {reg.weigh_in_weight_kg && <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg)' }}>{reg.weigh_in_weight_kg} kg</span>}
-                        {reg.final_weight_category
-                          ? <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', background: 'rgba(220,38,38,0.1)', borderRadius: 5, padding: '2px 6px' }}>{reg.final_weight_category} kg</span>
-                          : reg.weigh_in_status === 'done' && hasWeightCategories(reg.final_age_category || '') && <span style={{ fontSize: 10, color: '#ef4444' }} title="Catégorie de poids manquante">⚠</span>
-                        }
-                        <span style={{ background: s.bg, color: s.color, borderRadius: 5, padding: '2px 7px', fontSize: 11, fontWeight: 600 }}>{s.label}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+            <div style={{ flex: 1, background: 'var(--card)', border: '1px solid var(--b2)', borderRadius: 16, overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    {([
+                      { label: 'Combattant', col: 'nom' },
+                      { label: 'Licence',    col: 'licence' },
+                      { label: 'Club',       col: 'club' },
+                      { label: 'Catégorie',  col: 'cat' },
+                      { label: 'Poids',      col: 'poids' },
+                      { label: 'Cat. poids', col: 'catpoids' },
+                      { label: 'Statut',     col: 'statut' },
+                    ] as { label: string; col: string }[]).map(({ label, col }) => (
+                      <th key={col}
+                        onClick={() => handleSort(col)}
+                        style={{
+                          padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700,
+                          color: 'var(--fg3)', textTransform: 'uppercase' as const, letterSpacing: '0.08em',
+                          background: 'var(--inp)', borderBottom: '1px solid var(--b2)',
+                          cursor: 'pointer', userSelect: 'none' as const, whiteSpace: 'nowrap' as const,
+                        }}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {label}
+                          <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 1, opacity: sortCol === col ? 1 : 0.35 }}>
+                            <span style={{ fontSize: 6, lineHeight: '7px', color: sortCol === col && sortDir === 'asc' ? '#60a5fa' : 'var(--fg3)' }}>▲</span>
+                            <span style={{ fontSize: 6, lineHeight: '7px', color: sortCol === col && sortDir === 'desc' ? '#60a5fa' : 'var(--fg3)' }}>▼</span>
+                          </span>
+                        </span>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 && (
+                    <tr><td colSpan={7} style={{ textAlign: 'center', padding: '48px 16px' }}>
+                      <Scale size={28} color="var(--dim)" style={{ margin: '0 auto 10px', display: 'block' }} />
+                      <div style={{ color: 'var(--fg3)', fontSize: 13 }}>Aucun résultat</div>
+                    </td></tr>
+                  )}
+                  {filtered.map((reg: any) => {
+                    const s = STATUS_INFO[reg.weigh_in_status] || STATUS_INFO.pending;
+                    const isSel = selected?.id === reg.id;
+                    const missingCat = reg.weigh_in_status === 'done' && !reg.final_weight_category && hasWeightCategories(reg.final_age_category || '');
+                    const TD: React.CSSProperties = { padding: '9px 12px', fontSize: 13, borderBottom: '1px solid var(--b1)', cursor: 'pointer' };
+                    return (
+                      <tr key={reg.id} onClick={() => openSelected(reg)}
+                        style={{
+                          background: isSel ? 'rgba(220,38,38,0.06)' : missingCat ? 'rgba(239,68,68,0.03)' : 'transparent',
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => { if (!isSel) e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+                        onMouseLeave={e => { if (!isSel) e.currentTarget.style.background = missingCat ? 'rgba(239,68,68,0.03)' : 'transparent'; }}
+                      >
+                        <td style={TD}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ width: 7, height: 7, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
+                            <span style={{ fontWeight: 600, color: 'var(--fg)' }}>{formatName(reg.first_name, reg.last_name)}</span>
+                          </div>
+                        </td>
+                        <td style={{ ...TD, fontFamily: 'monospace', fontSize: 12, color: 'var(--fg3)' }}>{reg.license_number || '—'}</td>
+                        <td style={{ ...TD, color: 'var(--fg3)' }}>{reg.club_short || reg.club_name || '—'}</td>
+                        <td style={TD}>
+                          {reg.final_age_category
+                            ? <span style={{ background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.2)', color: '#60a5fa', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 600 }}>{reg.final_age_category}</span>
+                            : <span style={{ color: 'var(--dim)' }}>—</span>}
+                        </td>
+                        <td style={{ ...TD, fontWeight: 700, color: 'var(--fg)' }}>
+                          {reg.weigh_in_weight_kg ? `${reg.weigh_in_weight_kg} kg` : '—'}
+                        </td>
+                        <td style={TD}>
+                          {reg.final_weight_category
+                            ? <span style={{ fontSize: 11, fontWeight: 700, color: '#f87171', background: 'rgba(220,38,38,0.1)', borderRadius: 5, padding: '2px 6px' }}>{reg.final_weight_category} kg</span>
+                            : missingCat
+                            ? <span style={{ fontSize: 10, color: '#ef4444' }} title="Catégorie de poids manquante">⚠ Manquante</span>
+                            : <span style={{ color: 'var(--dim)' }}>—</span>}
+                        </td>
+                        <td style={TD}>
+                          <span style={{ background: s.bg, color: s.color, borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 600 }}>{s.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
             {/* Panel pesée desktop */}
