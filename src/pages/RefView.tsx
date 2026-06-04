@@ -242,6 +242,9 @@ export default function RefView() {
         loser_id:  loser_id  ?? null,
         score_red: scoreRed, score_blue: scoreBlue,
         win_type: wt ?? winType,
+        max_point_red: maxRed || null,
+        max_point_blue: maxBlue || null,
+        last_scorer: lastScorer || null,
       }),
     onSuccess: () => {
       toast.success('Résultat enregistré');
@@ -489,6 +492,22 @@ export default function RefView() {
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>✓</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#4ade80' }}>Combat terminé</div>
             <div style={{ fontSize: 13, color: '#6b7280' }}>{match.winner_name ? `${match.winner_name} gagne` : '🤝 Match nul'}</div>
+            {/* Tie-break indicators (affichés si les scores sont égaux) */}
+            {match.score_red === match.score_blue && (match.max_point_red || match.max_point_blue || match.last_scorer) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8, background: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '10px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                {(match.max_point_red > 0 || match.max_point_blue > 0) && (
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 12 }}>
+                    <span style={{ color: '#fca5a5', fontWeight: 700 }}>🔴 max +{match.max_point_red || 0}</span>
+                    <span style={{ color: '#93c5fd', fontWeight: 700 }}>🔵 max +{match.max_point_blue || 0}</span>
+                  </div>
+                )}
+                {match.last_scorer && (
+                  <div style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: match.last_scorer === 'red' ? '#fca5a5' : '#93c5fd' }}>
+                    ⬤ Dernier point : {match.last_scorer === 'red' ? 'ROUGE' : 'BLEU'}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={() => setShowAlertModal(true)}
               style={{ marginTop: 8, padding: '10px 20px', borderRadius: 10, border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.07)', color: '#fbbf24', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
@@ -745,7 +764,23 @@ export default function RefView() {
             <div style={{ textAlign: 'center' }}>
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', fontSize: 18 }}>✓</div>
               <div style={{ color: '#4ade80', fontWeight: 700, fontSize: 13 }}>Enregistré</div>
-              <div style={{ color: '#6b7280', fontSize: 11, marginTop: 4 }}>{match.winner_name} gagne</div>
+              <div style={{ color: '#6b7280', fontSize: 11, marginTop: 4 }}>{match.winner_name ? `${match.winner_name} gagne` : '🤝 Match nul'}</div>
+              {/* Tie-break indicators */}
+              {match.score_red === match.score_blue && (match.max_point_red || match.max_point_blue || match.last_scorer) && (
+                <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '8px 12px', border: '1px solid rgba(255,255,255,0.08)', textAlign: 'left' }}>
+                  {(match.max_point_red > 0 || match.max_point_blue > 0) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 4 }}>
+                      <span style={{ color: '#fca5a5', fontWeight: 700 }}>🔴 max +{match.max_point_red || 0}</span>
+                      <span style={{ color: '#93c5fd', fontWeight: 700 }}>🔵 max +{match.max_point_blue || 0}</span>
+                    </div>
+                  )}
+                  {match.last_scorer && (
+                    <div style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: match.last_scorer === 'red' ? '#fca5a5' : '#93c5fd' }}>
+                      ⬤ Dernier point : {match.last_scorer === 'red' ? 'ROUGE' : 'BLEU'}
+                    </div>
+                  )}
+                </div>
+              )}
               <button
                 onClick={() => setShowAlertModal(true)}
                 style={{ marginTop: 14, padding: '9px 16px', borderRadius: 9, border: '1px solid rgba(251,191,36,0.3)', background: 'rgba(251,191,36,0.07)', color: '#fbbf24', fontSize: 12, fontWeight: 700, cursor: 'pointer', width: '100%' }}

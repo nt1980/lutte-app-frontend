@@ -109,7 +109,22 @@ function MatchCard({ match }: { match: any }) {
         <div style={{ marginTop: 6, fontSize: 10, color: '#fbbf24', fontWeight: 600 }}>● En cours</div>
       )}
       {isFinished && !isBye && match.win_type && (
-        <div style={{ marginTop: 3, fontSize: 10, color: 'var(--fg3)', textTransform: 'capitalize' }}>{match.win_type}</div>
+        <div style={{ marginTop: 3, fontSize: 10, color: 'var(--fg3)', textTransform: 'capitalize' }}>{match.win_type === 'draw' ? 'Match nul' : match.win_type}</div>
+      )}
+      {isFinished && !isBye && match.score_red === match.score_blue && (match.max_point_red || match.max_point_blue || match.last_scorer) && (
+        <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2, fontSize: 9, color: 'var(--fg3)' }}>
+          {(match.max_point_red > 0 || match.max_point_blue > 0) && (
+            <div style={{ display: 'flex', gap: 10 }}>
+              <span style={{ color: '#fca5a5', fontWeight: 700 }}>🔴 max +{match.max_point_red || 0}</span>
+              <span style={{ color: '#93c5fd', fontWeight: 700 }}>🔵 max +{match.max_point_blue || 0}</span>
+            </div>
+          )}
+          {match.last_scorer && (
+            <div style={{ fontWeight: 700, color: match.last_scorer === 'red' ? '#fca5a5' : '#93c5fd' }}>
+              ⬤ Dernier pt : {match.last_scorer === 'red' ? 'Rouge' : 'Bleu'}
+            </div>
+          )}
+        </div>
       )}
       {/* BYE badge */}
       {isBye && (
