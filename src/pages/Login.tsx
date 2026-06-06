@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/auth';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import api from '../lib/api';
 
 export default function Login() {
-  const [email, setEmail]       = useState('');
-  const [password, setPassword] = useState('');
-  const [showPw, setShowPw]     = useState(false);
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword]     = useState('');
+  const [showPw, setShowPw]         = useState(false);
+  const [error, setError]           = useState('');
+  const [loading, setLoading]       = useState(false);
   const { login }  = useAuth();
   const navigate   = useNavigate();
 
@@ -18,7 +18,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(identifier, password);
       try {
         const { data } = await api.get('/api/users/me/referee-mat');
         if (data?.tournament_id) {
@@ -28,7 +28,7 @@ export default function Login() {
       } catch {}
       navigate('/dashboard');
     } catch {
-      setError('Email ou mot de passe incorrect');
+      setError('Identifiant ou mot de passe incorrect');
     } finally {
       setLoading(false);
     }
@@ -59,20 +59,20 @@ export default function Login() {
           </h2>
 
           <form onSubmit={handleSubmit}>
-            {/* Email */}
+            {/* Identifiant */}
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', color: 'var(--fg3)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.4rem' }}>
-                Email
+                Identifiant
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={14} color="var(--faint)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                <User size={14} color="var(--faint)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="admin@lutte.app"
+                  type="text"
+                  value={identifier}
+                  onChange={e => setIdentifier(e.target.value)}
+                  placeholder="Nom ou email"
                   required
-                  autoComplete="email"
+                  autoComplete="username"
                   style={{
                     width: '100%', boxSizing: 'border-box',
                     background: 'var(--inp)', border: '1px solid var(--b3)',
