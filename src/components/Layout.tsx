@@ -275,6 +275,23 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
             )}
           </div>
 
+          {/* Retour à la liste des tournois — fixe, hors de la zone scrollable */}
+          {tournamentId && isGlobalAdmin && !isReferee && (
+            <div style={{ padding: '10px 8px', borderBottom: '1px solid var(--b1)', overflow: 'hidden', flexShrink: 0 }}>
+              <Link
+                to="/dashboard"
+                title={collapsed && !isMobile ? 'Tous les tournois' : undefined}
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: collapsed && !isMobile ? 'center' : 'flex-start',
+                  gap: 4, fontSize: 10, color: 'var(--faint)', textDecoration: 'none',
+                }}
+              >
+                <ChevronLeft size={10} /> {showLabel && 'Tous les tournois'}
+              </Link>
+            </div>
+          )}
+
           {/* Navigation */}
           <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
 
@@ -285,16 +302,11 @@ export default function Layout({ children, tournamentId }: { children: React.Rea
 
             {tournamentId && (
               <>
-                <div style={{ padding: '16px 8px 6px', overflow: 'hidden' }}>
-                  {isGlobalAdmin && !isReferee && showLabel && (
-                    <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--faint)', textDecoration: 'none', marginBottom: 8 }}>
-                      <ChevronLeft size={10} /> Tous les tournois
-                    </Link>
-                  )}
-                  {showLabel && (
+                {showLabel && (
+                  <div style={{ padding: '16px 8px 6px', overflow: 'hidden' }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Ce tournoi</div>
-                  )}
-                </div>
+                  </div>
+                )}
                 {visibleTournamentNav(tournamentId).map(({ to, label, icon: Icon }) => {
                   const active = location.pathname === to;
                   return <NavLink key={to} to={to} label={label} icon={Icon} active={active} collapsed={collapsed && !isMobile} />;
